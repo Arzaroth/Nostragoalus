@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../i18n/i18n.dart';
 import '../state/providers.dart';
+import '../theme/app_theme.dart';
 
 const _localeNames = {
   'en': 'English',
@@ -20,6 +21,8 @@ class LocaleMenu extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final current = ref.watch(localeProvider);
+    final scheme = Theme.of(context).colorScheme;
+    final t = context.tokens;
     return PopupMenuButton<Locale>(
       icon: const Icon(Icons.translate),
       tooltip: _localeNames[current.languageCode],
@@ -30,9 +33,11 @@ class LocaleMenu extends ConsumerWidget {
             value: l,
             child: Row(
               children: [
-                Icon(l == current ? Icons.check : Icons.language, size: 18),
+                Icon(l == current ? Icons.check : Icons.language_outlined,
+                    size: 18, color: l == current ? scheme.primary : t.faint),
                 const SizedBox(width: 12),
-                Text(_localeNames[l.languageCode] ?? l.languageCode),
+                Text(_localeNames[l.languageCode] ?? l.languageCode,
+                    style: l == current ? const TextStyle(fontWeight: FontWeight.w600) : null),
               ],
             ),
           ),

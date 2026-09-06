@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../i18n/i18n_scope.dart';
 import '../../kt/kt_providers.dart' show KtCheck;
+import '../../theme/app_theme.dart';
+import 'panel.dart';
 
 /// How a peer's served public key compares to the transparency log. `mismatch`
 /// is the substitution alarm; `absent` is a soft caution; `ok` and `unknown`
@@ -13,33 +15,16 @@ class KtKeyBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    final t = context.tokens;
     return switch (check) {
-      KtCheck.mismatch => _chip(
-          context,
-          Icons.gpp_bad,
-          context.tr('kt.peer.mismatch'),
-          scheme.error,
-        ),
-      KtCheck.absent => _chip(
-          context,
-          Icons.help_outline,
-          context.tr('kt.peer.absent'),
-          scheme.tertiary,
-        ),
+      KtCheck.mismatch => _tag(context, Icons.gpp_bad, context.tr('kt.peer.mismatch'), t.live),
+      KtCheck.absent => _tag(context, Icons.help_outline, context.tr('kt.peer.absent'), t.amber),
       KtCheck.ok || KtCheck.unknown => const SizedBox.shrink(),
     };
   }
 
-  Widget _chip(BuildContext context, IconData icon, String label, Color color) => Tooltip(
+  Widget _tag(BuildContext context, IconData icon, String label, Color color) => Tooltip(
         message: context.tr('chat.verify.notInLogHint'),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 16, color: color),
-            const SizedBox(width: 4),
-            Text(label, style: TextStyle(color: color, fontSize: 12)),
-          ],
-        ),
+        child: Tag(label, icon: icon, color: color),
       );
 }

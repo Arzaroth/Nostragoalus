@@ -8,6 +8,7 @@ import '../state/providers.dart';
 import 'feedback.dart';
 import 'widgets/async_value_view.dart';
 import 'widgets/empty_state.dart';
+import 'widgets/panel.dart';
 
 /// In-app notification center. Push delivery (FCM/APNs) is a separate, later
 /// slice; "mark all read" is an explicit action here.
@@ -39,11 +40,15 @@ class NotificationsScreen extends ConsumerWidget {
           value: notifs,
           onRetry: () => ref.invalidate(notificationsProvider),
           data: (res) => res.notifications.isEmpty
-              ? EmptyState(message: context.tr('notifications.empty'))
-              : ListView.separated(
-                  itemCount: res.notifications.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
-                  itemBuilder: (context, i) => _Tile(res.notifications[i]),
+              ? EmptyState(
+                  icon: Icons.notifications_none_outlined,
+                  message: context.tr('notifications.empty'),
+                )
+              : ListView(
+                  padding: const EdgeInsets.only(top: 8, bottom: 24),
+                  children: [
+                    Panel(children: [for (final n in res.notifications) _Row(n)]),
+                  ],
                 ),
         ),
       ),
@@ -51,15 +56,20 @@ class NotificationsScreen extends ConsumerWidget {
   }
 }
 
-class _Tile extends StatelessWidget {
-  const _Tile(this.n);
+class _Row extends StatelessWidget {
+  const _Row(this.n);
   final NotificationsResponseNotification n;
 
   @override
-  Widget build(BuildContext context) => ListTile(
-        leading: Icon(notificationIcon(n.type.wire, read: n.read),
-            color: n.read ? null : Theme.of(context).colorScheme.primary),
-        title: Text(notificationMessage(n.type.wire, n.data, context.tr)),
-        subtitle: Text(formatNotificationDate(n.createdAt)),
-      );
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return PanelRow(
+      selected: !n.read,
+      leading: Icon(notificationIcon(n.type.wire, read: n.read),
+          color: n.read ? null : scheme.primary),
+      title: Text(notificationMessage(n.type.wire, n.data, context.tr),
+          style: n.read ? null : const TextStyle(fontWeight: FontWeight.w600)),
+      subtitle: Text(formatNotificationDate(n.createdAt)),
+    );
+  }
 }

@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
+import '../theme/app_theme.dart';
+import 'feedback.dart';
+import 'widgets/panel.dart';
 
 /// Two-factor (TOTP) enrolment and removal over the better-auth two-factor
 /// endpoints. Enrol: password -> scan secret + save backup codes -> verify code.
@@ -89,18 +92,25 @@ class _TwoFactorScreenState extends ConsumerState<TwoFactorScreen> {
         if (mounted) Navigator.of(context).pop();
       });
 
+  void _copy(String text) {
+    Clipboard.setData(ClipboardData(text: text));
+    showToast(context, context.tr('common.copied'));
+  }
+
   @override
   Widget build(BuildContext context) {
     final enabled = ref.watch(authControllerProvider).valueOrNull?.twoFactorEnabled == true;
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(title: Text(context.tr('twofa.title'))),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [
           if (_error != null)
             Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+              padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
+              child: Text(_error!,
+                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error)),
             ),
           if (_step == _Step.backup)
             ..._backupView()
@@ -115,112 +125,144 @@ class _TwoFactorScreenState extends ConsumerState<TwoFactorScreen> {
     );
   }
 
+  Widget _blurb(String text) => Padding(
+        padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
+        child: Text(text,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: context.tokens.muted)),
+      );
+
   List<Widget> _enableView() => [
-        Text(context.tr('twofa.hint')),
-        const SizedBox(height: 16),
-        TextField(
-          controller: _password,
-          obscureText: true,
-          decoration: InputDecoration(
-            labelText: context.tr('auth.password'),
-            border: const OutlineInputBorder(),
-          ),
-        ),
-        const SizedBox(height: 16),
-        FilledButton(
-          onPressed: _busy ? null : _startEnable,
-          child: Text(context.tr('twofa.enable')),
+        _blurb(context.tr('twofa.hint')),
+        Panel(
+          margin: EdgeInsets.zero,
+          padding: const EdgeInsets.all(16),
+          dividers: false,
+          children: [
+            TextField(
+              controller: _password,
+              obscureText: true,
+              autofillHints: const [AutofillHints.password],
+              decoration: InputDecoration(labelText: context.tr('auth.password')),
+            ),
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: _busy ? null : _startEnable,
+              child: Text(context.tr('twofa.enable')),
+            ),
+          ],
         ),
       ];
 
   List<Widget> _verifyView() => [
-        Text(context.tr('twofa.scan')),
-        const SizedBox(height: 12),
-        Card(
-          child: ListTile(
-            title: Text(context.tr('twofa.secret')),
-            subtitle: SelectableText(_secret, style: const TextStyle(fontFamily: 'monospace')),
-            trailing: IconButton(
-              icon: const Icon(Icons.copy),
-              onPressed: () {
-                Clipboard.setData(ClipboardData(text: _secret));
-                ScaffoldMessenger.of(context)
-                    .showSnackBar(SnackBar(content: Text(context.tr('common.copied'))));
-              },
+        _blurb(context.tr('twofa.scan')),
+        Panel(
+          margin: EdgeInsets.zero,
+          children: [
+            PanelRow(
+              leading: const Icon(Icons.key_outlined),
+              title: Text(context.tr('twofa.secret')),
+              subtitle: SelectableText(_secret, style: const TextStyle(fontFamily: 'monospace')),
+              trailing: IconButton(
+                icon: const Icon(Icons.copy_outlined),
+                tooltip: context.tr('twofa.copy'),
+                onPressed: () => _copy(_secret),
+              ),
             ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        TextField(
-          controller: _code,
-          keyboardType: TextInputType.number,
-          decoration: InputDecoration(
-            labelText: context.tr('twofa.code'),
-            border: const OutlineInputBorder(),
-          ),
-        ),
-        const SizedBox(height: 16),
-        FilledButton(
-          onPressed: _busy ? null : _confirmEnable,
-          child: Text(context.tr('twofa.verify')),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextField(
+                    controller: _code,
+                    keyboardType: TextInputType.number,
+                    autofillHints: const [AutofillHints.oneTimeCode],
+                    decoration: InputDecoration(labelText: context.tr('twofa.code')),
+                  ),
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    onPressed: _busy ? null : _confirmEnable,
+                    child: Text(context.tr('twofa.verify')),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ];
 
   List<Widget> _backupView() => [
-        Text(context.tr('twofa.backupHintLong')),
-        const SizedBox(height: 12),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: SelectableText(_backup.join('\n'),
-                style: const TextStyle(fontFamily: 'monospace')),
-          ),
+        _blurb(context.tr('twofa.backupHintLong')),
+        Panel(
+          margin: EdgeInsets.zero,
+          padding: const EdgeInsets.all(16),
+          dividers: false,
+          children: [
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: context.tokens.raised,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: SelectableText(_backup.join('\n'),
+                    style: const TextStyle(fontFamily: 'monospace')),
+              ),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              icon: const Icon(Icons.copy_outlined),
+              label: Text(context.tr('twofa.copyCodes')),
+              onPressed: () => _copy(_backup.join('\n')),
+            ),
+            const SizedBox(height: 12),
+            FilledButton(onPressed: _finish, child: Text(context.tr('twofa.done'))),
+          ],
         ),
-        const SizedBox(height: 8),
-        OutlinedButton.icon(
-          icon: const Icon(Icons.copy),
-          label: Text(context.tr('twofa.copyCodes')),
-          onPressed: () {
-            Clipboard.setData(ClipboardData(text: _backup.join('\n')));
-            ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(content: Text(context.tr('common.copied'))));
-          },
-        ),
-        const SizedBox(height: 16),
-        FilledButton(onPressed: _finish, child: Text(context.tr('twofa.done'))),
       ];
 
-  List<Widget> _disableView() => [
-        Row(children: [
-          const Icon(Icons.verified_user, color: Colors.green),
-          const SizedBox(width: 8),
-          Text(context.tr('twofa.enabled')),
-        ]),
-        const SizedBox(height: 16),
-        Text(context.tr('twofa.disableBlurb')),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _password,
-          obscureText: true,
-          decoration: InputDecoration(
-            labelText: context.tr('auth.password'),
-            border: const OutlineInputBorder(),
+  List<Widget> _disableView() {
+    final scheme = Theme.of(context).colorScheme;
+    final t = context.tokens;
+    return [
+      Panel(
+        margin: EdgeInsets.zero,
+        children: [
+          PanelRow(
+            leading: Icon(Icons.verified_user, color: t.emerald),
+            title: Text(context.tr('twofa.enabled')),
+            subtitle: Text(context.tr('twofa.disableBlurb')),
           ),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _code,
-          keyboardType: TextInputType.number,
-          decoration: InputDecoration(
-            labelText: context.tr('twofa.code'),
-            border: const OutlineInputBorder(),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextField(
+                  controller: _password,
+                  obscureText: true,
+                  autofillHints: const [AutofillHints.password],
+                  decoration: InputDecoration(labelText: context.tr('auth.password')),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _code,
+                  keyboardType: TextInputType.number,
+                  autofillHints: const [AutofillHints.oneTimeCode],
+                  decoration: InputDecoration(labelText: context.tr('twofa.code')),
+                ),
+                const SizedBox(height: 16),
+                FilledButton(
+                  style: FilledButton.styleFrom(
+                      backgroundColor: scheme.error, foregroundColor: scheme.onError),
+                  onPressed: _busy ? null : _disable,
+                  child: Text(context.tr('twofa.disable')),
+                ),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 16),
-        FilledButton(
-          style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
-          onPressed: _busy ? null : _disable,
-          child: Text(context.tr('twofa.disable')),
-        ),
-      ];
+        ],
+      ),
+    ];
+  }
 }

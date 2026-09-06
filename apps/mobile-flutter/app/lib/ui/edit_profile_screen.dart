@@ -6,7 +6,9 @@ import 'package:image_picker/image_picker.dart';
 
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
+import '../theme/app_theme.dart';
 import 'feedback.dart';
+import 'widgets/panel.dart';
 
 /// Edit the display name and avatar. Avatar is uploaded as a data: URL (the same
 /// contract as the web account page's update-user call).
@@ -64,46 +66,56 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   Widget build(BuildContext context) {
     final user = ref.watch(authControllerProvider).valueOrNull;
     final initial = (user?.name ?? user?.email ?? '?').characters.first.toUpperCase();
+    final scheme = Theme.of(context).colorScheme;
+    final t = context.tokens;
     return Scaffold(
       appBar: AppBar(title: Text(context.tr('profile.editTitle'))),
       body: ListView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         children: [
           Center(
             child: Stack(
-              alignment: Alignment.bottomRight,
+              alignment: AlignmentDirectional.bottomEnd,
               children: [
                 CircleAvatar(
-                  radius: 48,
+                  radius: 44,
+                  backgroundColor: scheme.primaryContainer,
                   backgroundImage: _imageDataUrl != null
                       ? MemoryImage(base64Decode(_imageDataUrl!.split(',').last))
                       : null,
                   child: _imageDataUrl == null
-                      ? Text(initial, style: const TextStyle(fontSize: 36))
+                      ? Text(initial,
+                          style: t.score(36, weight: FontWeight.w600, color: scheme.onPrimaryContainer))
                       : null,
                 ),
                 IconButton.filled(
-                  icon: const Icon(Icons.photo_camera, size: 18),
+                  icon: const Icon(Icons.photo_camera_outlined, size: 18),
+                  tooltip: context.tr('account.changeAvatar'),
                   onPressed: _pick,
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 24),
-          TextField(
-            controller: _name,
-            decoration: InputDecoration(
-              labelText: context.tr('profile.displayName'),
-              border: const OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 24),
-          FilledButton(
-            onPressed: _busy ? null : _save,
-            child: _busy
-                ? const SizedBox(
-                    height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                : Text(context.tr('common.save')),
+          const SizedBox(height: 20),
+          Panel(
+            margin: EdgeInsets.zero,
+            padding: const EdgeInsets.all(16),
+            dividers: false,
+            children: [
+              TextField(
+                controller: _name,
+                autofillHints: const [AutofillHints.name],
+                decoration: InputDecoration(labelText: context.tr('profile.displayName')),
+              ),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: _busy ? null : _save,
+                child: _busy
+                    ? const SizedBox(
+                        height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                    : Text(context.tr('common.save')),
+              ),
+            ],
           ),
         ],
       ),

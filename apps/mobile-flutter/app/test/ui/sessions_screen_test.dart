@@ -6,6 +6,7 @@ import 'package:nostragoalus/i18n/i18n.dart';
 import 'package:nostragoalus/i18n/i18n_scope.dart';
 import 'package:nostragoalus/state/providers.dart';
 import 'package:nostragoalus/ui/sessions_screen.dart';
+import 'package:nostragoalus/ui/widgets/panel.dart';
 
 class _MemoryKv implements SecureKv {
   _MemoryKv([this._value]);
@@ -59,8 +60,8 @@ void main() {
 
     expect(find.text('Laptop - This device'), findsOneWidget);
     expect(find.text('Pixel 8'), findsOneWidget);
-    final tiles = tester.widgetList<ListTile>(find.byType(ListTile)).toList();
-    expect((tiles.first.title! as Text).data, 'Laptop - This device');
+    final rows = tester.widgetList<PanelRow>(find.byType(PanelRow)).toList();
+    expect((rows.first.title as Text).data, 'Laptop - This device');
   });
 
   testWidgets('marks nothing when the bearer matches no row', (tester) async {

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
+import '../theme/app_theme.dart';
 import 'about_screen.dart';
 import 'analytics_screen.dart';
 import 'best_scorer_screen.dart';
@@ -31,6 +32,8 @@ import 'sessions_screen.dart';
 import 'teams_screen.dart';
 import 'two_factor_screen.dart';
 import 'verify_screen.dart';
+import 'widgets/panel.dart';
+import 'widgets/section_card.dart';
 import 'wrapped_screen.dart';
 
 class _Entry {
@@ -45,40 +48,43 @@ void _open(BuildContext context, Widget screen) =>
 
 /// Grouped by what the user came for: their own game, then the tournament
 /// views, then app-level things. Account + security is [_security], last.
-final _sections = <List<_Entry>>[
-  [
-    _Entry(Icons.checklist, 'predictions.title', (c) => _open(c, const MyPredictionsScreen())),
-    _Entry(Icons.query_stats, 'stats.title', (c) => _open(c, const MyStatsScreen())),
-    _Entry(Icons.insights, 'analytics.title', (c) => _open(c, const AnalyticsScreen())),
-    _Entry(Icons.compare_arrows, 'compare.title', (c) => _open(c, const CompareScreen())),
-    _Entry(Icons.card_giftcard, 'rewards.title', (c) => _open(c, const MyRewardsScreen())),
-    _Entry(Icons.emoji_events, 'nav.champion', (c) => _open(c, const ChampionScreen())),
-    _Entry(Icons.sports_soccer, 'bestScorer.title', (c) => _open(c, const BestScorerScreen())),
-    _Entry(Icons.auto_awesome, 'wrapped.title', (c) => _open(c, const WrappedScreen())),
-  ],
-  [
-    _Entry(Icons.account_tree, 'nav.bracket', (c) => _open(c, const BracketScreen())),
-    _Entry(Icons.groups_3, 'nav.teams', (c) => _open(c, const TeamsScreen())),
-    _Entry(Icons.public, 'nav.map', (c) => _open(c, const MapScreen())),
-    _Entry(Icons.grid_view, 'nav.multiview', (c) => _open(c, const MultiviewScreen())),
-    _Entry(Icons.smart_toy, 'bot.title', (c) => _open(c, const BotScreen())),
-    _Entry(Icons.calendar_month, 'calendar.title', (c) => _open(c, const CalendarScreen())),
-  ],
-  [
-    _Entry(Icons.forum, 'dm.title', (c) => _open(c, const DmInboxScreen())),
-    _Entry(Icons.tune, 'prefs.title', (c) => _open(c, const PreferencesScreen())),
-    _Entry(Icons.school, 'onboarding.takeTour', showOnboardingTour),
-    _Entry(Icons.map, 'nav.roadmap', (c) => _open(c, const RoadmapScreen())),
-    _Entry(Icons.info_outline, 'about.title', (c) => _open(c, const AboutScreen())),
-  ],
+final _profile = <_Entry>[
+  _Entry(Icons.checklist_outlined, 'predictions.title', (c) => _open(c, const MyPredictionsScreen())),
+  _Entry(Icons.query_stats_outlined, 'stats.title', (c) => _open(c, const MyStatsScreen())),
+  _Entry(Icons.insights_outlined, 'analytics.title', (c) => _open(c, const AnalyticsScreen())),
+  _Entry(Icons.compare_arrows_outlined, 'compare.title', (c) => _open(c, const CompareScreen())),
+  _Entry(Icons.card_giftcard_outlined, 'rewards.title', (c) => _open(c, const MyRewardsScreen())),
+  _Entry(Icons.emoji_events_outlined, 'nav.champion', (c) => _open(c, const ChampionScreen())),
+  _Entry(Icons.sports_soccer_outlined, 'bestScorer.title', (c) => _open(c, const BestScorerScreen())),
+  _Entry(Icons.auto_awesome_outlined, 'wrapped.title', (c) => _open(c, const WrappedScreen())),
+  _Entry(Icons.forum_outlined, 'dm.title', (c) => _open(c, const DmInboxScreen())),
+];
+
+final _competition = <_Entry>[
+  _Entry(Icons.account_tree_outlined, 'nav.bracket', (c) => _open(c, const BracketScreen())),
+  _Entry(Icons.groups_3_outlined, 'nav.teams', (c) => _open(c, const TeamsScreen())),
+  _Entry(Icons.public_outlined, 'nav.map', (c) => _open(c, const MapScreen())),
+  _Entry(Icons.grid_view_outlined, 'nav.multiview', (c) => _open(c, const MultiviewScreen())),
+  _Entry(Icons.smart_toy_outlined, 'bot.title', (c) => _open(c, const BotScreen())),
+  _Entry(Icons.calendar_month_outlined, 'calendar.title', (c) => _open(c, const CalendarScreen())),
+];
+
+final _preferences = <_Entry>[
+  _Entry(Icons.tune_outlined, 'prefs.title', (c) => _open(c, const PreferencesScreen())),
+  _Entry(Icons.school_outlined, 'onboarding.takeTour', showOnboardingTour),
 ];
 
 final _security = <_Entry>[
-  _Entry(Icons.shield, 'twofa.title', (c) => _open(c, const TwoFactorScreen())),
-  _Entry(Icons.devices, 'sessions.title', (c) => _open(c, const SessionsScreen())),
-  _Entry(Icons.vpn_key, 'recovery.title', (c) => _open(c, const RecoverySetupScreen())),
-  _Entry(Icons.verified_user, 'kt.title', (c) => _open(c, const KtScreen())),
-  _Entry(Icons.verified, 'verify.title', (c) => _open(c, const VerifyScreen())),
+  _Entry(Icons.shield_outlined, 'twofa.title', (c) => _open(c, const TwoFactorScreen())),
+  _Entry(Icons.devices_outlined, 'sessions.title', (c) => _open(c, const SessionsScreen())),
+  _Entry(Icons.vpn_key_outlined, 'recovery.title', (c) => _open(c, const RecoverySetupScreen())),
+  _Entry(Icons.verified_user_outlined, 'kt.title', (c) => _open(c, const KtScreen())),
+  _Entry(Icons.verified_outlined, 'verify.title', (c) => _open(c, const VerifyScreen())),
+];
+
+final _about = <_Entry>[
+  _Entry(Icons.map_outlined, 'nav.roadmap', (c) => _open(c, const RoadmapScreen())),
+  _Entry(Icons.info_outlined, 'about.title', (c) => _open(c, const AboutScreen())),
 ];
 
 /// Account tab: who you are, everything you own, locale, sign out.
@@ -88,47 +94,60 @@ class AccountScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authControllerProvider).valueOrNull;
+    final t = context.tokens;
+    List<Widget> rows(List<_Entry> entries) => [
+          for (final e in entries)
+            PanelRow(
+              leading: Icon(e.icon),
+              title: Text(context.tr(e.labelKey)),
+              subtitle: e.labelKey == 'twofa.title' && user?.twoFactorEnabled == true
+                  ? Text(context.tr('twofa.enabled'))
+                  : null,
+              chevron: true,
+              onTap: () => e.open(context),
+            ),
+        ];
     return Scaffold(
       appBar: AppBar(
         title: Text(context.tr('nav.account')),
         actions: const [LocaleMenu()],
       ),
       body: ListView(
+        padding: const EdgeInsets.only(top: 8, bottom: 24),
         children: [
-          const SizedBox(height: 16),
-          const _Header(),
-          const SizedBox(height: 24),
-          if (user != null && user.emailVerified == false) _VerifyBanner(email: user.email),
-          if (user != null)
-            _MenuTile(
-              icon: Icons.workspace_premium,
-              label: context.tr('achievements.cabinetTitle'),
-              onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => CabinetScreen(userId: user.id, name: user.name ?? user.email),
-              )),
-            ),
-          for (final section in _sections) ...[
-            for (final e in section)
-              _MenuTile(
-                icon: e.icon,
-                label: context.tr(e.labelKey),
-                onTap: () => e.open(context),
-              ),
-            const Divider(),
+          const _Identity(),
+          if (user != null && user.emailVerified == false) ...[
+            const SizedBox(height: 12),
+            _VerifyBanner(email: user.email),
           ],
-          for (final e in _security)
-            _MenuTile(
-              icon: e.icon,
-              label: context.tr(e.labelKey),
-              subtitle: e.labelKey == 'twofa.title' && user?.twoFactorEnabled == true
-                  ? context.tr('twofa.enabled')
-                  : null,
-              onTap: () => e.open(context),
-            ),
-          ListTile(
-            leading: const Icon(Icons.logout),
-            title: Text(context.tr('nav.signOut')),
-            onTap: () => ref.read(authControllerProvider.notifier).signOut(),
+          SectionCard(
+            title: context.tr('account.profile'),
+            children: [
+              if (user != null)
+                PanelRow(
+                  leading: const Icon(Icons.workspace_premium_outlined),
+                  title: Text(context.tr('achievements.cabinetTitle')),
+                  chevron: true,
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => CabinetScreen(userId: user.id, name: user.name ?? user.email),
+                  )),
+                ),
+              ...rows(_profile),
+            ],
+          ),
+          SectionCard(title: context.tr('nav.competition'), children: rows(_competition)),
+          SectionCard(title: context.tr('prefs.title'), children: rows(_preferences)),
+          SectionCard(title: context.tr('account.title'), children: rows(_security)),
+          SectionCard(title: context.tr('about.title'), children: rows(_about)),
+          const SizedBox(height: 20),
+          Panel(
+            children: [
+              PanelRow(
+                leading: Icon(Icons.logout, color: t.live),
+                title: Text(context.tr('nav.signOut'), style: TextStyle(color: t.live)),
+                onTap: () => ref.read(authControllerProvider.notifier).signOut(),
+              ),
+            ],
           ),
         ],
       ),
@@ -136,58 +155,68 @@ class AccountScreen extends ConsumerWidget {
   }
 }
 
-class _MenuTile extends StatelessWidget {
-  const _MenuTile({required this.icon, required this.label, required this.onTap, this.subtitle});
-
-  final IconData icon;
-  final String label;
-  final String? subtitle;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) => ListTile(
-        leading: Icon(icon),
-        title: Text(label),
-        subtitle: subtitle == null ? null : Text(subtitle!),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: onTap,
-      );
-}
-
-class _Header extends ConsumerWidget {
-  const _Header();
+/// Who is signed in, leading the hub. Tapping it opens the profile editor.
+class _Identity extends ConsumerWidget {
+  const _Identity();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authControllerProvider).valueOrNull;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final t = context.tokens;
     final image = user?.image;
     final hasImage = image != null && image.isNotEmpty;
-    return InkWell(
-      onTap: user == null
-          ? null
-          : () => Navigator.of(context)
-              .push(MaterialPageRoute(builder: (_) => const EditProfileScreen())),
-      child: Column(
-        children: [
-          CircleAvatar(
-            radius: 36,
-            backgroundImage: hasImage
-                ? NetworkImage(
-                    image.startsWith('http') ? image : '${AppConfig.apiBase}$image')
-                : null,
-            child: hasImage
-                ? null
-                : Text((user?.name ?? user?.email ?? '?').characters.first.toUpperCase(),
-                    style: const TextStyle(fontSize: 28)),
+    final title = user?.name ?? user?.email ?? '';
+    return Panel(
+      children: [
+        InkWell(
+          onTap: user == null
+              ? null
+              : () => Navigator.of(context)
+                  .push(MaterialPageRoute(builder: (_) => const EditProfileScreen())),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 30,
+                  backgroundColor: scheme.primaryContainer,
+                  foregroundImage: hasImage
+                      ? NetworkImage(image.startsWith('http') ? image : '${AppConfig.apiBase}$image')
+                      : null,
+                  child: Text(
+                    (user?.name ?? user?.email ?? '?').characters.first.toUpperCase(),
+                    style: t.score(26, weight: FontWeight.w600, color: scheme.onPrimaryContainer),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title,
+                          style: theme.textTheme.headlineSmall,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
+                      if (user?.name != null)
+                        Text(user!.email,
+                            style: theme.textTheme.bodySmall?.copyWith(color: t.muted),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis),
+                      const SizedBox(height: 4),
+                      Text(context.tr('profile.editTitle'),
+                          style: theme.textTheme.labelMedium?.copyWith(color: scheme.primary)),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(Icons.chevron_right, size: 20, color: t.faint),
+              ],
+            ),
           ),
-          const SizedBox(height: 12),
-          Text(user?.name ?? user?.email ?? '', style: Theme.of(context).textTheme.titleLarge),
-          if (user?.name != null) Text(user!.email, style: Theme.of(context).textTheme.bodySmall),
-          const SizedBox(height: 4),
-          Text(context.tr('profile.editTitle'),
-              style: TextStyle(color: Theme.of(context).colorScheme.primary, fontSize: 12)),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -197,11 +226,13 @@ class _VerifyBanner extends ConsumerWidget {
   final String email;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => Card(
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-        color: Theme.of(context).colorScheme.errorContainer,
-        child: ListTile(
-          leading: const Icon(Icons.mark_email_unread),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = context.tokens;
+    return Panel(
+      tint: t.amber.withValues(alpha: 0.12),
+      children: [
+        PanelRow(
+          leading: Icon(Icons.mark_email_unread_outlined, color: t.amber),
           title: Text(context.tr('verifyEmail.title')),
           subtitle: Text(context.tr('verifyEmail.body')),
           trailing: TextButton(
@@ -213,5 +244,7 @@ class _VerifyBanner extends ConsumerWidget {
             child: Text(context.tr('verifyEmail.resend')),
           ),
         ),
-      );
+      ],
+    );
+  }
 }

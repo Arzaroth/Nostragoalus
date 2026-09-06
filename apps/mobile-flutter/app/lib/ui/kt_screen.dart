@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../i18n/i18n_scope.dart';
 import '../kt/kt_providers.dart';
+import '../theme/app_theme.dart';
 import 'widgets/async_value_view.dart';
+import 'widgets/panel.dart';
+import 'widgets/section_card.dart';
 
 /// Key-transparency verification: the app re-walks the server's public-key hash
 /// chain and shows this user's safety number for out-of-band comparison.
@@ -21,54 +24,62 @@ class KtScreen extends ConsumerWidget {
           value: kt,
           onRetry: () => ref.invalidate(ktProvider),
           data: (view) {
-            final scheme = Theme.of(context).colorScheme;
+            final theme = Theme.of(context);
+            final t = context.tokens;
             // `verification.ok` alone green-badges an empty log or a chain that
             // recomputes cleanly under a head the server made up.
             final ok = view.chainOk;
+            final accent = ok ? t.emerald : t.live;
             return ListView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.only(top: 8, bottom: 24),
               children: [
-                if (view.headTampered)
-                  Card(
-                    color: scheme.error,
-                    child: ListTile(
-                      leading: Icon(Icons.warning_amber, color: scheme.onError),
-                      title: Text(context.tr('kt.tampered'),
-                          style: TextStyle(
-                              color: scheme.onError, fontWeight: FontWeight.bold)),
-                      subtitle: Text(context.tr('chat.verify.logTampered'),
-                          style: TextStyle(color: scheme.onError)),
-                    ),
+                if (view.headTampered) ...[
+                  Panel(
+                    tint: t.live.withValues(alpha: 0.16),
+                    children: [
+                      PanelRow(
+                        leading: Icon(Icons.warning_amber, color: t.live),
+                        title: Text(context.tr('kt.tampered'),
+                            style: TextStyle(color: t.live, fontWeight: FontWeight.w600)),
+                        subtitle: Text(context.tr('chat.verify.logTampered')),
+                      ),
+                    ],
                   ),
-                if (view.headTampered) const SizedBox(height: 12),
-                Card(
-                  color: ok ? scheme.secondaryContainer : scheme.errorContainer,
-                  child: ListTile(
-                    leading: Icon(ok ? Icons.verified_user : Icons.gpp_bad),
-                    title: Text(context.tr(ok ? 'kt.verified' : 'kt.broken')),
-                    subtitle: Text(ok
-                        ? context.tr('kt.entries', {'n': view.entryCount})
-                        : view.verification.ok
-                            ? context.tr('kt.headMismatch')
-                            : '${view.verification.failure} @ #${view.verification.count}'),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(context.tr('kt.headHash'), style: Theme.of(context).textTheme.labelMedium),
-                SelectableText(view.headHash,
-                    style: const TextStyle(fontFamily: 'monospace', fontSize: 12)),
-                const SizedBox(height: 24),
-                if (view.mySafetyNumber != null) ...[
-                  Text(context.tr('kt.safetyNumber'),
-                      style: Theme.of(context).textTheme.labelMedium),
-                  const SizedBox(height: 4),
-                  SelectableText(view.mySafetyNumber!,
-                      style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(fontFamily: 'monospace', letterSpacing: 2)),
-                  const SizedBox(height: 8),
-                  Text(context.tr('kt.safetyHint'),
-                      style: Theme.of(context).textTheme.bodySmall),
+                  const SizedBox(height: 12),
                 ],
+                Panel(
+                  tint: accent.withValues(alpha: 0.10),
+                  children: [
+                    PanelRow(
+                      leading: Icon(ok ? Icons.verified_user : Icons.gpp_bad, color: accent),
+                      title: Text(context.tr(ok ? 'kt.verified' : 'kt.broken')),
+                      subtitle: Text(ok
+                          ? context.tr('kt.entries', {'n': view.entryCount})
+                          : view.verification.ok
+                              ? context.tr('kt.headMismatch')
+                              : '${view.verification.failure} @ #${view.verification.count}'),
+                    ),
+                  ],
+                ),
+                SectionCard(
+                  title: context.tr('kt.headHash'),
+                  padded: true,
+                  children: [
+                    SelectableText(view.headHash,
+                        style: theme.textTheme.bodySmall?.copyWith(fontFamily: 'monospace')),
+                  ],
+                ),
+                if (view.mySafetyNumber != null)
+                  SectionCard(
+                    title: context.tr('kt.safetyNumber'),
+                    padded: true,
+                    children: [
+                      SelectableText(view.mySafetyNumber!,
+                          style: t.score(26, weight: FontWeight.w600, color: theme.colorScheme.onSurface)),
+                      const SizedBox(height: 8),
+                      Text(context.tr('kt.safetyHint'), style: theme.textTheme.bodySmall),
+                    ],
+                  ),
               ],
             );
           },

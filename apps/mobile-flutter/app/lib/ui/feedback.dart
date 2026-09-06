@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../api/api_client.dart';
 import '../i18n/i18n_scope.dart';
+import '../theme/app_theme.dart';
 
 /// The server's own reason for a failure, falling back to the generic string.
 /// Without this every catch collapses "email already taken" and "server down"
@@ -50,7 +51,7 @@ Future<bool> confirmDialog(
   required String confirmLabel,
   bool danger = true,
 }) async {
-  final scheme = Theme.of(context).colorScheme;
+  final live = context.tokens.live;
   final ok = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
@@ -63,7 +64,7 @@ Future<bool> confirmDialog(
         ),
         TextButton(
           onPressed: () => Navigator.of(ctx).pop(true),
-          style: danger ? TextButton.styleFrom(foregroundColor: scheme.error) : null,
+          style: danger ? TextButton.styleFrom(foregroundColor: live) : null,
           child: Text(confirmLabel),
         ),
       ],

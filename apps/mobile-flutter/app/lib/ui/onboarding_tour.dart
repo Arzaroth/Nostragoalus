@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
+import '../theme/app_theme.dart';
 
 /// The ordered tour step keys - the i18n stems `onboarding.steps.<key>`.
 /// Mirrors the web spotlight tour; on mobile it plays as a paged intro card.
@@ -18,14 +19,14 @@ const _steps = [
 ];
 
 const _icons = [
-  Icons.waving_hand,
+  Icons.waving_hand_outlined,
   Icons.emoji_events_outlined,
-  Icons.edit_note,
-  Icons.military_tech,
-  Icons.leaderboard,
-  Icons.notifications_active,
-  Icons.forum,
-  Icons.check_circle,
+  Icons.edit_note_outlined,
+  Icons.military_tech_outlined,
+  Icons.leaderboard_outlined,
+  Icons.notifications_active_outlined,
+  Icons.forum_outlined,
+  Icons.check_circle_outline,
 ];
 
 /// Show the one-time onboarding tour as a modal. Marks it dismissed on finish or
@@ -64,13 +65,19 @@ class _OnboardingTourState extends ConsumerState<_OnboardingTour> {
   @override
   Widget build(BuildContext context) {
     final last = _i == _steps.length - 1;
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final t = context.tokens;
     return SizedBox(
       height: 420,
       child: Column(
         children: [
           Align(
             alignment: AlignmentDirectional.topEnd,
-            child: TextButton(onPressed: _finish, child: Text(context.tr('onboarding.skip'))),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+              child: TextButton(onPressed: _finish, child: Text(context.tr('onboarding.skip'))),
+            ),
           ),
           Expanded(
             child: PageView.builder(
@@ -82,15 +89,18 @@ class _OnboardingTourState extends ConsumerState<_OnboardingTour> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(_icons[i], size: 56, color: Theme.of(context).colorScheme.primary),
+                    CircleAvatar(
+                      radius: 36,
+                      backgroundColor: scheme.primaryContainer,
+                      child: Icon(_icons[i], size: 36, color: scheme.onPrimaryContainer),
+                    ),
                     const SizedBox(height: 20),
                     Text(context.tr('onboarding.steps.${_steps[i]}.title'),
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.titleLarge),
+                        textAlign: TextAlign.center, style: theme.textTheme.headlineSmall),
                     const SizedBox(height: 12),
                     Text(context.tr('onboarding.steps.${_steps[i]}.body'),
                         textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyMedium),
+                        style: theme.textTheme.bodyMedium?.copyWith(color: t.muted)),
                   ],
                 ),
               ),
@@ -106,9 +116,7 @@ class _OnboardingTourState extends ConsumerState<_OnboardingTour> {
                   margin: const EdgeInsets.symmetric(horizontal: 3),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: d == _i
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.surfaceContainerHighest,
+                    color: d == _i ? scheme.primary : t.ruleStrong,
                   ),
                 ),
             ],
