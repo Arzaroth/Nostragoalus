@@ -86,6 +86,7 @@ const TARGETS = {
   '/api/users/{id}/cabinet': `/api/users/${userId}/cabinet?competition=${liveComp}`,
   '/api/commitments': '/api/commitments?limit=5',
   '/api/commitments/head': '/api/commitments/head',
+  '/api/app/android': '/api/app/android',
 }
 
 const out = {}
