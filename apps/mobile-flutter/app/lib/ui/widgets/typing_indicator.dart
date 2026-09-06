@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../api/models.gen.dart' show Member;
 import '../../i18n/i18n_scope.dart';
 import '../../state/providers.dart';
+import '../../theme/app_theme.dart';
 
 const _typingWindow = Duration(seconds: 5);
 
@@ -73,13 +74,10 @@ class _TypingIndicatorState extends ConsumerState<TypingIndicator> {
     return Align(
       alignment: AlignmentDirectional.centerStart,
       child: Padding(
-        padding: const EdgeInsetsDirectional.only(start: 16, bottom: 2),
+        padding: const EdgeInsetsDirectional.only(start: 16, bottom: 4),
         child: Text(
           label,
-          style: Theme.of(context)
-              .textTheme
-              .bodySmall
-              ?.copyWith(fontStyle: FontStyle.italic),
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(color: context.tokens.muted),
         ),
       ),
     );

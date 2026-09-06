@@ -11,6 +11,7 @@ import '../i18n/i18n_scope.dart';
 import '../live/typing_throttle.dart';
 import '../reactions.dart';
 import '../state/providers.dart';
+import '../theme/app_theme.dart';
 import '../voice/voice_service.dart';
 import 'feedback.dart';
 import 'widgets/async_value_view.dart';
@@ -19,6 +20,7 @@ import 'widgets/chat_composer.dart';
 import 'widgets/chat_line_tile.dart';
 import 'widgets/chat_message_list.dart';
 import 'widgets/chat_recovery_gate.dart';
+import 'widgets/empty_state.dart';
 import 'widgets/kt_key_badge.dart';
 import 'widgets/voice_bar.dart';
 
@@ -159,7 +161,7 @@ class _DmRoomScreenState extends ConsumerState<DmRoomScreen> {
         actions: [
           if (otherId.isNotEmpty)
             IconButton(
-              icon: const Icon(Icons.call),
+              icon: const Icon(Icons.call_outlined),
               tooltip: context.tr('voice.call'),
               onPressed: () => _call(otherId),
             ),
@@ -175,10 +177,11 @@ class _DmRoomScreenState extends ConsumerState<DmRoomScreen> {
               data: (view) {
                 final seenId = lastSeenOwnMessage(view, self);
                 return switch (view.state) {
-                  ChatState.awaitingKey => Center(
-                      child: Text(context.tr('chat.awaitingKey'), textAlign: TextAlign.center)),
+                  ChatState.awaitingKey =>
+                    EmptyState(message: context.tr('chat.awaitingKey'), icon: Icons.hourglass_empty),
                   ChatState.needsIdentity => const Center(child: CircularProgressIndicator()),
-                  ChatState.disabled => Center(child: Text(context.tr('chat.disabled'))),
+                  ChatState.disabled => EmptyState(
+                      message: context.tr('chat.disabled'), icon: Icons.speaker_notes_off_outlined),
                   ChatState.keyMismatch => const ChatRecoveryGate(
                       messageKey: 'chat.keyMismatch',
                       icon: Icons.gpp_bad,
@@ -192,13 +195,17 @@ class _DmRoomScreenState extends ConsumerState<DmRoomScreen> {
                       emptyMessage: context.tr('chat.empty'),
                       tile: (line) => ChatLineTile(
                         line: line,
+                        own: line.userId != null && line.userId == self,
                         undecryptableLabel: context.tr('chat.undecryptable'),
                         attachmentBuilder: (i) => ChatAttachment(
                           provider: dmAttachmentProvider((widget.threadId, line.id, i)),
                         ),
                         trailing: line.id == seenId
                             ? Text(context.tr('dm.seen'),
-                                style: Theme.of(context).textTheme.bodySmall)
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .labelSmall
+                                    ?.copyWith(color: context.tokens.muted))
                             : null,
                         onLongPress: () => _react(line.id),
                       ),
@@ -215,7 +222,7 @@ class _DmRoomScreenState extends ConsumerState<DmRoomScreen> {
               onChanged: (_) => _notifyTyping(),
               leading: [
                 IconButton(
-                  icon: const Icon(Icons.image),
+                  icon: const Icon(Icons.image_outlined),
                   tooltip: context.tr('chat.image.attach'),
                   onPressed: _sendImage,
                 ),
@@ -269,10 +276,10 @@ class _DmTypingHintState extends ConsumerState<DmTypingHint> {
     return Align(
       alignment: AlignmentDirectional.centerStart,
       child: Padding(
-        padding: const EdgeInsetsDirectional.only(start: 16, bottom: 2),
+        padding: const EdgeInsetsDirectional.only(start: 16, bottom: 4),
         child: Text(
           context.tr('chat.typing.one', {'name': widget.otherName}),
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic),
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(color: context.tokens.muted),
         ),
       ),
     );

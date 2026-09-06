@@ -38,9 +38,10 @@ class ChatMessageList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = chatItems(lines, outbox, reverse: reverse);
-    if (items.isEmpty) return EmptyState(message: emptyMessage);
+    if (items.isEmpty) return EmptyState(message: emptyMessage, icon: Icons.forum_outlined);
     return ListView.builder(
       reverse: reverse,
+      padding: const EdgeInsets.symmetric(vertical: 8),
       itemCount: items.length,
       itemBuilder: (context, i) {
         final item = items[i];

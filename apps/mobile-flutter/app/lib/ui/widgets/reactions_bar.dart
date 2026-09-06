@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../api/models.gen.dart';
 import '../../reactions.dart';
 import '../../state/providers.dart';
+import '../../theme/app_theme.dart';
 
 int _count(Total t, String emoji) => switch (emoji) {
       'FIRE' => t.fire.toInt(),
@@ -14,7 +15,8 @@ int _count(Total t, String emoji) => switch (emoji) {
       _ => t.angry.toInt(),
     };
 
-/// Emoji reactions for a match: tap to (re)act, counts update on success.
+/// Emoji reactions for a match as stadium chips: tap to (re)act, counts update
+/// on success.
 class ReactionsBar extends ConsumerWidget {
   const ReactionsBar({super.key, required this.matchId});
   final String matchId;
@@ -25,6 +27,7 @@ class ReactionsBar extends ConsumerWidget {
     return reactions.maybeWhen(
       data: (res) => Wrap(
         spacing: 8,
+        runSpacing: 8,
         children: [
           for (final (emoji, glyph) in reactionPalette)
             _Chip(
@@ -54,16 +57,27 @@ class _Chip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final t = context.tokens;
     return InkWell(
-      borderRadius: BorderRadius.circular(16),
+      customBorder: const StadiumBorder(),
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: selected ? scheme.primaryContainer : scheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(16),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: ShapeDecoration(
+          color: selected ? scheme.primary.withValues(alpha: 0.14) : null,
+          shape: StadiumBorder(side: BorderSide(color: selected ? scheme.primary : t.ruleStrong)),
         ),
-        child: Text('$glyph ${count > 0 ? count : ''}'.trim()),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(glyph, style: const TextStyle(fontSize: 16)),
+            if (count > 0) ...[
+              const SizedBox(width: 6),
+              Text('$count',
+                  style: t.score(15, color: selected ? scheme.primary : scheme.onSurface)),
+            ],
+          ],
+        ),
       ),
     );
   }

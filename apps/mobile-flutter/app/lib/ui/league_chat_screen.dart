@@ -16,6 +16,7 @@ import 'widgets/chat_composer.dart';
 import 'widgets/chat_line_tile.dart';
 import 'widgets/chat_message_list.dart';
 import 'widgets/chat_recovery_gate.dart';
+import 'widgets/empty_state.dart';
 import 'widgets/typing_indicator.dart';
 
 /// The league members named with a literal `@Name` in [text]. Derived at send
@@ -41,7 +42,7 @@ class LeagueChatScreen extends ConsumerWidget {
       appBar: AppBar(title: Text(name)),
       body: identity.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, __) => Center(child: Text(context.tr('err.generic'))),
+        error: (_, __) => EmptyState(message: context.tr('err.generic'), icon: Icons.error_outline),
         data: (state) => state.needsRecovery
             ? const ChatRecoveryGate()
             : _ChatBody(leagueId: leagueId),
@@ -119,7 +120,7 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
           children: [
             for (final m in members)
               ListTile(
-                leading: CircleAvatar(child: Text(m.name.characters.first.toUpperCase())),
+                leading: ChatAvatar(name: m.name, image: m.image),
                 title: Text(m.name),
                 onTap: () => Navigator.pop(context, m),
               ),
@@ -156,7 +157,7 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
             ),
             if (isOwn && line.text != null)
               ListTile(
-                leading: const Icon(Icons.edit),
+                leading: const Icon(Icons.edit_outlined),
                 title: Text(context.tr('chat.edit.button')),
                 onTap: () => Navigator.pop(context, 'edit'),
               ),
@@ -194,7 +195,6 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
           controller: controller,
           autofocus: true,
           maxLines: null,
-          decoration: const InputDecoration(border: OutlineInputBorder()),
         ),
         actions: [
           TextButton(
@@ -211,13 +211,14 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
     await runAction(context, () => ref.read(editChatProvider)(widget.leagueId, line.id, newText));
   }
 
-  Widget _tile(ChatLine line, List<Member> members) {
+  Widget _tile(ChatLine line, List<Member> members, String? selfId) {
     Member? author;
     for (final m in members) {
       if (m.userId == line.userId) author = m;
     }
     return ChatLineTile(
       line: line,
+      own: line.userId != null && line.userId == selfId,
       undecryptableLabel: context.tr('chat.undecryptable'),
       // The server names the author (it holds that metadata anyway), so an
       // ex-member's messages stay attributed; the roster is only a fallback.
@@ -231,9 +232,10 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
       footer: TextButton.icon(
         style: TextButton.styleFrom(
             padding: EdgeInsets.zero,
-            minimumSize: const Size(0, 28),
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-        icon: const Icon(Icons.forum, size: 14),
+            minimumSize: const Size(0, 24),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            textStyle: Theme.of(context).textTheme.labelSmall),
+        icon: const Icon(Icons.forum_outlined, size: 14),
         label: Text(line.threadCount > 0
             ? context.tr('chat.thread.count', {'n': line.threadCount})
             : context.tr('chat.reply.button')),
@@ -251,6 +253,7 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
     final outbox = ref.watch(chatOutboxProvider).where((e) => e.roomId == _room).toList();
     final members =
         ref.watch(leagueDetailProvider(widget.leagueId)).valueOrNull?.members ?? const <Member>[];
+    final selfId = ref.watch(authControllerProvider).valueOrNull?.id;
     final ready = chat.valueOrNull?.state == ChatState.ready;
     return Column(
       children: [
@@ -259,13 +262,10 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
             value: chat,
             onRetry: () => ref.invalidate(leagueChatProvider(widget.leagueId)),
             data: (view) => switch (view.state) {
-              ChatState.disabled => Center(child: Text(context.tr('chat.disabled'))),
-              ChatState.awaitingKey => Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Text(context.tr('chat.awaitingKey'), textAlign: TextAlign.center),
-                  ),
-                ),
+              ChatState.disabled =>
+                EmptyState(message: context.tr('chat.disabled'), icon: Icons.speaker_notes_off_outlined),
+              ChatState.awaitingKey =>
+                EmptyState(message: context.tr('chat.awaitingKey'), icon: Icons.hourglass_empty),
               ChatState.needsIdentity => const Center(child: CircularProgressIndicator()),
               ChatState.keyMismatch => const ChatRecoveryGate(
                   messageKey: 'chat.keyMismatch',
@@ -278,7 +278,7 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
                   outbox: outbox,
                   reverse: true,
                   emptyMessage: context.tr('chat.empty'),
-                  tile: (line) => _tile(line, members),
+                  tile: (line) => _tile(line, members, selfId),
                 ),
             },
           ),
@@ -291,7 +291,7 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
             onChanged: (_) => _notifyTyping(),
             leading: [
               IconButton(
-                icon: const Icon(Icons.image),
+                icon: const Icon(Icons.image_outlined),
                 tooltip: context.tr('chat.image.attach'),
                 onPressed: _sendImage,
               ),

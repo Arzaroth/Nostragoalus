@@ -47,6 +47,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
     final outbox = ref.watch(chatOutboxProvider).where((e) => e.roomId == _room).toList();
     final members =
         ref.watch(leagueDetailProvider(widget.leagueId)).valueOrNull?.members ?? const <Member>[];
+    final selfId = ref.watch(authControllerProvider).valueOrNull?.id;
     return Scaffold(
       appBar: AppBar(title: Text(context.tr('chat.thread.reply'))),
       body: Column(
@@ -67,6 +68,7 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                   }
                   return ChatLineTile(
                     line: line,
+                    own: line.userId != null && line.userId == selfId,
                     undecryptableLabel: context.tr('chat.undecryptable'),
                     authorName: line.authorName ??
                         author?.name ??
