@@ -36,31 +36,40 @@ class LeaderboardScreen extends ConsumerWidget {
             if (res.rows.isEmpty) {
               return EmptyState(icon: Icons.leaderboard_outlined, message: context.tr('leaderboard.empty'));
             }
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-              child: Material(
-                color: t.board,
-                clipBehavior: Clip.antiAlias,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(color: t.rule),
+            return CustomScrollView(
+              slivers: [
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                  sliver: DecoratedSliver(
+                    decoration: ShapeDecoration(
+                      color: t.board,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: BorderSide(color: t.rule),
+                      ),
+                    ),
+                    sliver: SliverList.separated(
+                      itemCount: res.rows.length,
+                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      itemBuilder: (context, i) {
+                        final row = res.rows[i];
+                        return LeaderboardRowCard(
+                          row: row,
+                          meId: meId,
+                          radius: BorderRadius.vertical(
+                            top: Radius.circular(i == 0 ? 16 : 0),
+                            bottom: Radius.circular(i == res.rows.length - 1 ? 16 : 0),
+                          ),
+                          onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                            builder: (_) =>
+                                CabinetScreen(userId: row.userId, name: row.displayName),
+                          )),
+                        );
+                      },
+                    ),
+                  ),
                 ),
-                child: ListView.separated(
-                  padding: EdgeInsets.zero,
-                  itemCount: res.rows.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
-                  itemBuilder: (context, i) {
-                    final row = res.rows[i];
-                    return LeaderboardRowCard(
-                      row: row,
-                      meId: meId,
-                      onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                        builder: (_) => CabinetScreen(userId: row.userId, name: row.displayName),
-                      )),
-                    );
-                  },
-                ),
-              ),
+              ],
             );
           },
         ),

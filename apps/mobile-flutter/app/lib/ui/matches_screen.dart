@@ -149,9 +149,8 @@ class _StatHeader extends ConsumerWidget {
         children: [
           StatTile(label: context.tr('picks.points'), value: '${mine.totalPoints.toInt()}'),
           StatTile(
-            label: context.tr('stats.rank'),
+            label: context.tr('picks.rank', {'n': '${board.rows.length}'}),
             value: '${mine.rank.toInt()}',
-            sub: '/ ${board.rows.length}',
           ),
           StatTile(
             label: context.tr('picks.exact'),
@@ -240,6 +239,11 @@ class _PickRow extends StatelessWidget {
       chevron: true,
       leading: Icon(icon, color: p == null && !locked ? scheme.primary : t.amber),
       title: Text(title),
+      subtitle: p == null
+          ? Text(context.tr(ctaKey),
+              style: theme.textTheme.labelMedium?.copyWith(
+                  color: locked ? t.faint : scheme.primary, fontWeight: FontWeight.w600))
+          : null,
       trailing: p != null
           ? Row(
               mainAxisSize: MainAxisSize.min,
@@ -257,9 +261,7 @@ class _PickRow extends StatelessWidget {
                 ),
               ],
             )
-          : Text(context.tr(ctaKey),
-              style: theme.textTheme.labelMedium?.copyWith(
-                  color: locked ? t.faint : scheme.primary, fontWeight: FontWeight.w600)),
+          : null,
     );
   }
 }
@@ -310,7 +312,7 @@ class _RoundGroup extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           if (liveCount > 0) ...[
-            const LiveDot(size: 7),
+            const Padding(padding: EdgeInsets.only(bottom: 6), child: LiveDot(size: 7)),
             const SizedBox(width: 5),
           ],
           Padding(

@@ -52,7 +52,7 @@ class MatchCard extends StatelessWidget {
     final live = ScorePill.isLive(status);
     final finished = status == StatusValue.finished || status == StatusValue.awarded;
     final subline = <Widget>[
-      if (locked) ...[
+      if (locked && !finished) ...[
         Icon(Icons.lock, size: 12, color: t.faint),
         const SizedBox(width: 4),
       ],

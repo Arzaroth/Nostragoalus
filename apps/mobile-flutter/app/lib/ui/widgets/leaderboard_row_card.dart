@@ -12,11 +12,21 @@ import 'team_flag.dart';
 /// champion and best-scorer flags, an exact/correct line, and the points. The
 /// signed-in player's own row is tinted.
 class LeaderboardRowCard extends StatelessWidget {
-  const LeaderboardRowCard({super.key, required this.row, this.meId, this.onTap});
+  const LeaderboardRowCard({
+    super.key,
+    required this.row,
+    this.meId,
+    this.onTap,
+    this.radius = BorderRadius.zero,
+  });
 
   final LeaderboardResponseRow row;
   final String? meId;
   final VoidCallback? onTap;
+
+  /// The panel corners this row sits on (first / last row), so the own-row
+  /// tint and the ink stay inside the rounded surface.
+  final BorderRadius radius;
 
   @override
   Widget build(BuildContext context) {
@@ -106,7 +116,13 @@ class LeaderboardRowCard extends StatelessWidget {
     final tinted = isMe
         ? ColoredBox(color: scheme.primary.withValues(alpha: 0.10), child: body)
         : body;
-    return InkWell(onTap: onTap, child: tinted);
+    return ClipRRect(
+      borderRadius: radius,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(onTap: onTap, borderRadius: radius, child: tinted),
+      ),
+    );
   }
 
   String _subtitle(BuildContext context) {
