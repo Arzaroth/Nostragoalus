@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../api/api_client.dart';
 import '../auth/sso.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
