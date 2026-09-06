@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [4.7.2] - 2026-09-06
+
 ### tI'pu'
 
 - Sar vo' Suqbogh Android De'wI'Hom: qach SamlaHbe'pu'. chenmoHmeH Duv chu'be' lo'lu'pu', vaj Hoch luj; 'ej nuq Damugh 'e' bIH, mu'qaD ghItlhwI' lughbe' 'e' ja'. DaH Sar teH jatlh; Segh 'ab je rap.

@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [4.7.2] - 2026-09-06
+
 ### Fixed
 
 - The Android app downloaded from the site could not reach the server at all: it was built pointing at a development address, so every screen failed and signing in reported a wrong password no matter what you typed. It now talks to the real site, and its version and size match the build the page advertises.

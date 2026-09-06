@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [4.7.2] - 2026-09-06
+
 ### Corrigé
 
 - L'application Android téléchargée depuis le site ne pouvait pas joindre le serveur du tout : elle était compilée avec une adresse de développement, donc tout échouait et la connexion annonçait un mot de passe incorrect quoi que vous saisissiez. Elle parle désormais au vrai site, et sa version et sa taille correspondent à la build annoncée sur la page.
