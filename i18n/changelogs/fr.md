@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [4.7.3] - 2026-09-07
+
 ### Sécurité
 
 - Renforcement de l'étape qui restitue une authentification unique mobile à l'application Android : elle ne transmet plus que la session tout juste créée par cette connexion, au lieu de celle que le navigateur avait déjà ouverte.

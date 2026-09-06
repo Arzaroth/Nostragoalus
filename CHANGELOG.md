@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [4.7.3] - 2026-09-07
+
 ### Security
 
 - Hardened the step that hands a mobile single sign-on back to the Android app: it now only passes along a session that was just created by that sign-in, instead of whatever session the browser already had open.
