@@ -1,5 +1,14 @@
 import { auth } from '../../../lib/auth'
+import { db } from '../../../db'
+import { createRateLimiter } from '../../utils/rate-limit'
+import { isProviderEnabled } from '../../utils/sso/service'
 import { isOpaqueNonce, MOBILE_SSO_CALLBACK_PATH, mobileSsoParkCallback } from '../../utils/sso/mobile-exchange'
+
+// Starting a sign-in costs a provider lookup, possibly an outbound discovery
+// fetch at the customer's IdP, and a verification row nothing sweeps until it is
+// read. Unauthenticated by necessity, so it gets the same treatment the exchange
+// route has.
+const limiter = createRateLimiter({ limit: 10, windowMs: 60_000 })
 
 // Starts the mobile SSO handshake INSIDE the browser, and exists only because of
 // where better-auth keeps its CSRF state.
@@ -39,9 +48,40 @@ export default defineEventHandler(async (event) => {
 
   if (!providerId || !isOpaqueNonce(state) || !isOpaqueNonce(challenge)) return bail()
 
+  // This route drives a whole SSO round trip, and its product is a brand-new
+  // session for whoever's browser followed it. A page that navigates here from
+  // another site is doing that TO someone: it can pick the state and challenge,
+  // let the victim's live IdP session complete the hop silently, and collect the
+  // parked bearer. The app opens this itself, so the legitimate request has no
+  // initiator (`none`) or is same-origin. Absent means a client that does not
+  // send the header at all, which is not evidence of an attack - so this blocks
+  // the values a cross-site navigation actually carries rather than demanding a
+  // value, and cannot break a client that omits it.
+  const site = getRequestHeader(event, 'sec-fetch-site')
+  if (site === 'cross-site' || site === 'same-site') return bail()
+
+  if (!limiter.allow(getRequestIP(event, { xForwardedFor: true }) ?? 'unknown')) return bail()
+
+  // The /api/auth catch-all gates the CALLBACK on provider status, and calling
+  // auth.api directly walks around it. Without this a draft or disabled provider
+  // still answers here, which both leaks that it exists and points unsolicited
+  // authorize traffic at an IdP the operator has not turned on.
+  if (!(await isProviderEnabled(db, providerId))) return bail()
+
   try {
+    const failure = new URL(MOBILE_SSO_CALLBACK_PATH, origin)
+    failure.searchParams.set('state', state)
     const res = await auth.api.signInSSO({
-      body: { providerId, callbackURL: mobileSsoParkCallback(state, challenge) },
+      body: {
+        providerId,
+        callbackURL: mobileSsoParkCallback(state, challenge),
+        // Without this, anything that goes wrong after the IdP - the user
+        // pressing Deny, a discovery failure - lands on the web /login page via
+        // onAPIError.errorURL. That is not a URL the app intercepts, so the tab
+        // sits on a login form and the spinner never stops. Send failures to the
+        // App Link instead, where the app can close the tab and say so.
+        errorCallbackURL: failure.toString(),
+      },
       headers: event.headers,
       asResponse: true,
     })
@@ -53,7 +93,10 @@ export default defineEventHandler(async (event) => {
     const body = (await res.json()) as { url?: unknown }
     if (typeof body?.url !== 'string' || !body.url) return bail()
     return sendRedirect(event, body.url, 302)
-  } catch {
+  } catch (error) {
+    // The app is told only that the round trip failed, so without a log here an
+    // outage in this route is indistinguishable from a user pressing Cancel.
+    console.error('[sso] mobile-authorize failed', error)
     return bail()
   }
 })

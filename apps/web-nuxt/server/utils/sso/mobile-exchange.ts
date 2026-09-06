@@ -1,7 +1,7 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
-import { verification } from '../../../db/schema'
+import { session, verification } from '../../../db/schema'
 import { NotFoundError, ValidationError } from '../errors'
 import { createRateLimiter } from '../rate-limit'
 
@@ -43,28 +43,57 @@ const OPAQUE = /^[A-Za-z0-9_-]{16,128}$/
 
 // How new the session must be for the callback to hand it over.
 //
-// Without this the route is a CSRF that mints a credential: it is a public GET
-// that reads whatever session cookie the browser happens to carry and parks THAT
-// bearer behind a code bound only to values the caller chose. Anyone who can
-// make a logged-in browser follow a link - and then receive the redirect, which
-// takes an unverified App Link - redeems someone else's session. PKCE does not
-// help, because the attacker supplied the challenge.
-//
-// better-auth's SSO callback always mints a NEW session (handleOAuthUserInfo ->
+// The park route is a public GET that turns a session cookie into a redeemable
+// bearer, so without an age bound it hands over whatever session the browser was
+// already carrying - months old, nothing to do with this flow. better-auth's SSO
+// callback always mints a NEW session (handleOAuthUserInfo ->
 // internalAdapter.createSession) and redirects here in the same breath, so the
-// legitimate arrival is milliseconds old. A long-lived browser session is not
-// this flow's session and is never handed over. Two minutes is slack for a slow
-// IdP hop and a phone with a bad clock, and still nowhere near a session's life.
+// legitimate arrival is milliseconds old. Two minutes is slack for a slow IdP hop
+// and a phone with a bad clock, and nowhere near a session's life.
+//
+// Read what this does NOT establish. It is an age check and only an age check:
+// it does not prove the session came from SSO, nor that it belongs to the flow
+// whose state and challenge are in the query. Any sign-in in the preceding two
+// minutes satisfies it, and /api/sso/mobile-authorize can be used to cause one.
+// What ultimately keeps a parked code away from an attacker is that only the app
+// whose signing certificate the domain vouches for receives the App Link it is
+// sent to. This narrows the window; App Links verification is the boundary.
 export const MOBILE_SSO_MAX_SESSION_AGE_MS = 2 * 60 * 1000
 
-// A future timestamp counts as fresh: clock skew between the app server and the
-// database is not evidence of an attack, and nobody who can set createdAt into
-// the future needs this endpoint.
-export function isFreshSsoSession(createdAt: Date | string | null | undefined, now: Date = new Date()): boolean {
-  if (!createdAt) return false
-  const created = createdAt instanceof Date ? createdAt : new Date(createdAt)
-  if (Number.isNaN(created.getTime())) return false
-  return now.getTime() - created.getTime() <= MOBILE_SSO_MAX_SESSION_AGE_MS
+// Clock skew is a seconds-scale phenomenon, so the tolerance for a session
+// stamped in the FUTURE is bounded too. Left open it is not a tolerance but an
+// exemption: a host whose clock jumped forward stamps rows hours ahead, and once
+// the clock is corrected every one of them stays "fresh" for the rest of its
+// life, with the age check switched off for exactly those sessions.
+export const MOBILE_SSO_MAX_CLOCK_SKEW_MS = 60 * 1000
+
+// The age is computed IN the database, against the database's own clock.
+// better-auth's `session.created_at` is `timestamp` WITHOUT time zone, and
+// node-postgres builds a Date for such a column in the Node process's LOCAL
+// zone, so comparing it to `new Date()` here reads the age wrong by exactly the
+// process offset. That is silent and it breaks both ways: on a UTC+2 host every
+// real sign-in looks two hours old and is refused, and on a UTC-4 host every
+// session looks four hours in the FUTURE, which this check would have to accept
+// (clock skew is not evidence of an attack) - turning it off for a session of
+// any age. Prod containers happen to run UTC; nothing enforces that.
+export async function isFreshSsoSession(db: AppDatabase, sessionId: string | null | undefined): Promise<boolean> {
+  if (!sessionId) return false
+  const maxAge = MOBILE_SSO_MAX_SESSION_AGE_MS / 1000
+  const maxSkew = MOBILE_SSO_MAX_CLOCK_SKEW_MS / 1000
+  const rows = await db
+    .select({
+      // Stored naive values are UTC wall clock, so `now()` is read as UTC too:
+      // that leaves the answer independent of both the Node and the database
+      // time zone rather than only the Node one.
+      fresh: sql<boolean>`
+        (now() at time zone 'utc') - ${session.createdAt} <= make_interval(secs => ${maxAge})
+        and ${session.createdAt} - (now() at time zone 'utc') <= make_interval(secs => ${maxSkew})
+      `,
+    })
+    .from(session)
+    .where(eq(session.id, sessionId))
+    .limit(1)
+  return rows[0]?.fresh === true
 }
 
 // Ten exchanges a minute per caller is ample for a human sign-in; the budget

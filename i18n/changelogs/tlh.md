@@ -7,14 +7,16 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ### Hubqu'moH
 
-- Android De'wI'Hom: DaH qorDu' De'wI' Segh (SSO) 'el chav. wa'DIch Hoch luj, 'ej mIw Qav luj: De'wI'Hom 'el tagh, 'ach Sar 'el rIn; DaH Sar 'el tagh je.
 - Android De'wI'Hom: SSO 'el nobHa'meH mIw Hubqu'lu'. DaH 'elmeH chu'bogh qep neH ngeHlu'; qep tIQ, ngeHbe'lu'.
+
+### tI'pu'
+
+- Android De'wI'Hom: DaH qorDu' De'wI' Segh (SSO) 'el chav. wa'DIch Hoch luj, 'ej mIw Qav luj: De'wI'Hom 'el tagh, 'ach Sar 'el rIn; DaH Sar 'el tagh je.
+- HaSta ngeHmeH nagh: DaH chenlaH. mu'mey chenmoHmeH Doch chIlpu' chenmoHbogh Duv; vaj Duv taghDI' Hoch, Qagh qonlu', 'ej HaSta chenlaHbe'.
 
 ## [4.7.2] - 2026-09-06
 
 ### tI'pu'
-
-- HaSta ngeHmeH nagh: DaH chenlaH. mu'mey chenmoHmeH Doch chIlpu' chenmoHbogh Duv; vaj Duv taghDI' Hoch, Qagh qonlu', 'ej HaSta chenlaHbe'.
 
 - Sar vo' Suqbogh Android De'wI'Hom: qach SamlaHbe'pu'. chenmoHmeH Duv chu'be' lo'lu'pu', vaj Hoch luj; 'ej nuq Damugh 'e' bIH, mu'qaD ghItlhwI' lughbe' 'e' ja'. DaH Sar teH jatlh; Segh 'ab je rap.
 - Android De'wI'Hom: qorDu' De'wI' Segh (SSO) lo'laH. wa'DIch Hoch luj.

@@ -2985,6 +2985,42 @@ The big one, and the reason everything below is possible:
       produces (`handleOAuthUserInfo` -> `createSession`, then redirect) and what
       an ambient long-lived cookie never is. The redirect origin is also pinned to
       the configured `BETTER_AUTH_URL` instead of the request `Host`.
+- [ ] **App Links verification is the only thing keeping a parked SSO bearer away
+      from a malicious app, and no server-side check can replace it.** The park
+      route's age gate (`isFreshSsoSession`) stops it handing over a session the
+      browser was merely carrying, but it is an age check and nothing more: it
+      cannot tell an SSO sign-in from any other, and `/api/sso/mobile-authorize`
+      can be used to cause a fresh one on demand. An attacker who picks the state
+      and challenge, drives a victim's browser through the round trip (silent when
+      the victim has a live IdP session), and can RECEIVE the resulting App Link
+      redirect, redeems the victim's session. PKCE does not help - the attacker
+      supplied the challenge. Receiving the redirect is the step that requires a
+      signing certificate the domain vouches for, so the whole flow rests on
+      `NUXT_ANDROID_CERT_FINGERPRINTS` matching the published APK and on Android
+      reporting the domain `verified`. Mitigated, not closed: the route refuses a
+      cross-site navigation (`Sec-Fetch-Site`), is rate limited, and gates on
+      provider status. A real fix needs the redemption bound to the app instance
+      that started the flow (attestation), which needs a Play account.
+- [ ] CI (`.github/workflows/ci.yml`) runs only the web gate, so the Flutter
+      suite - and with it every cross-stack guard in `sso_test.dart`, the thing
+      that catches a server route being renamed out from under the app - fires
+      only when someone runs `mise -C apps/mobile-flutter run gate` by hand. A
+      Flutter job needs the SDK, an Android SDK and a system libsodium on the
+      runner, which is why it is not there yet.
+- [ ] `server/api/sso/mobile-authorize.get.ts` is not a thin route: it resolves
+      the redirect origin, builds a bail target, forwards Set-Cookie and
+      shape-checks the response body, none of which the coverage gate reaches
+      (`server/api/**` is outside `coverage.include`). The origin resolution is
+      also duplicated verbatim in `mobile-callback.get.ts`. Both belong in
+      `server/utils/sso/mobile-exchange.ts`, which is gated at 100%. The
+      string-level guards in `mobile-exchange.test.ts` are a stopgap for the two
+      lines that have already broken this flow, not a substitute.
+- [ ] Both SSO mobile routes fall back to `getRequestURL(event).origin` when
+      neither `BETTER_AUTH_URL` nor `NUXT_PUBLIC_AUTH_URL` is set, so on a deploy
+      without a `.env` (compose does not require one) the redirect origin is
+      Host-header controlled again. `lib/auth.ts` degrades the same way, so this
+      is install-wide rather than route-specific, but a route whose entire output
+      is a `Location` should fail closed instead.
 - [ ] A cold start that cannot reach the server now resolves to signed-out with
       no explanation at all: `AuthController.build()` swallows the failure, so
       `err.offline` only ever renders after the user submits credentials. Better

@@ -191,10 +191,9 @@ void main() {
 /// callbackURL the app asked for, and plays the exchange endpoint: only the
 /// well-formed `the-code` redemption yields a bearer.
 class _SsoAdapter extends RouteAdapter {
-  _SsoAdapter(this.callbacks, this.exchanges)
-      : super({
-          '/api/auth/sign-in/sso': () => Reply(200, {'url': 'https://idp.example/authorize'}),
-        });
+  // No sign-in/sso route: the app does not call it any more. The browser stub
+  // is what records where the flow was pointed.
+  _SsoAdapter(this.callbacks, this.exchanges) : super({});
   final List<Uri> callbacks;
   final List<Map<String, dynamic>> exchanges;
 

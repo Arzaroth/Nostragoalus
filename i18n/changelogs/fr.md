@@ -7,14 +7,16 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ### Sécurité
 
-- La connexion avec un compte d'entreprise (authentification unique) aboutit désormais dans l'application Android. Elle échouait systématiquement à la dernière étape, parce que la connexion était lancée depuis l'application et non depuis le navigateur qui la terminait.
 - Renforcement de l'étape qui restitue une authentification unique mobile à l'application Android : elle ne transmet plus que la session tout juste créée par cette connexion, au lieu de celle que le navigateur avait déjà ouverte.
+
+### Corrigé
+
+- La connexion avec un compte d'entreprise (authentification unique) aboutit désormais dans l'application Android. Elle échouait systématiquement à la dernière étape, parce que la connexion était lancée depuis l'application et non depuis le navigateur qui la terminait.
+- Les images de partage s'affichent à nouveau. Le composant de mise en forme du texte manquait dans la version de production : chaque démarrage du serveur enregistrait une erreur et les cartes de partage ne pouvaient pas être dessinées.
 
 ## [4.7.2] - 2026-09-06
 
 ### Corrigé
-
-- Les images de partage s'affichent à nouveau. Le composant de mise en forme du texte manquait dans la version de production : chaque démarrage du serveur enregistrait une erreur et les cartes de partage ne pouvaient pas être dessinées.
 
 - L'application Android téléchargée depuis le site ne pouvait pas joindre le serveur du tout : elle était compilée avec une adresse de développement, donc tout échouait et la connexion annonçait un mot de passe incorrect quoi que vous saisissiez. Elle parle désormais au vrai site, et sa version et sa taille correspondent à la build annoncée sur la page.
 - La connexion avec un compte d'entreprise (authentification unique) fonctionne dans l'application Android. Elle échouait jusqu'ici à la dernière étape.

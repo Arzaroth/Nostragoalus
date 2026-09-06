@@ -1,13 +1,18 @@
 import { createHash, randomBytes } from 'node:crypto'
+import { existsSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, it, expect } from 'vitest'
-import { eq } from 'drizzle-orm'
-import { createTestDb } from '../../../tests/db'
-import { verification } from '../../../db/schema'
+import { eq, sql } from 'drizzle-orm'
+import { createTestDb, type TestDb } from '../../../tests/db'
+import { makeUser } from '../../../tests/factories'
+import { session, verification } from '../../../db/schema'
 import { NotFoundError, ValidationError } from '../errors'
 import {
   isFreshSsoSession,
   isOpaqueNonce,
   MOBILE_SSO_CALLBACK_PATH,
+  MOBILE_SSO_MAX_CLOCK_SKEW_MS,
   MOBILE_SSO_MAX_SESSION_AGE_MS,
   MOBILE_SSO_PARK_PATH,
   mobileSsoParkCallback,
@@ -135,34 +140,54 @@ describe('mobile SSO exchange', () => {
 })
 
 describe('isFreshSsoSession', () => {
-  const now = new Date('2026-09-06T12:00:00Z')
-  const ago = (ms: number) => new Date(now.getTime() - ms)
+  // Against a real database on purpose. The age is computed in SQL because
+  // session.created_at is `timestamp` WITHOUT time zone, and reading it into a
+  // JS Date bends it by the Node process's offset - which silently either
+  // refuses every real sign-in or accepts sessions of any age. A test that hands
+  // the function a Date cannot see that; this one goes through the column.
+  async function seedSession(db: TestDb, id: string, ageSeconds: number) {
+    const userId = await makeUser(db, `u-${id}`)
+    await db.insert(session).values({
+      id,
+      userId,
+      token: `tok-${id}`,
+      expiresAt: sql`(now() at time zone 'utc') + interval '7 days'`,
+      createdAt: sql`(now() at time zone 'utc') - make_interval(secs => ${ageSeconds})`,
+      updatedAt: sql`(now() at time zone 'utc')`,
+    })
+  }
 
-  it('accepts the session better-auth just created', () => {
-    // The real flow arrives milliseconds after createSession, so this is the
-    // only shape the callback should ever hand over.
-    expect(isFreshSsoSession(now, now)).toBe(true)
-    expect(isFreshSsoSession(ago(500), now)).toBe(true)
-    expect(isFreshSsoSession(ago(MOBILE_SSO_MAX_SESSION_AGE_MS), now)).toBe(true)
+  it('accepts the session the sign-in just created', async () => {
+    const { db, client } = await createTestDb()
+    await seedSession(db, 'brand-new', 0)
+    expect(await isFreshSsoSession(db, 'brand-new')).toBe(true)
+    await client.close()
   })
 
-  it('refuses a session the browser was already carrying', () => {
-    // The attack this exists for: a public GET that turns any logged-in
-    // browser's ambient cookie into a redeemable bearer.
-    expect(isFreshSsoSession(ago(MOBILE_SSO_MAX_SESSION_AGE_MS + 1), now)).toBe(false)
-    expect(isFreshSsoSession(ago(60 * 60 * 1000), now)).toBe(false)
-    expect(isFreshSsoSession(ago(30 * 24 * 60 * 60 * 1000), now)).toBe(false)
+  it('refuses a session the browser was already carrying', async () => {
+    const { db, client } = await createTestDb()
+    await seedSession(db, 'stale', 5 * 60)
+    await seedSession(db, 'ancient', 30 * 24 * 60 * 60)
+    expect(await isFreshSsoSession(db, 'stale')).toBe(false)
+    expect(await isFreshSsoSession(db, 'ancient')).toBe(false)
+    await client.close()
   })
 
-  it('refuses a request with no session at all', () => {
-    expect(isFreshSsoSession(null, now)).toBe(false)
-    expect(isFreshSsoSession(undefined, now)).toBe(false)
-    expect(isFreshSsoSession('not a date', now)).toBe(false)
+  it('holds right up to the edge of the window', async () => {
+    const { db, client } = await createTestDb()
+    await seedSession(db, 'just-inside', MOBILE_SSO_MAX_SESSION_AGE_MS / 1000 - 5)
+    await seedSession(db, 'just-outside', MOBILE_SSO_MAX_SESSION_AGE_MS / 1000 + 5)
+    expect(await isFreshSsoSession(db, 'just-inside')).toBe(true)
+    expect(await isFreshSsoSession(db, 'just-outside')).toBe(false)
+    await client.close()
   })
 
-  it('reads an ISO string, and tolerates a clock running ahead', () => {
-    expect(isFreshSsoSession(ago(1_000).toISOString(), now)).toBe(true)
-    expect(isFreshSsoSession(new Date(now.getTime() + 30_000), now)).toBe(true)
+  it('refuses a request with no session, or one that does not exist', async () => {
+    const { db, client } = await createTestDb()
+    expect(await isFreshSsoSession(db, null)).toBe(false)
+    expect(await isFreshSsoSession(db, undefined)).toBe(false)
+    expect(await isFreshSsoSession(db, 'no-such-session')).toBe(false)
+    await client.close()
   })
 })
 
@@ -181,5 +206,44 @@ describe('mobileSsoParkCallback', () => {
     const url = new URL(mobileSsoParkCallback('a b&c=d', 'x/y'), 'https://example.test')
     expect(url.searchParams.get('state')).toBe('a b&c=d')
     expect(url.searchParams.get('challenge')).toBe('x/y')
+  })
+})
+
+describe('the routes the handoff is wired through', () => {
+  // server/api is outside the coverage gate, so nothing else here would notice
+  // the park route losing its age check or a path constant pointing at a file
+  // that does not exist. Both have already broken this flow once each.
+  const api = fileURLToPath(new URL('../../api', import.meta.url))
+  const routeFor = (path: string) => join(api, `${path.replace(/^\/api/, '')}.get.ts`)
+
+  it('every path constant resolves to a route that exists', () => {
+    // Nitro maps server/api/<path>.get.ts onto /api/<path>. Pinning a constant
+    // against itself proves nothing; this pins it against the filesystem.
+    expect(existsSync(routeFor(MOBILE_SSO_PARK_PATH))).toBe(true)
+    expect(existsSync(routeFor('/api/sso/mobile-authorize'))).toBe(true)
+  })
+
+  it('the park route still refuses a session that is not fresh', () => {
+    // The gate is four lines in a route with no test of its own: deleting it
+    // left the whole suite green, which is how it would come back.
+    const source = readFileSync(routeFor(MOBILE_SSO_PARK_PATH), 'utf8')
+    // The CALL, not the mention: an unused leftover import would satisfy a
+    // looser check while the gate itself was gone.
+    expect(source).toContain('await isFreshSsoSession(')
+  })
+
+  it('the authorize route still forwards the state cookie to the browser', () => {
+    // Forwarding Set-Cookie is the entire fix: without it better-auth's callback
+    // has no state cookie to match and every real sign-in dies. It reads like
+    // boilerplate, so it is exactly the sort of line a refactor drops.
+    const source = readFileSync(routeFor('/api/sso/mobile-authorize'), 'utf8')
+    expect(source).toContain('getSetCookie')
+    expect(source).toContain('set-cookie')
+  })
+
+  it('pins the handoff window, so widening it cannot be silent', () => {
+    // Every other assertion is relative to the constant and follows it anywhere.
+    expect(MOBILE_SSO_MAX_SESSION_AGE_MS).toBe(2 * 60 * 1000)
+    expect(MOBILE_SSO_MAX_CLOCK_SKEW_MS).toBe(60 * 1000)
   })
 })

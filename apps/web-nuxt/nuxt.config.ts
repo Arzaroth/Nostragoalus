@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import { copyFile, mkdir } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
@@ -186,6 +187,10 @@ export default defineNuxtConfig({
       // Resolving through require means a satori upgrade that drops harfbuzzjs
       // fails the build loudly rather than silently shipping the same hole again.
       async compiled(nitro) {
+        // Dev calls this hook without awaiting it, on every rebundle, and a
+        // throw there is an unhandled rejection rather than the loud build
+        // failure this is meant to be.
+        if (nitro.options.dev) return
         // Resolved THROUGH satori, not from here: harfbuzzjs is satori's
         // dependency, not ours, so under pnpm it is only guaranteed to exist
         // next to satori. Resolving it from this file relies on hoisting that
@@ -195,6 +200,13 @@ export default defineNuxtConfig({
         const dest = join(nitro.options.output.serverDir, 'node_modules/harfbuzzjs/hb.wasm')
         await mkdir(dirname(dest), { recursive: true })
         await copyFile(src, dest)
+        // hb.js finds the binary strictly beside itself (__dirname + '/hb.wasm'),
+        // so a copy that is not next to the emitted hb.js is a copy into an
+        // orphan directory - green build, same crash on every boot. If the trace
+        // ever emits harfbuzzjs elsewhere, fail here rather than in production.
+        if (!existsSync(join(dirname(dest), 'hb.js'))) {
+          throw new Error(`harfbuzzjs was not traced to ${dirname(dest)}; hb.wasm would be orphaned`)
+        }
       },
     },
     openAPI: {

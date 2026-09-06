@@ -15,10 +15,12 @@ with the data caveat noted per area.
 ## Auth & account
 - [x] Email/password sign in (bearer session, secure-storage token)
 - [x] Sign out
-- [~] SSO sign in - email-domain detection, then better-auth to a server park
-  route that mints a single-use code, redeemed over a verified App Link (no
-  custom scheme, no trusted-origin config: the callbackURL is relative). Runs
-  against a real IdP. `[!]` the last step needs NUXT_ANDROID_CERT_FINGERPRINTS
+- [~] SSO sign in - email-domain detection, then a server authorize route opened
+  IN the browser (better-auth sets its CSRF state cookie on the sign-in response,
+  so the browser has to be what makes that request), on to the IdP, back through
+  a server park route that mints a single-use code, redeemed over a verified App
+  Link (no custom scheme, no trusted-origin config: the callbackURL is relative).
+  Runs against a real IdP. `[!]` the last step needs NUXT_ANDROID_CERT_FINGERPRINTS
   set on the server so /.well-known/assetlinks.json verifies the App Link; iOS
   additionally needs a Team ID
 - [x] Sign up (native form)

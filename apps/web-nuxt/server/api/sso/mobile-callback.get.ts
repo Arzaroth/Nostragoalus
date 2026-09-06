@@ -35,7 +35,7 @@ export default defineEventHandler(async (event) => {
   const target = new URL(MOBILE_SSO_CALLBACK_PATH, configured || getRequestURL(event).origin)
   try {
     const session = await auth.api.getSession({ headers: event.headers })
-    if (!isFreshSsoSession(session?.session.createdAt)) {
+    if (!(await isFreshSsoSession(db, session?.session.id))) {
       throw new ValidationError('no sso sign-in to hand off')
     }
     const token = getCookie(event, (await auth.$context).authCookies.sessionToken.name) ?? ''

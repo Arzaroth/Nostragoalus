@@ -7,14 +7,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ### Security
 
-- Signing in with your company account (single sign-on) now completes in the Android app. It failed at the last step every time, because the sign-in was started from the app rather than from the browser that finished it.
 - Hardened the step that hands a mobile single sign-on back to the Android app: it now only passes along a session that was just created by that sign-in, instead of whatever session the browser already had open.
+
+### Fixed
+
+- Signing in with your company account (single sign-on) now completes in the Android app. It failed at the last step every time, because the sign-in was started from the app rather than from the browser that finished it.
+- Share images render again. The text-shaping component was missing from the production build, so every server start logged a crash and share cards could not be drawn.
 
 ## [4.7.2] - 2026-09-06
 
 ### Fixed
-
-- Share images render again. The text-shaping component was missing from the production build, so every server start logged a crash and share cards could not be drawn.
 
 - The Android app downloaded from the site could not reach the server at all: it was built pointing at a development address, so every screen failed and signing in reported a wrong password no matter what you typed. It now talks to the real site, and its version and size match the build the page advertises.
 - Signing in with your company account (single sign-on) works in the Android app. It always failed at the last step before.

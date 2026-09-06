@@ -272,7 +272,9 @@ session cookie, so it is the only point that can park a bearer.
 better-auth straight to the App Link looks equivalent and is not - better-auth
 redirects verbatim after setting the cookie, so the app receives its own `state`
 and `challenge` back with no `code` and no credential, and every attempt dies on
-`missing_code`. The client keeps them as two constants, `ssoParkPath` and
+`missing_code`. The park path is now server-side only (`MOBILE_SSO_PARK_PATH`,
+built into the callbackURL by `mobileSsoParkCallback`), so the client cannot
+disagree with it; what the app names is `ssoAuthorizePath` and
 `ssoCallbackPath`, and `sso_test.dart` pins the requested one.
 
 **No bearer ever rides a URL.** A URL lands in browser history, in intermediate
@@ -314,7 +316,7 @@ strictly worse than serving nothing. See
 - `apps/web-nuxt/server/utils/crypto/envelope.ts`, `apps/web-nuxt/server/utils/crypto/encrypted-adapter.ts`
 - `apps/web-nuxt/server/utils/auth/sso-domains.ts`, `apps/web-nuxt/server/utils/auth/sso-guard-paths.ts`
 - `apps/web-nuxt/server/utils/sso/{service,config,test-signin,mobile-exchange}.ts`, `apps/web-nuxt/server/api/admin/sso/**`
-- `apps/web-nuxt/server/api/sso/{check,test-callback,mobile-callback}.get.ts`, `apps/web-nuxt/server/api/sso/mobile-exchange.post.ts`
+- `apps/web-nuxt/server/api/sso/{check,test-callback,mobile-authorize,mobile-callback}.get.ts`, `apps/web-nuxt/server/api/sso/mobile-exchange.post.ts`
 - `apps/web-nuxt/server/utils/auth/well-known.ts`, `apps/web-nuxt/server/routes/.well-known/**`
 - See [../features/sso-provisioning.md](../features/sso-provisioning.md)
 - `apps/web-nuxt/db/auth-schema.ts` (`user`, `session`, `account`, `ssoProvider`, `scimProvider`, `apikey`)
