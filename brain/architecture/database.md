@@ -19,7 +19,7 @@ source of truth; migrations are generated, never hand-written.
 ## Migrations
 
 - Generate with `pnpm db:generate` (drizzle-kit) into `apps/web-nuxt/drizzle/NNNN_name.sql`
-  plus the journal/snapshot. Currently ~55 migrations (0000 through 0054).
+  plus the journal/snapshot. Currently 62 migrations (0000 through 0061).
 - Applied on boot by `apps/web-nuxt/server/plugins/migrate.ts` when `RUN_MIGRATIONS=true`.
 - **Shared-dev-DB caveat:** the local `nostragoalus_pgdata` volume is shared
   across all worktrees/branches, and the node-postgres migrator applies journal
@@ -86,10 +86,12 @@ Logical names are the Drizzle TS exports; the SQL tables are snake_case
 (SCHEDULED/LIVE/PAUSED/FINISHED/POSTPONED/CANCELLED/SUSPENDED/AWARDED/INTERRUPTED),
 `match_scoring_state` (PENDING/SCORED/VOID/STALE), `league_role`
 (OWNER/MODERATOR/MEMBER), `league_visibility` (PRIVATE/PUBLIC),
-`chat_moderation_state` (VISIBLE/PENDING/REMOVED), `notification_type` (10 values:
+`chat_moderation_state` (VISIBLE/PENDING/REMOVED), `notification_type` (12 values:
 LEAGUE_JOIN, LEAGUE_ROLE, LEAGUE_REMOVED, PICK_REMINDER, MATCH_RESULT,
 CHAMPION_RESULT, BEST_SCORER_RESULT, TROPHY_AWARDED, ACHIEVEMENT_UNLOCKED,
-CHAT_MENTION), `match_media_kind` (LIVE/REPLAY/HIGHLIGHTS),
+CHAT_MENTION, DM_MESSAGE, VOICE_MISSED), `match_media_kind` (LIVE/REPLAY/HIGHLIGHTS),
+`league_mode` (NORMAL/EASY/HARD/HARDCORE), `league_reward_criterion` (11 values),
+`voice_call_status` (ONGOING/ENDED/MISSED),
 `competition_award_type` (OVERALL/GROUP_PHASE/KNOCKOUT_PHASE/MADAME_IRMA/TEAM_SPECIALIST),
 `achievement_tier` (BRONZE/SILVER/GOLD/DIAMOND),
 `roadmap_status` (PLANNED/IN_PROGRESS/SHIPPED/SUGGESTED),
