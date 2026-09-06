@@ -1,0 +1,51 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  # The same gate mise-tasks/release runs, minus the parts that need a host.
+  # It exists because that gate only runs when a release is cut: until now
+  # nothing checked an ordinary commit, so a break between two tags was not
+  # visible until the next one.
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+
+      - name: types
+        run: pnpm -C apps/web-nuxt typecheck
+
+      # Thresholds are in vitest.config.ts (98% lines/functions/statements/
+      # branches), so this is the coverage gate and not only the unit suite.
+      - name: unit tests, with the coverage gate
+        run: pnpm -C apps/web-nuxt test:coverage
+
+      - name: component tests
+        run: pnpm -C apps/web-nuxt test:components
+
+      # Last, for the reason the release task gives: SSR and rollup link errors
+      # (an unresolved import, say) are invisible to typecheck and to both
+      # suites, so a build here is what makes a green commit a buildable one.
+      - name: production build
+        run: pnpm -C apps/web-nuxt build
+
+# Deliberately not here:
+#
+#   e2e / e2e-bun   Playwright against the compose stack (Postgres, maildev,
+#                   keycloak, coturn). It belongs on a host that can run it,
+#                   not on a runner that would have to build the world first.
+#   pnpm badge      .github/coverage-badge.svg is committed, and this repository
+#                   is a push mirror of git.arzaroth.com, so nothing here can
+#                   push a regenerated badge back. It stays a local step.
+#   changelog check Translation parity is a release-time concern. Run per commit
+#                   it would fail every time an [Unreleased] entry lands before
+#                   its translations do, which is most of the time.
