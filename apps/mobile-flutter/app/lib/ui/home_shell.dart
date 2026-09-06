@@ -15,6 +15,7 @@ import 'leagues_screen.dart';
 import 'matches_screen.dart';
 import 'onboarding_tour.dart';
 import 'standings_screen.dart';
+import 'widgets/app_nav_bar.dart';
 
 /// How long an unanswered incoming ring stays on screen (matches the web's
 /// RING_TIMEOUT_MS).
@@ -185,7 +186,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.call, size: 40),
+                Icon(Icons.call, size: 36, color: Theme.of(context).colorScheme.primary),
                 const SizedBox(height: 12),
                 Text(
                     fromName.isEmpty
@@ -262,20 +263,24 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     ref.listen(viewedMatchProvider, (_, __) => _resubscribe());
     return Scaffold(
       body: IndexedStack(index: _tab, children: _screens),
-      bottomNavigationBar: NavigationBar(
+      bottomNavigationBar: AppNavBar(
         selectedIndex: _tab,
-        onDestinationSelected: (i) => setState(() => _tab = i),
-        destinations: [
-          NavigationDestination(
-              icon: const Icon(Icons.sports_soccer), label: context.tr('nav.matches')),
-          NavigationDestination(
-              icon: const Icon(Icons.table_chart), label: context.tr('nav.standings')),
-          NavigationDestination(
-              icon: const Icon(Icons.leaderboard), label: context.tr('nav.leaderboard')),
-          NavigationDestination(
-              icon: const Icon(Icons.groups), label: context.tr('nav.leagues')),
-          NavigationDestination(
-              icon: const Icon(Icons.person), label: context.tr('nav.account')),
+        onSelected: (i) => setState(() => _tab = i),
+        items: [
+          NavItem(
+              icon: Icons.sports_soccer_outlined,
+              activeIcon: Icons.sports_soccer,
+              label: context.tr('nav.matches')),
+          NavItem(
+              icon: Icons.table_chart_outlined,
+              activeIcon: Icons.table_chart,
+              label: context.tr('nav.standings')),
+          NavItem(
+              icon: Icons.leaderboard_outlined,
+              activeIcon: Icons.leaderboard,
+              label: context.tr('nav.leaderboard')),
+          NavItem(icon: Icons.groups_outlined, activeIcon: Icons.groups, label: context.tr('nav.leagues')),
+          NavItem(icon: Icons.person_outline, activeIcon: Icons.person, label: context.tr('nav.account')),
         ],
       ),
     );

@@ -54,23 +54,51 @@ class NostragoalusApp extends ConsumerWidget {
   }
 }
 
-/// Paints the theme's scaffold gradient behind the whole app. Scaffolds are
-/// transparent (see AppTheme), so this wash shows through every screen the way
-/// the web's tinted background does.
+/// Paints the floodlit ground behind the whole app: the night (or paper) base
+/// with two soft glows, primary from the top corner and emerald from the far
+/// side, the way the web's body background is lit. Scaffolds are transparent
+/// (see AppTheme) so it shows through every screen.
 class _GradientBackground extends StatelessWidget {
   const _GradientBackground({required this.child});
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    final dark = Theme.of(context).brightness == Brightness.dark;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: dark ? AppTheme.darkScaffoldGradient : AppTheme.lightScaffoldGradient,
-      ),
+    final t = context.tokens;
+    return CustomPaint(
+      painter: _FloodlightPainter(ground: t.ground, glowA: t.glowA, glowB: t.glowB),
       child: child,
     );
   }
+}
+
+class _FloodlightPainter extends CustomPainter {
+  const _FloodlightPainter({required this.ground, required this.glowA, required this.glowB});
+  final Color ground;
+  final Color glowA;
+  final Color glowB;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    canvas.drawRect(rect, Paint()..color = ground);
+    void glow(Alignment at, double radius, Color color) {
+      final center = at.alongSize(size);
+      canvas.drawRect(
+        rect,
+        Paint()
+          ..shader = RadialGradient(radius: 1.0, colors: [color, color.withValues(alpha: 0)])
+              .createShader(Rect.fromCircle(center: center, radius: radius)),
+      );
+    }
+
+    glow(const Alignment(-0.9, -1.1), size.width * 1.1, glowA);
+    glow(const Alignment(1.1, -0.2), size.width * 0.8, glowB);
+  }
+
+  @override
+  bool shouldRepaint(_FloodlightPainter old) =>
+      old.ground != ground || old.glowA != glowA || old.glowB != glowB;
 }
 
 class _AuthGate extends ConsumerStatefulWidget {

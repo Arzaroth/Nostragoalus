@@ -58,6 +58,28 @@ flutter:
     # Vendored FIFA square flags by tricode (the same images the web's flagUrl
     # serves), bundled so match cards render offline.
     - assets/flags/
+  # Barlow + Barlow Condensed (OFL, assets/fonts/OFL.txt): the read face and the
+  # scoreboard face, vendored so the type is the same on every device.
+  fonts:
+    - family: Barlow
+      fonts:
+        - asset: assets/fonts/Barlow-Regular.ttf
+        - asset: assets/fonts/Barlow-Italic.ttf
+          style: italic
+        - asset: assets/fonts/Barlow-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Barlow-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Barlow-Bold.ttf
+          weight: 700
+    - family: BarlowCondensed
+      fonts:
+        - asset: assets/fonts/BarlowCondensed-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/BarlowCondensed-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/BarlowCondensed-Bold.ttf
+          weight: 700
 
 # Launch splash (indigo brand background + the app icon). Regenerate:
 # dart run flutter_native_splash:create

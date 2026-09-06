@@ -6,10 +6,12 @@ import '../../api/models.gen.dart';
 import '../../config.dart';
 import '../../i18n/i18n_scope.dart';
 import '../../state/providers.dart';
+import '../../theme/app_theme.dart';
 import '../widgets/async_value_view.dart';
 import '../widgets/reactions_bar.dart';
 import '../widgets/score_pill.dart';
 import '../widgets/scorers_table.dart';
+import '../widgets/panel.dart';
 import '../widgets/team_flag.dart';
 import 'crowd_consensus.dart';
 import 'past_picks.dart';
@@ -78,7 +80,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
       (
         labelKey: 'picks.yourPrediction',
         view: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
           children: [
             PredictionEditor(
               matchId: matchId,
@@ -121,20 +123,23 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
     final viewers = ref.watch(viewersProvider)[matchId] ?? 0;
     return Scaffold(
       appBar: AppBar(
-        title: Text(context.tr('nav.matches')),
+        title: detail.maybeWhen(
+          data: (res) => Text(res.match.roundLabel, style: Theme.of(context).textTheme.titleMedium),
+          orElse: () => const SizedBox.shrink(),
+        ),
         actions: [
           if (viewers > 0)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
+              padding: const EdgeInsetsDirectional.only(end: 4),
               child: Row(children: [
-                const Icon(Icons.visibility, size: 18),
+                Icon(Icons.visibility_outlined, size: 18, color: context.tokens.muted),
                 const SizedBox(width: 4),
-                Center(child: Text('$viewers')),
-                const SizedBox(width: 8),
+                Text('$viewers', style: context.tokens.score(16, weight: FontWeight.w600)),
               ]),
             ),
           IconButton(
-            icon: const Icon(Icons.share),
+            icon: const Icon(Icons.ios_share),
+            tooltip: context.tr('common.share'),
             onPressed: () => detail.whenData(_share),
           ),
         ],
@@ -149,52 +154,7 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
             length: tabs.length,
             child: Column(
               children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                  child: Column(
-                    children: [
-                      Text(m.roundLabel, style: Theme.of(context).textTheme.labelMedium),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                Flexible(
-                                    child: Text(m.homeTeam,
-                                        style: Theme.of(context).textTheme.titleLarge,
-                                        textAlign: TextAlign.end,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis)),
-                                const SizedBox(width: 10),
-                                TeamFlag(m.homeTeamCode, height: 30),
-                              ],
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            child: ScorePill(
-                                status: m.status, home: m.fullTimeHome, away: m.fullTimeAway),
-                          ),
-                          Expanded(
-                            child: Row(
-                              children: [
-                                TeamFlag(m.awayTeamCode, height: 30),
-                                const SizedBox(width: 10),
-                                Flexible(
-                                    child: Text(m.awayTeam,
-                                        style: Theme.of(context).textTheme.titleLarge,
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis)),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+                _MatchHeader(match: m, locked: res.isLocked),
                 TabBar(
                   isScrollable: true,
                   tabAlignment: TabAlignment.start,
@@ -210,4 +170,89 @@ class _MatchDetailScreenState extends ConsumerState<MatchDetailScreen> {
       ),
     );
   }
+}
+
+/// The scoreboard atop the match: the two flags and names around the score
+/// (or the kickoff), with the kickoff line, the shootout and the lock beneath.
+class _MatchHeader extends StatelessWidget {
+  const _MatchHeader({required this.match, required this.locked});
+  final MatchDetailResponseMatch match;
+  final bool locked;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final t = context.tokens;
+    final l = MaterialLocalizations.of(context);
+    final k = match.kickoffTime.toLocal();
+    final time = l.formatTimeOfDay(TimeOfDay.fromDateTime(k));
+    final pens = match.penaltiesHome != null && match.penaltiesAway != null
+        ? '${match.penaltiesHome} - ${match.penaltiesAway}'
+        : null;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+      child: Column(
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: _Side(name: match.homeTeam, code: match.homeTeamCode)),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+                child: Column(
+                  children: [
+                    ScorePill(
+                      status: match.status,
+                      home: match.fullTimeHome,
+                      away: match.fullTimeAway,
+                      size: 44,
+                      kickoff: time,
+                    ),
+                    if (pens != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(pens,
+                            style: t.score(15, weight: FontWeight.w500, color: t.muted)),
+                      ),
+                  ],
+                ),
+              ),
+              Expanded(child: _Side(name: match.awayTeam, code: match.awayTeamCode)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text('${l.formatMediumDate(k)} · $time',
+                  style: theme.textTheme.labelMedium?.copyWith(color: t.muted)),
+              if (locked) ...[
+                const SizedBox(width: 10),
+                Tag(context.tr('picks.locked'), icon: Icons.lock),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Side extends StatelessWidget {
+  const _Side({required this.name, required this.code});
+  final String name;
+  final String? code;
+
+  @override
+  Widget build(BuildContext context) => Column(
+        children: [
+          TeamFlag(code, height: 44),
+          const SizedBox(height: 8),
+          Text(name,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.titleSmall),
+        ],
+      );
 }

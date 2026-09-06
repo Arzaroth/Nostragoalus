@@ -366,11 +366,11 @@ void main() {
       ]));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byType(SwitchListTile).last);
+      await tester.tap(find.byType(Switch).last);
       await tester.pump();
-      expect(tester.widget<SwitchListTile>(find.byType(SwitchListTile).last).value, isTrue);
+      expect(tester.widget<Switch>(find.byType(Switch).last).value, isTrue);
       // Second tap while the first is still in flight.
-      await tester.tap(find.byType(SwitchListTile).last, warnIfMissed: false);
+      await tester.tap(find.byType(Switch).last, warnIfMissed: false);
       await tester.pumpAndSettle();
       expect(api.jokerCalls, 1);
     });

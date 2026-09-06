@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/models.gen.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
+import '../theme/app_theme.dart';
 import 'best_scorer_screen.dart';
 import 'champion_screen.dart';
 import 'competition_switcher.dart';
@@ -12,6 +13,8 @@ import 'widgets/async_value_view.dart';
 import 'widgets/empty_state.dart';
 import 'widgets/match_card.dart';
 import 'widgets/notifications_bell.dart';
+import 'widgets/panel.dart';
+import 'widgets/score_pill.dart';
 import 'widgets/stat_tile.dart';
 import 'widgets/team_flag.dart';
 
@@ -27,42 +30,39 @@ class MatchesScreen extends ConsumerWidget {
     final active = ref.watch(matchFilterProvider);
     return Scaffold(
       appBar: AppBar(
-        title: Text(context.tr('nav.matches')),
+        title: Text(context.tr('matches.title')),
         actions: const [CompetitionSwitcher(), NotificationsBell()],
       ),
-      body: Column(
-        children: [
-          const _FilterBar(),
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: () async => ref.refresh(matchesProvider.future),
-              child: AsyncValueView<MatchesResponse>(
-                value: matches,
-                onRetry: () => ref.invalidate(matchesProvider),
-                data: (res) {
-                  if (res.matches.isEmpty) {
-                    return EmptyState(message: context.tr('matches.empty'));
-                  }
-                  final shown =
-                      res.matches.where((m) => active.contains(_filterOf(m.status))).toList();
-                  final rounds = groupByRound(shown);
-                  return ListView(
-                    children: [
-                      const _StatHeader(),
-                      const _PicksSection(),
-                      if (rounds.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 48),
-                          child: Center(child: Text(context.tr('matches.noResults'))),
-                        ),
-                      for (final r in rounds) _RoundGroup(r),
-                    ],
-                  );
-                },
-              ),
-            ),
-          ),
-        ],
+      body: RefreshIndicator(
+        onRefresh: () async => ref.refresh(matchesProvider.future),
+        child: AsyncValueView<MatchesResponse>(
+          value: matches,
+          onRetry: () => ref.invalidate(matchesProvider),
+          data: (res) {
+            if (res.matches.isEmpty) {
+              return EmptyState(icon: Icons.sports_soccer, message: context.tr('matches.empty'));
+            }
+            final shown = res.matches.where((m) => active.contains(_filterOf(m.status))).toList();
+            final rounds = groupByRound(shown);
+            return ListView(
+              padding: const EdgeInsets.only(bottom: 24),
+              children: [
+                const _StatHeader(),
+                const _PicksSection(),
+                const _FilterBar(),
+                if (rounds.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 48),
+                    child: Center(
+                      child: Text(context.tr('matches.noResults'),
+                          style: TextStyle(color: context.tokens.muted)),
+                    ),
+                  ),
+                for (final r in rounds) _RoundGroup(r),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -86,23 +86,24 @@ class _FilterBar extends ConsumerWidget {
   const _FilterBar();
 
   static const _labelKeys = {
-    MatchFilter.full: 'match.statusLabel.fullTime',
-    MatchFilter.live: 'match.statusLabel.live',
-    MatchFilter.upcoming: 'match.statusLabel.scheduled',
+    MatchFilter.full: 'matches.filterStatus.fulltime',
+    MatchFilter.live: 'matches.filterStatus.live',
+    MatchFilter.upcoming: 'matches.filterStatus.upcoming',
   };
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final active = ref.watch(matchFilterProvider);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 4, 12, 4),
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
       child: Row(
         children: [
           for (final f in MatchFilter.values)
             Padding(
-              padding: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsetsDirectional.only(end: 8),
               child: FilterChip(
                 label: Text(context.tr(_labelKeys[f]!)),
+                avatar: f == MatchFilter.live && active.contains(f) ? const LiveDot() : null,
                 selected: active.contains(f),
                 onSelected: (on) {
                   final next = {...active};
@@ -121,10 +122,9 @@ class _FilterBar extends ConsumerWidget {
   }
 }
 
-/// The web fixtures page leads with the player's standing; mirror a compact
-/// Points / Rank / Exact strip above the list, read off the leaderboard the
-/// leaderboard tab already fetches. Renders nothing until it resolves, so it
-/// never delays or blocks the fixtures.
+/// The player's standing, read off the leaderboard the leaderboard tab already
+/// fetches: one scoreboard strip of Points / Rank / Exact. Renders nothing
+/// until it resolves, so it never delays or blocks the fixtures.
 class _StatHeader extends ConsumerWidget {
   const _StatHeader();
 
@@ -144,27 +144,29 @@ class _StatHeader extends ConsumerWidget {
     if (mine == null) return const SizedBox.shrink();
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-      child: Row(
+      padding: const EdgeInsets.only(top: 4),
+      child: StatBand(
         children: [
-          Expanded(
-              child: StatTile(
-                  label: context.tr('picks.points'), value: '${mine.totalPoints.toInt()}')),
-          Expanded(
-              child: StatTile(label: context.tr('stats.rank'), value: '#${mine.rank.toInt()}')),
-          Expanded(
-              child: StatTile(
-                  label: context.tr('picks.exact'), value: '${mine.exactCount.toInt()}')),
+          StatTile(label: context.tr('picks.points'), value: '${mine.totalPoints.toInt()}'),
+          StatTile(
+            label: context.tr('stats.rank'),
+            value: '${mine.rank.toInt()}',
+            sub: '/ ${board.rows.length}',
+          ),
+          StatTile(
+            label: context.tr('picks.exact'),
+            value: '${mine.exactCount.toInt()}',
+            color: mine.exactCount > 0 ? context.tokens.emerald : null,
+          ),
         ],
       ),
     );
   }
 }
 
-/// The champion + best-scorer season picks, as the web shows them at the top of
-/// the fixtures page: each a card with the current pick (or a prompt) that opens
-/// its full screen. Renders nothing until both resolve, so it never blocks the
-/// fixtures.
+/// The champion + best-scorer season picks: two rows on one panel, each with
+/// the current pick (or the prompt) that opens its full screen. Renders nothing
+/// until both resolve, so it never blocks the fixtures.
 class _PicksSection extends ConsumerWidget {
   const _PicksSection();
 
@@ -176,31 +178,30 @@ class _PicksSection extends ConsumerWidget {
 
     final cp = champion.myPick;
     final sp = scorer.myPick;
-    return Column(
-      children: [
-        _PickCard(
-          icon: Icons.emoji_events,
-          title: context.tr('champion.title'),
-          hint: context.tr('champion.hint'),
-          pick: cp == null
-              ? null
-              : _Pick(code: cp.teamCode, label: cp.teamName),
-          ctaKey: champion.locked ? 'champion.noPick' : 'champion.pick',
-          onTap: () =>
-              Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ChampionScreen())),
-        ),
-        _PickCard(
-          icon: Icons.sports_soccer,
-          title: context.tr('bestScorer.title'),
-          hint: context.tr('bestScorer.hint'),
-          pick: sp == null
-              ? null
-              : _Pick(code: sp.teamCode, label: sp.playerName),
-          ctaKey: scorer.locked ? 'bestScorer.noPick' : 'bestScorer.pickPlayer',
-          onTap: () => Navigator.of(context)
-              .push(MaterialPageRoute(builder: (_) => const BestScorerScreen())),
-        ),
-      ],
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Panel(
+        children: [
+          _PickRow(
+            icon: Icons.emoji_events_outlined,
+            title: context.tr('champion.title'),
+            pick: cp == null ? null : _Pick(code: cp.teamCode, label: cp.teamName),
+            ctaKey: champion.locked ? 'champion.noPick' : 'champion.pick',
+            locked: champion.locked,
+            onTap: () => Navigator.of(context)
+                .push(MaterialPageRoute(builder: (_) => const ChampionScreen())),
+          ),
+          _PickRow(
+            icon: Icons.sports_soccer_outlined,
+            title: context.tr('bestScorer.title'),
+            pick: sp == null ? null : _Pick(code: sp.teamCode, label: sp.playerName),
+            ctaKey: scorer.locked ? 'bestScorer.noPick' : 'bestScorer.pickPlayer',
+            locked: scorer.locked,
+            onTap: () => Navigator.of(context)
+                .push(MaterialPageRoute(builder: (_) => const BestScorerScreen())),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -211,76 +212,54 @@ class _Pick {
   final String label;
 }
 
-class _PickCard extends StatelessWidget {
-  const _PickCard({
+class _PickRow extends StatelessWidget {
+  const _PickRow({
     required this.icon,
     required this.title,
-    required this.hint,
     required this.pick,
     required this.ctaKey,
+    required this.locked,
     required this.onTap,
   });
 
   final IconData icon;
   final String title;
-  final String hint;
   final _Pick? pick;
   final String ctaKey;
+  final bool locked;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: [
-              Icon(icon, size: 20, color: scheme.tertiary),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: theme.textTheme.titleSmall),
-                    const SizedBox(height: 3),
-                    Text(hint,
-                        style: theme.textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant)),
-                    const SizedBox(height: 6),
-                    if (pick != null)
-                      Row(
-                        children: [
-                          if (pick!.code != null) ...[
-                            TeamFlag(pick!.code, height: 18),
-                            const SizedBox(width: 8),
-                          ],
-                          Flexible(
-                            child: Text(pick!.label,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.bodyMedium
-                                    ?.copyWith(fontWeight: FontWeight.w600)),
-                          ),
-                        ],
-                      )
-                    else
-                      Text(context.tr(ctaKey),
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                              color: ctaKey.endsWith('noPick') ? scheme.onSurfaceVariant : scheme.primary,
-                              fontWeight: FontWeight.w600)),
-                  ],
+    final t = context.tokens;
+    final p = pick;
+    return PanelRow(
+      onTap: onTap,
+      chevron: true,
+      leading: Icon(icon, color: p == null && !locked ? scheme.primary : t.amber),
+      title: Text(title),
+      trailing: p != null
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (p.code != null) ...[
+                  TeamFlag(p.code, height: 18),
+                  const SizedBox(width: 8),
+                ],
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 150),
+                  child: Text(p.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleSmall),
                 ),
-              ),
-              Icon(Icons.chevron_right, size: 18, color: scheme.outline),
-            ],
-          ),
-        ),
-      ),
+              ],
+            )
+          : Text(context.tr(ctaKey),
+              style: theme.textTheme.labelMedium?.copyWith(
+                  color: locked ? t.faint : scheme.primary, fontWeight: FontWeight.w600)),
     );
   }
 }
@@ -315,13 +294,37 @@ class _RoundGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final t = context.tokens;
+    final liveCount = round.matches.where((m) => ScorePill.isLive(m.status)).length;
     return ExpansionTile(
       key: PageStorageKey(round.id),
       initiallyExpanded: !round.collapsed,
-      title: Text(round.label, style: Theme.of(context).textTheme.titleSmall),
-      childrenPadding: EdgeInsets.zero,
+      tilePadding: const EdgeInsets.fromLTRB(20, 8, 16, 0),
+      title: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Flexible(
+            child: Text(round.label,
+                style: theme.textTheme.headlineSmall, maxLines: 1, overflow: TextOverflow.ellipsis),
+          ),
+          const SizedBox(width: 10),
+          if (liveCount > 0) ...[
+            const LiveDot(size: 7),
+            const SizedBox(width: 5),
+          ],
+          Padding(
+            padding: const EdgeInsets.only(bottom: 2),
+            child: Text('${round.matches.length}',
+                style: theme.textTheme.labelMedium?.copyWith(color: t.muted)),
+          ),
+        ],
+      ),
       children: [
-        for (final m in round.matches) _MatchTile(m),
+        Padding(
+          padding: const EdgeInsets.only(top: 8, bottom: 4),
+          child: Panel(children: [for (final m in round.matches) _MatchTile(m)]),
+        ),
       ],
     );
   }
@@ -335,14 +338,15 @@ class _MatchTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = MaterialLocalizations.of(context);
     final k = match.kickoffTime.toLocal();
-    final kickoff = '${l.formatMediumDate(k)} · ${l.formatTimeOfDay(TimeOfDay.fromDateTime(k))}';
+    final time = l.formatTimeOfDay(TimeOfDay.fromDateTime(k));
     return MatchCard(
       homeTeam: match.homeTeam,
       awayTeam: match.awayTeam,
       homeCode: match.homeTeamCode,
       awayCode: match.awayTeamCode,
       status: match.status,
-      kickoffLabel: kickoff,
+      kickoffLabel: '${l.formatMediumDate(k)} · $time',
+      kickoffTime: time,
       homeGoals: match.fullTimeHome,
       awayGoals: match.fullTimeAway,
       locked: match.isLocked,

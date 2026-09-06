@@ -4,10 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../auth/sso.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
+import '../theme/app_theme.dart';
 import 'feedback.dart';
 import 'forgot_password_screen.dart';
 import 'locale_menu.dart';
 import 'signup_screen.dart';
+import 'widgets/panel.dart';
 
 /// Email/password sign in over the bearer contract. Sign-up and password reset
 /// live on the web app for now; this is the native entry into an existing account.
@@ -70,15 +72,14 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   Widget build(BuildContext context) {
     final auth = ref.watch(authControllerProvider);
     final busy = auth.isLoading;
+    final theme = Theme.of(context);
+    final t = context.tokens;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(context.tr('landing.title')),
-        actions: const [LocaleMenu()],
-      ),
+      appBar: AppBar(actions: const [LocaleMenu()]),
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 420),
             child: Form(
@@ -87,84 +88,104 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Image.asset('assets/icon/icon.png', height: 88),
-                  const SizedBox(height: 16),
-                  Text(context.tr('landing.title'),
-                      style: Theme.of(context).textTheme.headlineMedium,
-                      textAlign: TextAlign.center),
-                  const SizedBox(height: 4),
-                  Text(context.tr('auth.signIn'),
-                      style: Theme.of(context).textTheme.titleMedium,
-                      textAlign: TextAlign.center),
-                  const SizedBox(height: 24),
-                  TextFormField(
-                    controller: _email,
-                    keyboardType: TextInputType.emailAddress,
-                    autofillHints: const [AutofillHints.email],
-                    onEditingComplete: _checkSso,
-                    decoration: InputDecoration(
-                      labelText: context.tr('auth.email'),
-                      border: const OutlineInputBorder(),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(14),
+                          child: Image.asset('assets/icon/icon.png', height: 56),
+                        ),
+                        const SizedBox(height: 20),
+                        Text(context.tr('landing.title'), style: theme.textTheme.displaySmall),
+                        const SizedBox(height: 10),
+                        Text(context.tr('landing.heroA'), style: theme.textTheme.headlineSmall),
+                        Text(context.tr('landing.heroB'),
+                            style: theme.textTheme.headlineSmall?.copyWith(color: t.muted)),
+                      ],
                     ),
-                    validator: (v) =>
-                        (v == null || !v.contains('@')) ? context.tr('auth.emailInvalid') : null,
                   ),
-                  if (_sso != null) ...[
-                    const SizedBox(height: 16),
-                    FilledButton.tonalIcon(
-                      onPressed: _ssoBusy ? null : _signInWithSso,
-                      icon: _ssoBusy
-                          ? const SizedBox(
-                              height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                          : const Icon(Icons.business),
-                      label: Text(context.tr('auth.ssoDomainUse', {'name': _sso!.name})),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(context.tr('auth.or'), textAlign: TextAlign.center),
-                  ],
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _password,
-                    obscureText: _obscure,
-                    autofillHints: const [AutofillHints.password],
-                    onFieldSubmitted: (_) => _submit(),
-                    decoration: InputDecoration(
-                      labelText: context.tr('auth.password'),
-                      border: const OutlineInputBorder(),
-                      suffixIcon: IconButton(
-                        icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
-                        onPressed: () => setState(() => _obscure = !_obscure),
+                  const SizedBox(height: 28),
+                  Panel(
+                    margin: EdgeInsets.zero,
+                    padding: const EdgeInsets.all(16),
+                    dividers: false,
+                    children: [
+                      TextFormField(
+                        controller: _email,
+                        keyboardType: TextInputType.emailAddress,
+                        autofillHints: const [AutofillHints.email],
+                        onEditingComplete: _checkSso,
+                        decoration: InputDecoration(labelText: context.tr('auth.email')),
+                        validator: (v) => (v == null || !v.contains('@'))
+                            ? context.tr('auth.emailInvalid')
+                            : null,
                       ),
-                    ),
-                    validator: (v) =>
-                        (v == null || v.isEmpty) ? context.tr('auth.passwordRequired') : null,
+                      if (_sso != null) ...[
+                        const SizedBox(height: 12),
+                        FilledButton.tonalIcon(
+                          onPressed: _ssoBusy ? null : _signInWithSso,
+                          icon: _ssoBusy
+                              ? const SizedBox(
+                                  height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                              : const Icon(Icons.business),
+                          label: Text(context.tr('auth.ssoDomainUse', {'name': _sso!.name})),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(context.tr('auth.or'),
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.labelMedium?.copyWith(color: t.muted)),
+                      ],
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _password,
+                        obscureText: _obscure,
+                        autofillHints: const [AutofillHints.password],
+                        onFieldSubmitted: (_) => _submit(),
+                        decoration: InputDecoration(
+                          labelText: context.tr('auth.password'),
+                          suffixIcon: IconButton(
+                            icon: Icon(_obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+                            onPressed: () => setState(() => _obscure = !_obscure),
+                          ),
+                        ),
+                        validator: (v) =>
+                            (v == null || v.isEmpty) ? context.tr('auth.passwordRequired') : null,
+                      ),
+                      const SizedBox(height: 16),
+                      FilledButton(
+                        onPressed: busy ? null : _submit,
+                        child: busy
+                            ? const SizedBox(
+                                height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                            : Text(context.tr('auth.signIn')),
+                      ),
+                      if (auth.hasError) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          context.tr('err.signInFailed'),
+                          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ],
                   ),
-                  const SizedBox(height: 24),
-                  FilledButton(
-                    onPressed: busy ? null : _submit,
-                    child: busy
-                        ? const SizedBox(
-                            height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                        : Text(context.tr('auth.signIn')),
-                  ),
-                  if (auth.hasError) ...[
-                    const SizedBox(height: 16),
-                    Text(
-                      context.tr('err.signInFailed'),
-                      style: TextStyle(color: Theme.of(context).colorScheme.error),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                  const SizedBox(height: 8),
-                  TextButton(
-                    onPressed: () => Navigator.of(context)
-                        .push(MaterialPageRoute(builder: (_) => const ForgotPasswordScreen())),
-                    child: Text(context.tr('auth.forgot')),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.of(context)
-                        .push(MaterialPageRoute(builder: (_) => const SignUpScreen())),
-                    child: Text(context.tr('auth.needAccount')),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context)
+                            .push(MaterialPageRoute(builder: (_) => const ForgotPasswordScreen())),
+                        child: Text(context.tr('auth.forgot')),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.of(context)
+                            .push(MaterialPageRoute(builder: (_) => const SignUpScreen())),
+                        child: Text(context.tr('auth.signUp')),
+                      ),
+                    ],
                   ),
                 ],
               ),

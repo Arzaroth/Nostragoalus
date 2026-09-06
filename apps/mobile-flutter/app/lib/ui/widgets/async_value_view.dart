@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../i18n/i18n_scope.dart';
+import '../../theme/app_theme.dart';
 
 /// Renders an [AsyncValue]: spinner while loading, a retry-able message on error,
 /// the built child on data. Keeps every data screen from re-implementing the
@@ -16,18 +17,20 @@ class AsyncValueView<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) => value.when(
         data: data,
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: CircularProgressIndicator(strokeWidth: 2.5)),
         error: (e, _) => Center(
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(32),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.error_outline, size: 40),
-                const SizedBox(height: 12),
-                Text(context.tr('err.generic'), textAlign: TextAlign.center),
+                Icon(Icons.cloud_off, size: 36, color: context.tokens.faint),
+                const SizedBox(height: 16),
+                Text(context.tr('err.generic'),
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: context.tokens.muted)),
                 if (onRetry != null) ...[
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 20),
                   OutlinedButton(onPressed: onRetry, child: Text(context.tr('common.retry'))),
                 ],
               ],

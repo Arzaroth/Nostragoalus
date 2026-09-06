@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 
 import '../../api/models.gen.dart';
+import '../../theme/app_theme.dart';
+import 'panel.dart';
 import 'score_pill.dart';
 import 'team_flag.dart';
 
-/// One match, flag-forward, matching the web's compact match card: each team as
-/// a flag + name flanking a bold centre score/status, with the kickoff line and
-/// a lock marker below. Replaces the plain list-tile row so fixtures read like
-/// the web app rather than a generic Material list.
+/// One fixture as a board row: flag + name on each side of the scoreboard, and
+/// a quiet second line for the kickoff date, the lock, and the player's own
+/// pick. Rows live on a [Panel]; the board draws the hairlines between them.
 class MatchCard extends StatelessWidget {
   const MatchCard({
     super.key,
@@ -17,9 +18,11 @@ class MatchCard extends StatelessWidget {
     required this.awayCode,
     required this.status,
     required this.kickoffLabel,
+    this.kickoffTime,
     this.homeGoals,
     this.awayGoals,
     this.locked = false,
+    this.pickLabel,
     this.onTap,
   });
 
@@ -28,70 +31,88 @@ class MatchCard extends StatelessWidget {
   final String? homeCode;
   final String? awayCode;
   final StatusValue status;
+
+  /// The full kickoff line ("Sat 14 Jun · 21:00").
   final String kickoffLabel;
+
+  /// Just the time, shown on the scoreboard for a scheduled match.
+  final String? kickoffTime;
   final int? homeGoals;
   final int? awayGoals;
   final bool locked;
+
+  /// The player's pick for this match ("you 2 - 0"), when they made one.
+  final String? pickLabel;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Expanded(child: _team(theme, homeTeam, homeCode, alignEnd: true)),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: ScorePill(status: status, home: homeGoals, away: awayGoals),
+    final t = context.tokens;
+    final live = ScorePill.isLive(status);
+    final finished = status == StatusValue.finished || status == StatusValue.awarded;
+    final subline = <Widget>[
+      if (locked) ...[
+        Icon(Icons.lock, size: 12, color: t.faint),
+        const SizedBox(width: 4),
+      ],
+      Text(finished ? ScorePill.statusLabel(context, status) : kickoffLabel,
+          style: theme.textTheme.labelSmall?.copyWith(color: t.faint)),
+      if (pickLabel != null) ...[
+        const SizedBox(width: 10),
+        Text(pickLabel!,
+            style: theme.textTheme.labelSmall?.copyWith(color: t.muted, fontWeight: FontWeight.w600)),
+      ],
+    ];
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        decoration: live
+            ? BoxDecoration(
+                border: BorderDirectional(start: BorderSide(color: t.live, width: 3)),
+              )
+            : null,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Column(
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(child: _team(theme, homeTeam, homeCode, end: true)),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: ScorePill(
+                    status: status,
+                    home: homeGoals,
+                    away: awayGoals,
+                    kickoff: kickoffTime,
                   ),
-                  Expanded(child: _team(theme, awayTeam, awayCode, alignEnd: false)),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (locked) ...[
-                    Icon(Icons.lock, size: 13, color: scheme.outline),
-                    const SizedBox(width: 5),
-                  ],
-                  Text(kickoffLabel,
-                      style: theme.textTheme.bodySmall?.copyWith(color: scheme.outline)),
-                ],
-              ),
-            ],
-          ),
+                ),
+                Expanded(child: _team(theme, awayTeam, awayCode, end: false)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(mainAxisAlignment: MainAxisAlignment.center, children: subline),
+          ],
         ),
       ),
     );
   }
 
-  Widget _team(ThemeData theme, String name, String? code, {required bool alignEnd}) {
+  Widget _team(ThemeData theme, String name, String? code, {required bool end}) {
     final label = Flexible(
       child: Text(
         name,
-        maxLines: 1,
+        maxLines: 2,
         overflow: TextOverflow.ellipsis,
-        textAlign: alignEnd ? TextAlign.end : TextAlign.start,
-        style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+        textAlign: end ? TextAlign.end : TextAlign.start,
+        style: theme.textTheme.titleSmall,
       ),
     );
-    final flag = TeamFlag(code, height: 22);
+    final flag = TeamFlag(code, height: 24);
     return Row(
-      mainAxisAlignment: alignEnd ? MainAxisAlignment.end : MainAxisAlignment.start,
-      children: alignEnd
-          ? [label, const SizedBox(width: 8), flag]
-          : [flag, const SizedBox(width: 8), label],
+      mainAxisAlignment: end ? MainAxisAlignment.end : MainAxisAlignment.start,
+      children: end ? [label, const SizedBox(width: 10), flag] : [flag, const SizedBox(width: 10), label],
     );
   }
 }
