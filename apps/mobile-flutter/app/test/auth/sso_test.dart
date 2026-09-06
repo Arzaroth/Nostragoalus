@@ -4,6 +4,8 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostragoalus/api/token_store.dart';
 import 'package:nostragoalus/auth/sso.dart';
@@ -45,6 +47,23 @@ void main() {
       exchanges: exchanges,
     );
   }
+
+  test('both SSO paths still exist on the server', () {
+    // The two constants are the whole contract, and pinning them against each
+    // other proves nothing - the tests would follow a typo. Nitro maps
+    // server/api/<path>.get.ts onto /api/<path>, so the park route has to be a
+    // real file, and the App Link has to match the constant the server redirects
+    // to. Conflating or mistyping these is what broke mobile SSO twice.
+    final repo = Directory.current.parent.parent.parent;
+    final park = File('${repo.path}/apps/web-nuxt/server/api'
+        '${ssoParkPath.substring('/api'.length)}.get.ts');
+    expect(park.existsSync(), isTrue, reason: 'no server route behind $ssoParkPath (${park.path})');
+
+    final service =
+        File('${repo.path}/apps/web-nuxt/server/utils/sso/mobile-exchange.ts').readAsStringSync();
+    expect(service, contains("MOBILE_SSO_CALLBACK_PATH = '$ssoCallbackPath'"),
+        reason: 'the app intercepts a path the server does not redirect to');
+  });
 
   test('better-auth is sent to the park route, not to the App Link', () async {
     // The App Link is where the app listens; it is not where better-auth may

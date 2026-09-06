@@ -27,6 +27,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   final _formKey = GlobalKey<FormState>();
   SsoProviderInfo? _sso;
   String? _ssoChecked;
+  int _ssoRequest = 0;
   bool _ssoBusy = false;
   bool _obscure = true;
 
@@ -61,13 +62,29 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   /// password. Runs when the email field loses focus / is submitted.
   Future<void> _checkSso() async {
     final email = _email.text.trim();
-    if (!email.contains('@')) return;
+    if (!email.contains('@')) {
+      // The address that earned the button is gone, so the button goes too -
+      // otherwise it keeps offering a provider for something no longer typed.
+      _ssoChecked = null;
+      if (_sso != null && mounted) setState(() => _sso = null);
+      return;
+    }
     // Focus can bounce between the fields; only ask the server about an address
-    // it has not already answered for.
+    // it has already answered for.
     if (email == _ssoChecked) return;
-    _ssoChecked = email;
-    final info = await ref.read(ssoServiceProvider).check(email);
-    if (mounted) setState(() => _sso = info);
+    final request = ++_ssoRequest;
+    try {
+      final info = await ref.read(ssoServiceProvider).check(email);
+      // A slower earlier lookup must not overwrite a later answer.
+      if (request != _ssoRequest || !mounted) return;
+      _ssoChecked = email;
+      setState(() => _sso = info);
+    } catch (_) {
+      // Deliberately not memoised: an SSO-only user has no password to fall
+      // back on, so a lookup that failed has to be retried on the next blur.
+      if (request != _ssoRequest || !mounted) return;
+      setState(() => _sso = null);
+    }
   }
 
   Future<void> _signInWithSso() async {

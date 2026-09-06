@@ -161,13 +161,18 @@ The open debt is listed in the root `TODO.md` under "Mobile app".
   `goal.arzaroth.com`'s links. The release keystore lives OUTSIDE the repo
   (`~/.keys/nostragoalus/`) so no worktree removal or clean can destroy it -
   losing it means never being able to update an installed app. `key.properties`
-  is the in-repo pointer at it, gitignored and listed in `.worktreeinclude` so a
-  new worktree can still build a publishable APK. There is still no Play account.
+  is the gitignored in-repo pointer at it, and deliberately NOT copied into
+  worktrees: signing credentials should not fan out across directories, and
+  publishing happens from the main checkout. A worktree that tries fails loudly
+  on the keystore guard rather than quietly shipping a debug-signed APK. There is
+  still no Play account.
 - **The published APK is built against the public origin**, and the publish task
   enforces it. `AppConfig.apiBase` is a compile-time `String.fromEnvironment`
-  defaulting to the emulator's host alias, so `mise run apk-publish` passes
-  `--dart-define=API_BASE` (plus `WEB_BASE`) and refuses to publish a base that
-  is not https or that points at a loopback. v4.7.0 shipped without the define:
+  defaulting to the emulator's host alias, so `mise -C apps/mobile-flutter run
+  apk-publish` passes `--dart-define=API_BASE` and `WEB_BASE` (overridable with
+  `NG_APP_API_BASE` / `NG_APP_WEB_BASE`) and refuses to publish unless BOTH are
+  https on a routable host, a release keystore is configured, and the version
+  parses as x.y.z. v4.7.0 shipped without the define:
   every install could reach nothing, and the sign-in screen reported that as a
   wrong password. `versionName`/`versionCode` come from the release version too,
   so the APK's own metadata matches what `/api/app/android` advertises.

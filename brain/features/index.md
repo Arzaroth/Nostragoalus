@@ -34,7 +34,7 @@ early on). Back to the root map: [../BRAIN.md](../BRAIN.md).
 | [Past-pick counterfactual](past-pick-counterfactual.md) | Owner-only "an earlier pick of yours would have scored", live + full-time, off the ledger | 2.5.0 | `prediction_commitment`; `server/utils/past-pick/*`, `PastPickHint.vue` |
 | [Share images](share-images.md) | Server-rendered OG/share cards (satori + resvg), signed tokens | core | `server/utils/share/*`, `routes/og/share/[token].get.ts` |
 | [PWA](pwa.md) | Installable app + install/download/reload UX | v2.1.0 | `PwaBanner.vue`, `pwa-status.client.ts` |
-| [App downloads](app-downloads.md) | The Android APK offered on /about: version, size and SHA-256, read off a bind-mounted directory per request | unreleased | `server/utils/app-download/*`, `apk-publish` |
+| [App downloads](app-downloads.md) | The Android APK offered on /about: version, size and SHA-256, read off a bind-mounted directory per request | 4.7.0 | `server/utils/app-download/*`, `apk-publish` |
 | [Image storage](image-storage.md) | Pluggable fs/s3 backend; avatars + chat blobs out of Postgres | v2.0.0 | `server/utils/storage/*`, `media:migrate-blobs` |
 | [Changelog](changelog.md) | In-app release history (`/about`) + "What's new" badge, rendered in the active locale | core | `CHANGELOG.md`, `i18n/changelogs/*`, `useChangelog.ts` |
 | [Achievements](achievements.md) | Trophy cabinet + "my showcase": 5 competition-end trophies, ~20 milestone badges, curated per-competition achievements showcase | v2.14.0 | `competition_award`, `user_achievement`, `showcase_pin`; `server/utils/{awards,achievements}/*` |

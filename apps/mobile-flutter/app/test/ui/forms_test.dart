@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:dio/dio.dart';
+import 'package:nostragoalus/api/api_client.dart';
 import 'package:nostragoalus/api/auth_repository.dart';
 import 'package:nostragoalus/api/models.gen.dart';
 import 'package:nostragoalus/auth/sso.dart';
@@ -56,14 +58,35 @@ const _authStrings = {
   'prefs': {'language': 'Language'},
 };
 
+/// An auth repository whose sign-in always fails with [error], so the screen's
+/// error branch runs through the real AuthController rather than a stubbed state.
+class _FailingAuth implements AuthRepository {
+  _FailingAuth(this.error);
+  final Object error;
+
+  @override
+  Future<AuthUser> signIn(String email, String password) async => throw error;
+
+  @override
+  Future<AuthUser?> currentUser() async => null;
+
+  @override
+  Future<void> signOut() async {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 /// Records the domain lookups a screen makes and answers with one provider.
 class _FakeSso implements SsoService {
-  _FakeSso(this.checked);
+  _FakeSso(this.checked, {this.shouldFail});
   final List<String> checked;
+  final bool Function()? shouldFail;
 
   @override
   Future<SsoProviderInfo?> check(String email) async {
     checked.add(email);
+    if (shouldFail?.call() ?? false) throw Exception('lookup failed');
     return const SsoProviderInfo('idp', 'Axeo System');
   }
 
@@ -75,6 +98,81 @@ class _FakeSso implements SsoService {
 }
 
 void main() {
+  Future<void> failSignIn(WidgetTester tester, Object error) async {
+    await tester.pumpWidget(_host(const SignInScreen(), _authStrings, [
+      authRepositoryProvider.overrideWithValue(_FailingAuth(error)),
+    ]));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextFormField, 'Email'), 'a@b.com');
+    await tester.enterText(find.widgetWithText(TextFormField, 'Password'), 'hunter2hunter2');
+    await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('a sign-in that never reached the server does not blame the password',
+      (tester) async {
+    await failSignIn(
+      tester,
+      DioException.connectionError(
+        requestOptions: RequestOptions(path: '/api/auth/sign-in/email'),
+        reason: 'unreachable',
+      ),
+    );
+    expect(find.text('Cannot reach the server'), findsOneWidget);
+    expect(find.text('Sign in failed'), findsNothing);
+  });
+
+  testWidgets('a refused sign-in still says the credentials were wrong', (tester) async {
+    await failSignIn(tester, ApiException(401, 'bad credentials'));
+    expect(find.text('Sign in failed'), findsOneWidget);
+    expect(find.text('Cannot reach the server'), findsNothing);
+  });
+
+  testWidgets('a lookup that fails is retried on the next blur', (tester) async {
+    // An SSO-only user has no password to fall back on, so memoising a failed
+    // lookup would leave them with no way in at all.
+    final checked = <String>[];
+    var failNext = true;
+    await tester.pumpWidget(_host(const SignInScreen(), _authStrings, [
+      ssoServiceProvider.overrideWith((ref) => _FakeSso(checked, shouldFail: () {
+            final fail = failNext;
+            failNext = false;
+            return fail;
+          })),
+    ]));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.widgetWithText(TextFormField, 'Email'), 'someone@axxone.fr');
+    await tester.tap(find.widgetWithText(TextFormField, 'Password'));
+    await tester.pumpAndSettle();
+    expect(find.text('Sign in with Axeo System'), findsNothing);
+
+    await tester.tap(find.widgetWithText(TextFormField, 'Email'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextFormField, 'Password'));
+    await tester.pumpAndSettle();
+    expect(checked, ['someone@axxone.fr', 'someone@axxone.fr']);
+    expect(find.text('Sign in with Axeo System'), findsOneWidget);
+  });
+
+  testWidgets('emptying the email takes the SSO button away with it', (tester) async {
+    final checked = <String>[];
+    await tester.pumpWidget(_host(const SignInScreen(), _authStrings, [
+      ssoServiceProvider.overrideWith((ref) => _FakeSso(checked)),
+    ]));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.widgetWithText(TextFormField, 'Email'), 'someone@axxone.fr');
+    await tester.tap(find.widgetWithText(TextFormField, 'Password'));
+    await tester.pumpAndSettle();
+    expect(find.text('Sign in with Axeo System'), findsOneWidget);
+
+    await tester.enterText(find.widgetWithText(TextFormField, 'Email'), 'someone');
+    await tester.tap(find.widgetWithText(TextFormField, 'Password'));
+    await tester.pumpAndSettle();
+    expect(find.text('Sign in with Axeo System'), findsNothing);
+  });
+
   testWidgets('leaving the email field offers the domain SSO provider', (tester) async {
     // Tapping from email straight into password is the ordinary way out of the
     // field, and it fires no editing-complete action - so the lookup has to hang

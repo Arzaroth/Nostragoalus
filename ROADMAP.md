@@ -762,16 +762,15 @@ effort buckets; order within a bucket is not priority.
     `apps/mobile-flutter/PARITY.md`, docs in `apps/mobile-flutter/README.md`.
   - [x] **Own design system ("Floodlit")** rather than a Material re-skin of
     the web: night ground, chalk hairline panels, Barlow + Barlow Condensed
-    scoreboard numerals, coherent light mode and RTL. On `feat/mobile-design-v2`,
-    awaiting feature-treatment.
+    scoreboard numerals, coherent light mode and RTL (v4.7.0).
   - [x] **The Android app is downloadable from the site** (v4.7.0): /about lists
     the published build with its version, size and SHA-256, and every public page
     links to it. The APK is a bind-mounted deploy artifact, not part of the web
     image, so publishing a new build is a file copy with no redeploy.
   - [ ] Remaining: mobile push (needs new server FCM endpoints - the server
-    speaks only web-push/VAPID), a real upload keystore (release currently
-    signs with the debug key), coverage measurement in the mobile gate, and
-    anything iOS/CallKit/passkeys (no Apple hardware, no maintained plugin).
+    speaks only web-push/VAPID), a Play account, and anything
+    iOS/CallKit/passkeys (no Apple hardware, no maintained plugin). The release
+    keystore now exists and the mobile gate measures coverage.
   - [ ] Desktop: still unstarted, still not obviously worth it over the PWA.
 - [ ] **Tamper-evident / E2EE scores**:
   - Phase 1 **commit-reveal** (shipped in 1.33.0). Locked

@@ -2967,14 +2967,50 @@ The big one, and the reason everything below is possible:
       opening with two `ignore_for_file` lint suppressions. Either add a golden
       test (small fixture schema in -> expected Dart out) or evaluate
       `swagger_parser`/`openapi_generator` and delete it.
-- [~] Release signing now reads a keystore the repo does not contain (env or
+- [x] Release signing reads a keystore the repo does not contain (env or
       `android/key.properties`), added so App Links could publish a real
-      fingerprint instead of the debug key's, which is a shared secret. Generate
-      an upload keystore before distributing anything. Until then it still falls
-      back to the DEBUG key
-      (`app/android/app/build.gradle.kts`) - no upload keystore, no Play
-      account. Disclosed in `PARITY.md` and the README; revisit if anything is
-      ever distributed.
+      fingerprint instead of the debug key's, which is a shared secret. Done: a
+      release keystore exists outside the repo (`~/.keys/nostragoalus/`), its
+      SHA-256 is the server's `NUXT_ANDROID_CERT_FINGERPRINTS`, and `apk-publish`
+      refuses to publish when no keystore is configured rather than letting
+      `build.gradle.kts` fall back to the debug key. Still no Play account.
+- [ ] **The mobile SSO park route mints a bearer from whatever session cookie the
+      browser happens to hold.** `GET /api/sso/mobile-callback` is public and
+      unauthenticated: it reads the session cookie, parks that bearer under a
+      code bound only to the caller's own `state`/`challenge`, and redirects to
+      the App Link. Nothing proves an SSO flow just completed for that browser.
+      The only thing standing between that and session theft is App Links
+      verification - if a malicious app can receive `/mobile/sso-callback` (an
+      unverified link, a chooser, the CustomTabs fallback), it can pick its own
+      state and verifier, navigate the victim's logged-in browser to the park
+      route, and redeem the victim's session. PKCE does not help: the attacker
+      supplied the challenge. Pre-existing (v4.6.0), and this branch is what puts
+      it on the live path. Bind the parked token to something only the real flow
+      has, rather than to caller-chosen values.
+- [ ] A cold start that cannot reach the server now resolves to signed-out with
+      no explanation at all: `AuthController.build()` swallows the failure, so
+      `err.offline` only ever renders after the user submits credentials. Better
+      would be to distinguish "restore failed, you may still be signed in" from
+      "signed out" without scaring a genuinely signed-out user.
+- [ ] `TokenStore.load()` assigns `_cached` only on success, so a keystore read
+      that throws on a RE-load (after a successful one) leaves the old bearer in
+      memory while `AuthController` reports signed-out - the UI and the HTTP
+      client then disagree. Cold start is unaffected (`_cached` starts null).
+- [ ] The App Link host is hardcoded to `goal.arzaroth.com` in
+      `AndroidManifest.xml` while `AppConfig.apiBase` is a build-time define, so
+      a self-hosted APK built with `NG_APP_API_BASE` pointed elsewhere gets deep
+      links and SSO that never come back to the app. Either template the manifest
+      host from the same value or document the pairing as a hard requirement.
+- [ ] `test/auth/sso_test.dart`'s fake server only models the happy branch of
+      `mobile-callback.get.ts`: it mints a code for any request to the park path
+      regardless of `state`/`challenge`, and never plays the `error=sso_failed`
+      redirect. A server-side tightening of `parkMobileSsoToken` would not be
+      caught by any Dart test.
+- [ ] `lib/ui/**` is outside the mobile coverage floor
+      (`app/tool/coverage_check.sh`), which is the web gate's own convention for
+      pages - but the sign-in screen now carries real branching (offline vs
+      credentials, the SSO lookup lifecycle). The widget tests added in
+      `test/ui/forms_test.dart` cover it; nothing enforces that they keep doing so.
 - [x] The bundled `app/assets/i18n/*.json` mirrors inherit em-dashes from the
       `shared/i18n-json` source (`chat.adminUpcomingDivider`,
       `leaderboard.livePointsHint`, `league.visibilityPrivate/Public`). Fix at

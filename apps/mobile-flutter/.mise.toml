@@ -127,14 +127,32 @@ set -euo pipefail
 # shipped once (v4.7.0); the guards below are why it cannot ship again.
 api_base="${NG_APP_API_BASE:-https://goal.arzaroth.com}"
 web_base="${NG_APP_WEB_BASE:-$api_base}"
-case "$api_base" in
-  https://*) ;;
-  *) echo "apk-publish: API_BASE must be an https origin, got '$api_base'" >&2; exit 1 ;;
-esac
-case "$api_base" in
-  *10.0.2.2*|*localhost*|*127.0.0.1*)
-    echo "apk-publish: API_BASE '$api_base' is a dev loopback, refusing to publish" >&2; exit 1 ;;
-esac
+# Both bases ride in the APK, so both get checked. A published build has to be
+# reachable from a stranger's phone: https, and a routable host - not a loopback
+# and not a private LAN address, which is the shape a dev override leaves behind.
+for pair in "API_BASE=$api_base" "WEB_BASE=$web_base"; do
+  name="${pair%%=*}"; value="${pair#*=}"
+  case "$value" in
+    https://*) ;;
+    *) echo "apk-publish: $name must be an https origin, got '$value'" >&2; exit 1 ;;
+  esac
+  host="${value#https://}"; host="${host%%/*}"; host="${host%%:*}"
+  case "$host" in
+    localhost|*.localhost|*.local|127.*|10.*|0.0.0.0|169.254.*|192.168.*|host.docker.internal)
+      echo "apk-publish: $name host '$host' is not routable from a phone" >&2; exit 1 ;;
+    172.1[6-9].*|172.2[0-9].*|172.3[01].*)
+      echo "apk-publish: $name host '$host' is not routable from a phone" >&2; exit 1 ;;
+  esac
+done
+# A release keystore has to be configured, because build.gradle.kts falls back to
+# the DEBUG key when it is not - and that key ships with every Android SDK, so a
+# debug-signed publish both fails App Links verification (assetlinks.json carries
+# the release fingerprint) and lets anyone sign an in-place upgrade over the real
+# app. Silent fallback is fine for `flutter run --release`, never for publishing.
+if [ ! -f android/key.properties ] && [ -z "${NG_ANDROID_KEYSTORE:-}" ]; then
+  echo "apk-publish: no release keystore (android/key.properties or NG_ANDROID_KEYSTORE)" >&2
+  exit 1
+fi
 out="{{ config_root }}/../web-nuxt/downloads"
 mkdir -p "$out"
 # The site shows the release version, not the pubspec's own (vestigial) one, so
@@ -143,7 +161,15 @@ version=$(sed -n 's/.*"version": "\\([^"]*\\)".*/\\1/p' "{{ config_root }}/../we
 # versionName/versionCode come from the release too, so the APK's own metadata
 # agrees with what the site advertises. Android orders builds by versionCode
 # only, so x.y.z maps to x*10000 + y*100 + z (minor and patch stay under 100).
-code=$(echo "$version" | awk -F. '{printf "%d", $1*10000 + $2*100 + $3}')
+# sed exits 0 on no match, so an unparsed version would otherwise ship as
+# versionCode 0 - which no already-installed build can ever be upgraded from.
+case "$version" in
+  *[!0-9.]*|*..*|.*|*.) echo "apk-publish: '$version' is not a plain x.y.z release" >&2; exit 1 ;;
+esac
+code=$(echo "$version" | awk -F. 'NF != 3 || $2 > 99 || $3 > 99 { exit 1 } { printf "%d", $1*10000 + $2*100 + $3 }') || {
+  echo "apk-publish: '$version' does not fit the versionCode scheme (x.y.z, minor/patch < 100)" >&2
+  exit 1
+}
 flutter build apk --release --dart-define=API_BASE="$api_base" --dart-define=WEB_BASE="$web_base" --build-name="$version" --build-number="$code"
 printf '{"version":"%s","builtAt":"%s"}\\n' "$version" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$out/nostragoalus.apk.json"
 # Stage then rename: the server stats and hashes the APK before streaming it, so

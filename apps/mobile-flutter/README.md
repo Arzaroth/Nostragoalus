@@ -177,11 +177,28 @@ Not installed - propose it before adding it.
 
 ## Known gaps
 
-- **Release builds are signed with the DEBUG key**
-  (`app/android/app/build.gradle.kts`). There is no upload keystore and no Play
-  account. A debug-signed `app-release.apk` must never be handed to a tester as
-  "the release build": it is not installable over a properly signed build, it
-  carries debuggable-adjacent expectations, and its signature proves nothing.
+- **A release build needs the release keystore.**
+  `app/android/app/build.gradle.kts` reads `android/key.properties` (or the
+  `NG_ANDROID_KEYSTORE` env vars) and falls back to the DEBUG key when neither is
+  present, purely so `flutter run --release` works. A debug-signed
+  `app-release.apk` must never be handed to anyone as "the release build": the
+  debug key ships with every Android SDK, so its signature proves nothing and
+  App Links verification rejects it. `mise -C apps/mobile-flutter run
+  apk-publish` refuses to publish without a real keystore. There is still no Play
+  account.
+
+### Publishing the APK
+
+`mise -C apps/mobile-flutter run apk-publish` builds the release APK, stamps it
+with the web app's release version, and copies it where the site serves it from.
+It bakes the server origin in at compile time (`AppConfig.apiBase` is a
+`String.fromEnvironment` whose default is the emulator's host alias), and refuses
+to publish a build that could not work on a stranger's phone: the base must be
+https and routable, and a release keystore must be configured. Override the
+origin with `NG_APP_API_BASE` (and `NG_APP_WEB_BASE`, which defaults to it) when
+self-hosting - note the App Link host in `AndroidManifest.xml` is
+`goal.arzaroth.com`, so another origin also needs that manifest edit or deep
+links and SSO will not come back to the app.
   Anything shared with anyone is a debug build until a real keystore exists.
 - Coverage is gated at 60%, not the web side's 98%, and `lib/ui/**` is outside
   the scope entirely (see above).

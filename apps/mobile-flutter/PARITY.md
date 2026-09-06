@@ -15,9 +15,12 @@ with the data caveat noted per area.
 ## Auth & account
 - [x] Email/password sign in (bearer session, secure-storage token)
 - [x] Sign out
-- [~] SSO sign in - email-domain detection + better-auth web-auth flow + Android
-  callback scheme. `[!]` completing it needs `nostragoalus` in
-  NUXT_SSO_TRUSTED_ORIGINS + an iOS URL type + a real IdP
+- [~] SSO sign in - email-domain detection, then better-auth to a server park
+  route that mints a single-use code, redeemed over a verified App Link (no
+  custom scheme, no trusted-origin config: the callbackURL is relative). Runs
+  against a real IdP. `[!]` the last step needs NUXT_ANDROID_CERT_FINGERPRINTS
+  set on the server so /.well-known/assetlinks.json verifies the App Link; iOS
+  additionally needs a Team ID
 - [x] Sign up (native form)
 - [x] Forgot / reset password (request-reset form)
 - [x] Two-factor (2FA enrol: password -> secret + backup codes -> verify; disable
@@ -192,9 +195,8 @@ with the data caveat noted per area.
   a seeded live server, so it stays out of the unattended gate. It earned its
   keep immediately: it caught the per-league save route 400ing in NORMAL
   leagues, and a ref-after-dispose in the home shell.
-- [!] Signed release build + Play internal (needs an upload keystore + a Play
-  account). Until then `android/app/build.gradle.kts` signs release with the
-  DEBUG key - never hand that APK to anyone as "the release build".
+- [~] Signed release build - a real release keystore exists and `apk-publish`
+  refuses to publish without it. Play internal still needs a Play account.
 - [~] Flutter gate (`mise run gate`) - sequential: model/i18n/KAT stale-checks,
   em-dash check, `flutter analyze`, `flutter test --coverage` + the coverage floor
   (app/test only), `dart test` (parity vectors), `flutter build apk --debug`.
@@ -214,6 +216,6 @@ with the data caveat noted per area.
 
 ## Genuinely external-blocked (not effort)
 - Push (mobile FCM) = server FCM work + Firebase project
-- SSO completion = trusted-origin config + real IdP
+- SSO completion = the server's assetlinks fingerprint (App Link verification)
 - Live chat/DM/voice round-trips = provisioned data / a 2nd participant
 - Anything iOS / CallKit / APNs = no Apple hardware

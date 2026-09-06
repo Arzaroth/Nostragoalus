@@ -241,7 +241,7 @@ The handoff, all of it in
    oracle). Rate limited per client IP (10/min).
 
 **The two paths in step 1 and step 2 are different on purpose**, and conflating
-them is how this broke a second time (fixed in 4.7.2). `/api/sso/mobile-callback`
+them is how this broke a second time. `/api/sso/mobile-callback`
 is where better-auth is told to land: it is the only point that runs with the
 session cookie, so it is the only point that can park a bearer.
 `/mobile/sso-callback` is the App Link the app itself intercepts. Sending
