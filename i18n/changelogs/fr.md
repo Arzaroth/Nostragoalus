@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [4.7.1] - 2026-09-06
+
 ### Corrigé
 
 - Supprimer une notification la supprime pour de bon. La notification « votre champion a gagné » (et son équivalent Soulier d'or) revenait dans la cloche quelques minutes après chaque suppression, parce que la tâche de fond qui attribue ces bonus la recréait sans cesse.

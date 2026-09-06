@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [4.7.1] - 2026-09-06
+
 ### tI'pu'
 
 - QIn DaHoHDI' Heghbej. "yay chavpu' SarlIj" QIn (Soulier je) cheghqa'taHpu', qaStaHvIS repHom puS; DaH mevpu'.
