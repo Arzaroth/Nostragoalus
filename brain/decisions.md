@@ -571,6 +571,18 @@ See [features/mobile-app.md](features/mobile-app.md).
   `TODO.md`. The one thing not compromised is the `flutter build apk --debug`
   step, which is the only check for the Android build class (manifest merger,
   minSdk/NDK, plugin registration).
+- **The mobile app has its own design system ("Floodlit") rather than a
+  Material re-skin of the web.** The first pass mapped the brand colours onto
+  stock Material 3 and still read as a generic app; the second only added flags
+  and cards. What makes the web feel like Nostragoalus is not its widgets but
+  its roles (indigo interactive, emerald pitch, amber floodlight, red live), so
+  the app keeps the roles and gets a native system: a night ground with two
+  glows, chalk hairline panels instead of card stacks, and the scoreboard
+  numerals as the single loud element. Barlow + Barlow Condensed are vendored
+  (one family, two widths, OFL) because platform fonts differ per device and
+  the condensed numerals are the identity. Light mode is kept coherent, not
+  dropped, because the preference already exists on the account.
+  See [../features/mobile-app.md](../features/mobile-app.md).
 - **A dependency whose feature is not built does not ship.**
   `flutter_callkit_incoming` was reachable only from dead Phase-0 spike code, yet
   merged `MANAGE_OWN_CALLS`, `USE_FULL_SCREEN_INTENT`, `DISABLE_KEYGUARD` and

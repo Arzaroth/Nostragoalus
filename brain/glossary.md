@@ -87,6 +87,14 @@ the code. Alphabetical.
 
 ## Technical
 
+- **Floodlit** - the mobile app's design system ([features/mobile-app.md](features/mobile-app.md)):
+  a night ground lit by two glows, chalk hairline **panels** instead of card
+  stacks, and the **scoreboard face** (Barlow Condensed, tabular figures, via
+  `context.tokens.score(size)`) for every number that is glanced at. Indigo is
+  interactive, emerald the pitch, amber the floodlight, red live.
+- **Panel** - one rounded surface holding rows split by hairlines
+  (`ui/widgets/panel.dart`); the list primitive of the mobile app. A `Card` is
+  reserved for a singular object.
 - **WebRTC** - the browser peer-to-peer real-time media stack behind
   [voice chat](features/voice-chat.md). Carries the audio directly between
   participants; the server only relays signaling.

@@ -39,24 +39,56 @@ Inside `app/lib/`:
 
 ## Look and feel
 
-The app follows the web's visual language rather than stock Material. `theme/app_theme.dart`
-is dark-first (a null or unknown user preference lands on dark; only an explicit
-`light`, or `system`, opts out) and paints a faint indigo-to-emerald gradient
-behind the whole app via a root builder in `app.dart`, with every scaffold and
-app bar transparent so the wash shows through.
+The app has its own design system, "Floodlit": a night match. The ground is a
+dark blue-black lit by two soft glows (primary from the top corner, emerald from
+the far side, painted by a `CustomPainter` in `app.dart`); chalk hairlines are
+the structure; the scoreboard numerals are the one loud element. The web brand
+survives as roles, not decoration: indigo is the interactive colour, emerald is
+the pitch (exact / correct / online), amber the floodlight (star / joker /
+champion), red is live. Light mode (paper ground, white panels, ink text) is an
+opt-in the theme keeps coherent; dark is the default (a null or unknown user
+preference lands on dark; only an explicit `light`, or `system`, opts out).
+
+`theme/app_theme.dart` holds the whole system: the two `ColorScheme`s, an
+`AppTokens` `ThemeExtension` (`context.tokens`: `rule` / `ruleStrong` hairlines,
+`board` / `raised` / `ground` surfaces, `muted` / `faint` text, the semantic
+accents, the gold / silver / bronze podium metals, and `score(size)`, the
+condensed tabular numeral style), the text theme and every component theme
+(inputs, chips, tabs, dialogs, sheets, menus, snackbars). `context.tokens` falls
+back to the brightness defaults when a tree was themed without the extension, so
+widget tests on a bare `MaterialApp` still render. Type is vendored under
+`app/assets/fonts/` (OFL): Barlow for everything read, Barlow Condensed for what
+is glanced at - scores, points, ranks, stats and screen titles. Arabic falls back
+to the platform face per glyph run.
+
+The primitives live in `ui/widgets/`: `panel.dart` (`Panel`, one rounded surface
+holding rows split by `Hairline`s; `PanelRow`; `PanelHeading`, the condensed
+heading above a panel; `Tag`, a quiet status word; `LiveDot`, the one
+non-user-triggered motion, which respects reduced motion), `stat_tile.dart`
+(`StatTile` + `StatBand`, the hairline-split scoreboard strip), `section_card.dart`
+(heading + panel), `empty_state.dart` (message + optional action),
+`app_nav_bar.dart` (the bottom bar: chalk top rule, active tab marked by a short
+goal-line, no pill). Lists are panels, never stacks of cards; a card is reserved
+for a singular object. Numbers that are glanced at use the score face; nothing is
+set in all caps or tracked out.
 
 Matches are flag-forward. `ui/widgets/team_flag.dart` renders a national flag by
 FIFA tricode from `app/assets/flags/<CODE>.png` - the same square FIFA images the
 web's `flagUrl` serves ([../architecture/cross-stack-contract.md](../architecture/cross-stack-contract.md)),
 vendored (not a package, not a CDN) so they work offline, with a tinted code-chip
-fallback for a missing flag. `ui/widgets/match_card.dart` (flags + centre
-score/status + kickoff) replaces plain list rows on the fixtures screen and in
-the match-detail header. `ui/widgets/leaderboard_row_card.dart` mirrors the web
-`LeaderboardRowCard`: medal-or-number rank + movement, avatar, champion/best-scorer
-flag badges, exact/correct line, points, with the signed-in player's row
-outlined. The fixtures screen (`ui/matches_screen.dart`) leads with a
-Points/Rank/Exact stat strip, champion + best-scorer pick cards, and
-Full-time/Live/Scheduled filter chips, echoing the web fixtures dashboard.
+fallback for a missing flag. `ui/widgets/match_card.dart` is a panel row: flag +
+name on each side of `score_pill.dart` (the score in condensed numerals, the
+kickoff time for a scheduled match, the breathing dot for a live one), a live
+match carrying a red start rail. `ui/widgets/leaderboard_row_card.dart` mirrors
+the web `LeaderboardRowCard`: podium-coloured rank numeral + movement, avatar,
+champion/best-scorer flag badges, exact/correct line, points in the score face,
+with the signed-in player's row tinted. The fixtures screen
+(`ui/matches_screen.dart`) leads with a Points/Rank/Exact `StatBand`, the
+champion + best-scorer pick rows, and Full-time/Live/Upcoming filter chips, then
+one panel per round (played rounds fold). The match header, prediction editor
+(big condensed steppers), standings (emerald qualification rail), leagues, chat
+(bubbles: own on `primaryContainer`, others on `raised`), account and the
+settings-style screens all sit on the same panels.
 
 The flag set under `app/assets/flags/` is vendored image assets, not a synced
 mirror of a `shared/` source, so it is not part of the stale-check below; a new
