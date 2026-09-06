@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:dio/dio.dart';
-import 'package:nostragoalus/api/api_client.dart';
 import 'package:nostragoalus/api/auth_repository.dart';
 import 'package:nostragoalus/api/models.gen.dart';
 import 'package:nostragoalus/auth/sso.dart';
