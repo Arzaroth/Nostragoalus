@@ -7,6 +7,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ### Security
 
+- Signing in with your company account (single sign-on) now completes in the Android app. It failed at the last step every time, because the sign-in was started from the app rather than from the browser that finished it.
 - Hardened the step that hands a mobile single sign-on back to the Android app: it now only passes along a session that was just created by that sign-in, instead of whatever session the browser already had open.
 
 ## [4.7.2] - 2026-09-06

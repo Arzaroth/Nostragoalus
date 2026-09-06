@@ -9,6 +9,8 @@ import {
   isOpaqueNonce,
   MOBILE_SSO_CALLBACK_PATH,
   MOBILE_SSO_MAX_SESSION_AGE_MS,
+  MOBILE_SSO_PARK_PATH,
+  mobileSsoParkCallback,
   parkMobileSsoToken,
   redeemMobileSsoCode,
 } from './mobile-exchange'
@@ -161,5 +163,23 @@ describe('isFreshSsoSession', () => {
   it('reads an ISO string, and tolerates a clock running ahead', () => {
     expect(isFreshSsoSession(ago(1_000).toISOString(), now)).toBe(true)
     expect(isFreshSsoSession(new Date(now.getTime() + 30_000), now)).toBe(true)
+  })
+})
+
+describe('mobileSsoParkCallback', () => {
+  it('points better-auth at the park route, never at the app link', () => {
+    const url = mobileSsoParkCallback('a'.repeat(20), 'b'.repeat(20))
+    expect(url.startsWith(MOBILE_SSO_PARK_PATH)).toBe(true)
+    expect(url.startsWith(MOBILE_SSO_CALLBACK_PATH)).toBe(false)
+  })
+
+  it('is relative, so no extra trusted origin is needed', () => {
+    expect(mobileSsoParkCallback('s'.repeat(20), 'c'.repeat(20)).startsWith('/')).toBe(true)
+  })
+
+  it('escapes what it puts in the query', () => {
+    const url = new URL(mobileSsoParkCallback('a b&c=d', 'x/y'), 'https://example.test')
+    expect(url.searchParams.get('state')).toBe('a b&c=d')
+    expect(url.searchParams.get('challenge')).toBe('x/y')
   })
 })

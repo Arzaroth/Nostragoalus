@@ -35,8 +35,12 @@ void main() {
       tokenStoreProvider.overrideWithValue(TokenStore(InMemoryKv())),
       ssoServiceProvider.overrideWith((ref) => SsoService(
             ref,
-            browser: ({required String url, required Uri callback}) async =>
-                reply(callbacks.last),
+            browser: ({required String url, required Uri callback}) async {
+              // The app opens the server's authorize route; everything the flow
+              // is bound to rides in its query.
+              callbacks.add(Uri.parse(url));
+              return reply(callbacks.last);
+            },
           )),
     ]);
     addTearDown(container.dispose);
@@ -48,16 +52,17 @@ void main() {
     );
   }
 
-  test('both SSO paths still exist on the server', () {
+  test('every SSO path still exists on the server', () {
     // The two constants are the whole contract, and pinning them against each
     // other proves nothing - the tests would follow a typo. Nitro maps
     // server/api/<path>.get.ts onto /api/<path>, so the park route has to be a
     // real file, and the App Link has to match the constant the server redirects
     // to. Conflating or mistyping these is what broke mobile SSO twice.
     final repo = Directory.current.parent.parent.parent;
-    final park = File('${repo.path}/apps/web-nuxt/server/api'
-        '${ssoParkPath.substring('/api'.length)}.get.ts');
-    expect(park.existsSync(), isTrue, reason: 'no server route behind $ssoParkPath (${park.path})');
+    final authorize = File('${repo.path}/apps/web-nuxt/server/api'
+        '${ssoAuthorizePath.substring('/api'.length)}.get.ts');
+    expect(authorize.existsSync(), isTrue,
+        reason: 'no server route behind $ssoAuthorizePath (${authorize.path})');
 
     final service =
         File('${repo.path}/apps/web-nuxt/server/utils/sso/mobile-exchange.ts').readAsStringSync();
@@ -65,37 +70,38 @@ void main() {
         reason: 'the app intercepts a path the server does not redirect to');
   });
 
-  test('better-auth is sent to the park route, not to the App Link', () async {
-    // The App Link is where the app listens; it is not where better-auth may
-    // land. better-auth redirects verbatim after setting a cookie, so pointing
-    // it at the App Link delivers no code and no credential. Only
-    // /api/sso/mobile-callback runs with that cookie and can mint the code.
-    final t = build((cb) => '${cb.replace(queryParameters: {
-          ssoStateParam: cb.queryParameters[ssoStateParam],
-          ssoCodeParam: 'the-code',
-        })}');
+  test('the handshake starts in the browser, not on the app HTTP client', () async {
+    // better-auth sets its CSRF state cookie on the sign-in response. Asking for
+    // the authorize URL over the app's own client puts that cookie in the app,
+    // and the callback then fails with "State not persisted correctly" - which is
+    // exactly how this failed on a real device. So the app opens the server's
+    // authorize route and lets the browser make that request.
+    final t = build((cb) => 'https://goal.arzaroth.com$ssoCallbackPath'
+        '?$ssoStateParam=${cb.queryParameters[ssoStateParam]}&$ssoCodeParam=the-code');
     await t.sso.signIn('idp');
-    expect(t.callbacks.single.path, ssoParkPath);
-    expect(t.callbacks.single.path, isNot(ssoCallbackPath));
-    expect(t.callbacks.single.queryParameters[ssoChallengeParam], isNotNull,
-        reason: 'the park route binds the code to our challenge');
+    final opened = t.callbacks.single;
+    expect(opened.path, ssoAuthorizePath);
+    expect(opened.path, isNot(ssoCallbackPath));
+    expect(opened.queryParameters[ssoProviderParam], 'idp');
+    expect(opened.queryParameters[ssoChallengeParam], isNotNull,
+        reason: 'the server binds the parked code to our challenge');
+    expect(t.exchanges.single['code'], 'the-code');
   });
 
   test('signs in against a callback that behaves like the real server', () async {
-    // The other cases hand the app a redirect built from whatever callbackURL it
-    // asked for, which cannot fail on a wrong one. This one plays the server:
-    // a code exists only because the request went through the park route.
-    final t = build((cb) {
-      if (cb.path != ssoParkPath) {
-        // better-auth redirecting verbatim: the App Link, no code appended.
+    // Plays the server: a code comes back only because the browser went through
+    // the authorize route, which is the only path that carries the state cookie.
+    final t = build((opened) {
+      if (opened.path != ssoAuthorizePath) {
+        // Anything else lands on the App Link with nothing to redeem.
         return Uri.parse('https://goal.arzaroth.com')
-            .replace(path: cb.path, queryParameters: cb.queryParameters)
+            .replace(path: ssoCallbackPath, queryParameters: opened.queryParameters)
             .toString();
       }
       return Uri.parse('https://goal.arzaroth.com').replace(
         path: ssoCallbackPath,
         queryParameters: {
-          ssoStateParam: cb.queryParameters[ssoStateParam],
+          ssoStateParam: opened.queryParameters[ssoStateParam],
           ssoCodeParam: 'the-code',
         },
       ).toString();

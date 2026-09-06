@@ -26,6 +26,17 @@ const TTL_MS = 2 * 60 * 1000
 // on this server's own origin, not a hijackable custom scheme.
 export const MOBILE_SSO_CALLBACK_PATH = '/mobile/sso-callback'
 
+// Where better-auth is told to land, which is NOT the App Link above. better-auth
+// redirects verbatim after setting the session cookie, so a redirect straight to
+// the App Link would reach the app with no credential and no code. This route is
+// the one that runs with that cookie. Built here so the authorize route and the
+// callback route cannot drift apart.
+export const MOBILE_SSO_PARK_PATH = '/api/sso/mobile-callback'
+
+export function mobileSsoParkCallback(state: string, challenge: string): string {
+  return `${MOBILE_SSO_PARK_PATH}?${new URLSearchParams({ state, challenge }).toString()}`
+}
+
 // Client-generated values are pinned to base64url, so a value that gets reflected
 // into a redirect can only ever carry [A-Za-z0-9_-].
 const OPAQUE = /^[A-Za-z0-9_-]{16,128}$/

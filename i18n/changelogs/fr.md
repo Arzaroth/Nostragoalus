@@ -7,6 +7,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ### Sécurité
 
+- La connexion avec un compte d'entreprise (authentification unique) aboutit désormais dans l'application Android. Elle échouait systématiquement à la dernière étape, parce que la connexion était lancée depuis l'application et non depuis le navigateur qui la terminait.
 - Renforcement de l'étape qui restitue une authentification unique mobile à l'application Android : elle ne transmet plus que la session tout juste créée par cette connexion, au lieu de celle que le navigateur avait déjà ouverte.
 
 ## [4.7.2] - 2026-09-06

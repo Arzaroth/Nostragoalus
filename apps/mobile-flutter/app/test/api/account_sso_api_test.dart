@@ -120,23 +120,6 @@ void main() {
           method: 'GET', path: '/api/sso/check', query: {'email': 'a@b.tld'});
     });
 
-    test('ssoAuthorizeUrl returns the IdP URL', () async {
-      final (api, adapter) = buildApi([
-        Reply(200, const {'url': 'https://idp/authorize'}),
-      ]);
-
-      expect(await api.ssoAuthorizeUrl('okta', 'ng://cb'), 'https://idp/authorize');
-      expectRequest(adapter, method: 'POST', path: '/api/auth/sign-in/sso', body: {
-        'providerId': 'okta',
-        'callbackURL': 'ng://cb',
-      });
-    });
-
-    test('ssoAuthorizeUrl is null when the server returns no url', () async {
-      final (api, _) = buildApi([Reply(200, const {})]);
-      expect(await api.ssoAuthorizeUrl('okta', 'ng://cb'), isNull);
-    });
-
     test('ssoExchange trades the code, state and verifier for a bearer', () async {
       final (api, adapter) = buildApi([Reply(200, const {'token': 'bearer'})]);
 

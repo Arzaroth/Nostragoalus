@@ -20,13 +20,18 @@ import '../state/providers.dart';
 /// server cannot complete this flow.
 const ssoCallbackPath = '/mobile/sso-callback';
 
-/// Where better-auth is told to land, which is NOT [ssoCallbackPath]. better-auth
-/// ends an SSO sign-in by setting a session cookie and redirecting verbatim, so a
-/// redirect straight to the App Link arrives with no credential and no code -
-/// the app would intercept it, find no `code`, and fail every time. This server
-/// route runs with that cookie, parks the bearer, and only then redirects to the
-/// App Link with the single-use code appended.
-const ssoParkPath = '/api/sso/mobile-callback';
+/// Where the round trip STARTS, and the reason it is a browser navigation rather
+/// than an API call the app makes itself. better-auth's `/sign-in/sso` returns
+/// the authorize URL and, on that same response, sets the signed `state` cookie
+/// its callback later has to match. Fetched over the app's own HTTP client that
+/// cookie lands in the app, not in the browser doing the round trip, and the
+/// callback dies on "State mismatch: State not persisted correctly". Opening
+/// this route in the browser puts the whole handshake in one cookie jar; the
+/// server builds the callbackURL that parks the bearer.
+const ssoAuthorizePath = '/api/sso/mobile-authorize';
+
+/// The query parameter naming the provider to sign in with.
+const ssoProviderParam = 'providerId';
 
 /// The ONE query parameter the callback carries the exchange code in. It is
 /// pinned, not probed: adopting whichever of several parameter names happens to
@@ -94,25 +99,23 @@ class SsoService {
   }
 
   /// Run the browser SSO round-trip, trade the returned single-use code for the
-  /// session bearer and adopt it. Returns false when the provider has no
-  /// authorize URL; anything that completed but cannot be trusted throws
-  /// [SsoException].
+  /// session bearer and adopt it. Anything that completed but cannot be trusted
+  /// throws [SsoException].
   Future<bool> signIn(String providerId) async {
     final state = _newNonce();
     final verifier = _newNonce();
     final challenge = _b64(sha256.convert(utf8.encode(verifier)).bytes);
     final callback = Uri.parse(AppConfig.apiBase).replace(path: ssoCallbackPath);
-    // Relative, so better-auth resolves it against its own baseURL and no extra
-    // trusted origin has to be configured for the app to sign in.
-    final callbackUrl = Uri(
-      path: ssoParkPath,
-      queryParameters: {ssoStateParam: state, ssoChallengeParam: challenge},
+    final authorize = Uri.parse(AppConfig.apiBase).replace(
+      path: ssoAuthorizePath,
+      queryParameters: {
+        ssoProviderParam: providerId,
+        ssoStateParam: state,
+        ssoChallengeParam: challenge,
+      },
     ).toString();
 
-    final url = await _ref.read(apiProvider).ssoAuthorizeUrl(providerId, callbackUrl);
-    if (url == null) return false;
-
-    final result = await _browser(url: url, callback: callback);
+    final result = await _browser(url: authorize, callback: callback);
     final params = Uri.parse(result).queryParameters;
 
     final error = params['error'];

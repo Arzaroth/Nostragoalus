@@ -7,6 +7,7 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ### Hubqu'moH
 
+- Android De'wI'Hom: DaH qorDu' De'wI' Segh (SSO) 'el chav. wa'DIch Hoch luj, 'ej mIw Qav luj: De'wI'Hom 'el tagh, 'ach Sar 'el rIn; DaH Sar 'el tagh je.
 - Android De'wI'Hom: SSO 'el nobHa'meH mIw Hubqu'lu'. DaH 'elmeH chu'bogh qep neH ngeHlu'; qep tIQ, ngeHbe'lu'.
 
 ## [4.7.2] - 2026-09-06

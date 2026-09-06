@@ -220,11 +220,25 @@ The handoff, all of it in
 `apps/web-nuxt/server/utils/sso/mobile-exchange.ts`:
 
 1. The app generates two unpadded-base64url nonces, `state` and a PKCE-style
-   `verifier`, and asks `/api/auth/sign-in/sso` for the authorize URL with the
-   **relative** `callbackURL`
-   `/api/sso/mobile-callback?state=<state>&challenge=<sha256(verifier)>`.
-   Relative, so better-auth resolves it against its own baseURL and no extra
-   trusted origin is needed.
+   `verifier`, and opens
+   `/api/sso/mobile-authorize?providerId=&state=&challenge=<sha256(verifier)>`
+   **in the browser**. That route calls `/api/auth/sign-in/sso` server-side with
+   the **relative** `callbackURL`
+   `/api/sso/mobile-callback?state=<state>&challenge=<sha256(verifier)>`
+   (relative, so better-auth resolves it against its own baseURL and no extra
+   trusted origin is needed), forwards better-auth's `Set-Cookie` to the browser,
+   and 302s to the identity provider.
+
+   **The browser has to be the one that makes the sign-in request.**
+   `/sign-in/sso` returns the authorize URL and, on the same response, sets the
+   signed `state` cookie its own callback later has to match. The app used to
+   fetch that URL over its own HTTP client, so the cookie stayed in the app while
+   the round trip happened in the browser, and every sign-in died at the callback
+   on `State mismatch: State not persisted correctly` (`state_security_mismatch`,
+   from `parseGenericState`) - after which `onAPIError.errorURL` dropped the user
+   on `/login`. Routing the start through the browser puts the whole handshake in
+   one cookie jar. Failures here redirect to the App Link with `error=sso_failed`
+   so the tab closes back into the app instead of stranding it on a web page.
 2. `GET /api/sso/mobile-callback` (public, unauthenticated, same exposure as
    `test-callback`) runs after better-auth created the session, so the request
    carries the session cookie. That cookie value **is** what `bearer()` hands out

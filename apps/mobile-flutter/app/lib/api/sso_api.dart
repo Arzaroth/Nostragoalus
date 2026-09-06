@@ -7,13 +7,6 @@ extension SsoApi on ApiClient {
   Future<Map<String, dynamic>> ssoCheck(String email) async =>
       getJson('/api/sso/check', query: {'email': email});
 
-  /// Start a better-auth SSO sign-in; returns the IdP authorize URL to open.
-  Future<String?> ssoAuthorizeUrl(String providerId, String callbackURL) async {
-    final res = await postJson('/api/auth/sign-in/sso',
-        body: {'providerId': providerId, 'callbackURL': callbackURL});
-    return res['url'] as String?;
-  }
-
   /// Trade the single-use code from the SSO callback for the session bearer.
   /// The verifier proves we are the client that started the flow, so the code
   /// is worthless to anyone who merely observed the redirect.
