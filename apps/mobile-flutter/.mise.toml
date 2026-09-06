@@ -121,12 +121,30 @@ description = "Build the release APK and publish it for the website to serve (ap
 dir = "{{ config_root }}/app"
 run = """
 set -euo pipefail
-flutter build apk --release
+# AppConfig.apiBase is a compile-time String.fromEnvironment whose default is the
+# emulator's host alias, so a build without this define is unroutable from a real
+# phone - it reaches nothing and the sign-in screen blames the password. That
+# shipped once (v4.7.0); the guards below are why it cannot ship again.
+api_base="${NG_APP_API_BASE:-https://goal.arzaroth.com}"
+web_base="${NG_APP_WEB_BASE:-$api_base}"
+case "$api_base" in
+  https://*) ;;
+  *) echo "apk-publish: API_BASE must be an https origin, got '$api_base'" >&2; exit 1 ;;
+esac
+case "$api_base" in
+  *10.0.2.2*|*localhost*|*127.0.0.1*)
+    echo "apk-publish: API_BASE '$api_base' is a dev loopback, refusing to publish" >&2; exit 1 ;;
+esac
 out="{{ config_root }}/../web-nuxt/downloads"
 mkdir -p "$out"
 # The site shows the release version, not the pubspec's own (vestigial) one, so
 # the APK on /about reads as the same release as the site serving it.
 version=$(sed -n 's/.*"version": "\\([^"]*\\)".*/\\1/p' "{{ config_root }}/../web-nuxt/package.json" | head -1)
+# versionName/versionCode come from the release too, so the APK's own metadata
+# agrees with what the site advertises. Android orders builds by versionCode
+# only, so x.y.z maps to x*10000 + y*100 + z (minor and patch stay under 100).
+code=$(echo "$version" | awk -F. '{printf "%d", $1*10000 + $2*100 + $3}')
+flutter build apk --release --dart-define=API_BASE="$api_base" --dart-define=WEB_BASE="$web_base" --build-name="$version" --build-number="$code"
 printf '{"version":"%s","builtAt":"%s"}\\n' "$version" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$out/nostragoalus.apk.json"
 # Stage then rename: the server stats and hashes the APK before streaming it, so
 # copying over the live file in place would serve one build's bytes under another
