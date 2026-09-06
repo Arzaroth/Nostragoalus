@@ -6,6 +6,8 @@ import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
 import 'competition_switcher.dart';
 import 'widgets/async_value_view.dart';
+import 'widgets/panel.dart';
+import 'widgets/team_flag.dart';
 
 /// The competition's teams.
 class TeamsScreen extends ConsumerWidget {
@@ -22,12 +24,17 @@ class TeamsScreen extends ConsumerWidget {
           value: teams,
           onRetry: () => ref.invalidate(teamsProvider),
           data: (res) => ListView(
+            padding: const EdgeInsets.only(top: 4, bottom: 24),
             children: [
-              for (final t in res.teams)
-                ListTile(
-                  leading: CircleAvatar(child: Text(t.code)),
-                  title: Text(t.name),
-                ),
+              if (res.teams.isNotEmpty)
+                Panel(children: [
+                  for (final t in res.teams)
+                    PanelRow(
+                      leading: TeamFlag(t.code, height: 20),
+                      title: Text(t.name),
+                      trailing: Text(t.code),
+                    ),
+                ]),
             ],
           ),
         ),

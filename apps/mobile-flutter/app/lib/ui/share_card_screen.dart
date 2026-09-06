@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
+import '../theme/app_theme.dart';
 import 'widgets/async_value_view.dart';
 import 'widgets/empty_state.dart';
+import 'widgets/panel.dart';
 
 /// In-app viewer for a shared card link (analytics /a, profile /p, pick /s). Opens
 /// from an inbound deep link; renders the card the token resolves to. Public -
@@ -44,16 +46,22 @@ class ShareCardScreen extends ConsumerWidget {
     ],
   };
 
+  static final _numeric = RegExp(r'^[#+\-]?[\d.\-]+%?$');
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final card = ref.watch(shareCardProvider((kind, token)));
+    final theme = Theme.of(context);
+    final t = context.tokens;
     return Scaffold(
       appBar: AppBar(title: Text(context.tr('share.cardTitle'))),
       body: AsyncValueView<Map<String, dynamic>>(
         value: card,
         onRetry: () => ref.invalidate(shareCardProvider((kind, token))),
         data: (c) {
-          if (c.isEmpty) return EmptyState(message: context.tr('share.notFound'));
+          if (c.isEmpty) {
+            return EmptyState(icon: Icons.link_off, message: context.tr('share.notFound'));
+          }
           final title = (c['displayName'] ?? c['ownerName'] ?? '').toString();
           final subtitle = [
             if (kind == 's' && c['homeTeam'] != null) '${c['homeTeam']} v ${c['awayTeam']}',
@@ -61,32 +69,35 @@ class ShareCardScreen extends ConsumerWidget {
           ].join(' · ');
           final values = _values(c);
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
             children: [
               Center(
                 child: Column(
                   children: [
-                    const Icon(Icons.share, size: 40),
-                    const SizedBox(height: 8),
-                    Text(title, style: Theme.of(context).textTheme.headlineSmall),
-                    if (subtitle.isNotEmpty)
-                      Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
+                    Icon(Icons.share_outlined, size: 36, color: t.faint),
+                    const SizedBox(height: 12),
+                    Text(title, style: theme.textTheme.headlineSmall, textAlign: TextAlign.center),
+                    if (subtitle.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(subtitle, style: theme.textTheme.bodySmall, textAlign: TextAlign.center),
+                    ],
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
-              Card(
-                child: Column(
-                  children: [
-                    for (final (field, labelKey) in _fields[kind] ?? const <(String, String)>[])
-                      if (values[field] case final v?)
-                        ListTile(
-                          dense: true,
-                          title: Text(context.tr(labelKey)),
-                          trailing: Text(v),
-                        ),
-                  ],
-                ),
+              const SizedBox(height: 20),
+              Panel(
+                margin: EdgeInsets.zero,
+                children: [
+                  for (final (field, labelKey) in _fields[kind] ?? const <(String, String)>[])
+                    if (values[field] case final v?)
+                      PanelRow(
+                        title: Text(context.tr(labelKey)),
+                        trailing: Text(v,
+                            style: _numeric.hasMatch(v)
+                                ? t.score(20, color: theme.colorScheme.onSurface)
+                                : theme.textTheme.labelMedium),
+                      ),
+                ],
               ),
             ],
           );

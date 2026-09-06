@@ -4,8 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/models.gen.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
+import '../theme/app_theme.dart';
 import 'feedback.dart';
 import 'widgets/async_value_view.dart';
+import 'widgets/empty_state.dart';
+import 'widgets/panel.dart';
 
 /// Public product roadmap - items by status, with community upvotes.
 class RoadmapScreen extends ConsumerWidget {
@@ -18,7 +21,7 @@ class RoadmapScreen extends ConsumerWidget {
       appBar: AppBar(title: Text(context.tr('nav.roadmap'))),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _suggest(context, ref),
-        icon: const Icon(Icons.lightbulb),
+        icon: const Icon(Icons.lightbulb_outline),
         label: Text(context.tr('roadmap.suggest.submit')),
       ),
       body: RefreshIndicator(
@@ -26,9 +29,14 @@ class RoadmapScreen extends ConsumerWidget {
         child: AsyncValueView<RoadmapResponse>(
           value: roadmap,
           onRetry: () => ref.invalidate(roadmapProvider),
-          data: (res) => ListView(
-            children: [for (final item in res.items) _ItemCard(item)],
-          ),
+          data: (res) => res.items.isEmpty
+              ? EmptyState(icon: Icons.map_outlined, message: context.tr('roadmap.empty'))
+              : ListView(
+                  padding: const EdgeInsets.only(top: 4, bottom: 96),
+                  children: [
+                    Panel(children: [for (final item in res.items) _ItemRow(item)]),
+                  ],
+                ),
         ),
       ),
     );
@@ -48,6 +56,7 @@ Future<void> _suggest(BuildContext context, WidgetRef ref) async {
           TextField(
               controller: title,
               decoration: InputDecoration(labelText: context.tr('roadmap.suggestTitle'))),
+          const SizedBox(height: 12),
           TextField(
               controller: desc,
               maxLines: 3,
@@ -81,44 +90,44 @@ String roadmapStatusKey(ItemStatusValue status) => switch (status) {
       _ => 'roadmap.planned',
     };
 
-class _ItemCard extends ConsumerWidget {
-  const _ItemCard(this.item);
+class _ItemRow extends ConsumerWidget {
+  const _ItemRow(this.item);
   final Item item;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      child: ListTile(
-        title: Text(item.title),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (item.description != null) Text(item.description!),
-            const SizedBox(height: 4),
-            Chip(
-              label: Text(context.tr(roadmapStatusKey(item.status)),
-                  style: const TextStyle(fontSize: 11)),
-              visualDensity: VisualDensity.compact,
-              padding: EdgeInsets.zero,
-            ),
-          ],
-        ),
-        isThreeLine: item.description != null,
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            IconButton(
-              icon: Icon(item.viewerHasVoted ? Icons.thumb_up : Icons.thumb_up_outlined),
-              color: item.viewerHasVoted ? Theme.of(context).colorScheme.primary : null,
-              onPressed: () => runAction(context, () async {
-                await ref.read(apiProvider).voteRoadmap(item.id);
-                ref.invalidate(roadmapProvider);
-              }),
-            ),
-            Text('${item.voteCount.toInt()}'),
-          ],
-        ),
+    final scheme = Theme.of(context).colorScheme;
+    final t = context.tokens;
+    final statusColor = switch (item.status) {
+      ItemStatusValue.shipped => t.emerald,
+      ItemStatusValue.inProgress => scheme.primary,
+      ItemStatusValue.suggested => t.amber,
+      _ => t.muted,
+    };
+    return PanelRow(
+      title: Text(item.title),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (item.description != null) Text(item.description!),
+          const SizedBox(height: 6),
+          Tag(context.tr(roadmapStatusKey(item.status)), color: statusColor),
+        ],
+      ),
+      trailing: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: Icon(item.viewerHasVoted ? Icons.thumb_up : Icons.thumb_up_outlined),
+            color: item.viewerHasVoted ? scheme.primary : t.muted,
+            onPressed: () => runAction(context, () async {
+              await ref.read(apiProvider).voteRoadmap(item.id);
+              ref.invalidate(roadmapProvider);
+            }),
+          ),
+          Text('${item.voteCount.toInt()}',
+              style: t.score(17, color: item.viewerHasVoted ? scheme.primary : scheme.onSurface)),
+        ],
       ),
     );
   }

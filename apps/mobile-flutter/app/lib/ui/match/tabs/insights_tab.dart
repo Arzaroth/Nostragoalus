@@ -4,13 +4,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../api/models.gen.dart';
 import '../../../i18n/i18n_scope.dart';
 import '../../../state/providers.dart';
+import '../../../theme/app_theme.dart';
 import '../../widgets/async_value_view.dart';
+import '../../widgets/panel.dart';
 import '../../widgets/section_card.dart';
+import '../../widgets/team_flag.dart';
 
 /// Possession, head-to-head, form, next fixtures and the goal list.
 class InsightsTab extends ConsumerWidget {
   const InsightsTab({super.key, required this.matchId});
   final String matchId;
+
+  static const _numWidth = 40.0;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -18,65 +23,189 @@ class InsightsTab extends ConsumerWidget {
       value: ref.watch(matchInsightsProvider(matchId)),
       onRetry: () => ref.invalidate(matchInsightsProvider(matchId)),
       data: (res) => ListView(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.only(bottom: 24),
         children: [
-          if (res.standings != null && res.standings!.isNotEmpty)
-            SectionCard(title: context.tr('nav.standings'), children: [
-              for (final r in res.standings!)
-                Row(
-                  children: [
-                    Expanded(child: Text(r.name)),
-                    Text('${r.played.toInt()}  '
-                        '${r.gd.toInt() >= 0 ? '+' : ''}${r.gd.toInt()}  '
-                        '${r.points.toInt()}'),
-                  ],
-                ),
-            ]),
+          if (res.standings != null && res.standings!.isNotEmpty) _standings(context, res.standings!),
           if (res.possession.home != null || res.possession.away != null)
-            SectionCard(title: context.tr('match.possession'), children: [
-              Text('${res.possession.home?.toInt() ?? 0}% - ${res.possession.away?.toInt() ?? 0}%'),
-            ]),
-          if (res.h2hAll != null)
-            SectionCard(title: context.tr('match.allTime'), children: [
-              Text('${res.h2hAll!.wins.toInt()}W ${res.h2hAll!.draws.toInt()}D '
-                  '${res.h2hAll!.losses.toInt()}L  ·  '
-                  '${res.h2hAll!.goalsFor.toInt()}-${res.h2hAll!.goalsAgainst.toInt()}'),
-            ]),
+            _possession(context, res.possession.home?.toInt() ?? 0, res.possession.away?.toInt() ?? 0),
+          if (res.h2hAll != null) _allTime(context, res.h2hAll!),
           if (res.headToHead.isNotEmpty)
             SectionCard(title: context.tr('match.h2h'), children: [
               for (final m in res.headToHead.take(6))
-                Text('${m.homeTeam} ${m.homeScore.toInt()}-${m.awayScore.toInt()} ${m.awayTeam}'),
+                _scoreLine(context, m.homeTeam, m.awayTeam,
+                    '${m.homeScore.toInt()} - ${m.awayScore.toInt()}'),
             ]),
           _form(context, res.form.home, res.form.away),
           _next(context, res.next.home, res.next.away),
           if (res.goals.isNotEmpty)
             SectionCard(title: context.tr('match.goals'), children: [
               for (final g in res.goals)
-                Text('${g.minute ?? ''} ${g.playerName}'
-                        '${g.ownGoal ? ' (${context.tr('match.ownGoalShort')})' : ''}'
-                    .trim()),
+                _minuteRow(
+                    context,
+                    g.minute,
+                    '${g.playerName}'
+                    '${g.ownGoal ? ' (${context.tr('match.ownGoalShort')})' : ''}'),
             ]),
         ],
       ),
     );
   }
 
-  Widget _formRow(BuildContext context, List<MatchInsightsResponseFormHome> form) => Wrap(
-        spacing: 4,
+  Widget _standings(BuildContext context, List<GroupRow> rows) {
+    final theme = Theme.of(context);
+    final t = context.tokens;
+    final head = theme.textTheme.labelSmall?.copyWith(color: t.faint);
+    Widget num(String s, {TextStyle? style}) =>
+        SizedBox(width: _numWidth, child: Text(s, textAlign: TextAlign.center, style: style));
+    return SectionCard(title: context.tr('nav.standings'), children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+        child: Row(
+          children: [
+            Expanded(child: Text(context.tr('standings.team'), style: head)),
+            num(context.tr('standings.p'), style: head),
+            num(context.tr('standings.gd'), style: head),
+            num(context.tr('standings.pts'), style: head),
+          ],
+        ),
+      ),
+      for (final r in rows)
+        Padding(
+          padding: const EdgeInsetsDirectional.fromSTEB(16, 10, 8, 10),
+          child: Row(
+            children: [
+              TeamFlag(r.code, height: 18),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(r.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
+              ),
+              num('${r.played.toInt()}', style: t.score(17, weight: FontWeight.w500, color: t.muted)),
+              num('${r.gd.toInt() > 0 ? '+' : ''}${r.gd.toInt()}',
+                  style: t.score(17, weight: FontWeight.w500, color: t.muted)),
+              num('${r.points.toInt()}', style: t.score(20)),
+            ],
+          ),
+        ),
+    ]);
+  }
+
+  Widget _possession(BuildContext context, int home, int away) {
+    final t = context.tokens;
+    final total = home + away;
+    return SectionCard(title: context.tr('match.possession'), padded: true, children: [
+      Row(
         children: [
-          for (final f in form)
-            CircleAvatar(
-              radius: 11,
-              backgroundColor: switch (f.result) {
-                ResultValue.w => Colors.green,
-                ResultValue.l => Theme.of(context).colorScheme.error,
-                _ => Colors.grey,
-              },
-              child:
-                  Text(f.result.wire, style: const TextStyle(fontSize: 11, color: Colors.white)),
+          Text('$home%', style: t.score(24)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(3),
+              child: LinearProgressIndicator(value: total > 0 ? home / total : 0.5, minHeight: 6),
             ),
+          ),
+          const SizedBox(width: 12),
+          Text('$away%', style: t.score(24)),
         ],
-      );
+      ),
+    ]);
+  }
+
+  Widget _allTime(BuildContext context, H2hAll h) {
+    final theme = Theme.of(context);
+    final t = context.tokens;
+    Widget cell(int n, String letter, {Color? color}) => Expanded(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text('$n', style: t.score(24, color: color)),
+              const SizedBox(width: 3),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 2),
+                child: Text(letter, style: theme.textTheme.labelSmall?.copyWith(color: t.muted)),
+              ),
+            ],
+          ),
+        );
+    return SectionCard(title: context.tr('match.allTime'), padded: true, children: [
+      Row(
+        children: [
+          cell(h.wins.toInt(), 'W', color: t.emerald),
+          cell(h.draws.toInt(), 'D'),
+          cell(h.losses.toInt(), 'L', color: t.live),
+          Expanded(
+            child: Text('${h.goalsFor.toInt()} - ${h.goalsAgainst.toInt()}',
+                textAlign: TextAlign.center, style: t.score(24, color: t.muted)),
+          ),
+        ],
+      ),
+    ]);
+  }
+
+  /// A row with a team on each side of a scoreboard number.
+  Widget _scoreLine(BuildContext context, String home, String away, String score) {
+    final theme = Theme.of(context);
+    final t = context.tokens;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(home,
+                textAlign: TextAlign.end,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodyMedium),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Text(score, style: t.score(20)),
+          ),
+          Expanded(
+            child: Text(away, maxLines: 1, overflow: TextOverflow.ellipsis, style: theme.textTheme.bodyMedium),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _minuteRow(BuildContext context, String? minute, String label) {
+    final t = context.tokens;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 44,
+            child: Text(minute == null || minute.isEmpty ? '' : "$minute'",
+                style: t.score(17, weight: FontWeight.w600, color: t.muted)),
+          ),
+          Expanded(child: Text(label)),
+        ],
+      ),
+    );
+  }
+
+  Widget _formRow(BuildContext context, List<MatchInsightsResponseFormHome> form) {
+    final t = context.tokens;
+    return Wrap(
+      spacing: 6,
+      children: [
+        for (final f in form)
+          Tag(
+            f.result.wire,
+            color: switch (f.result) {
+              ResultValue.w => t.emerald,
+              ResultValue.l => t.live,
+              _ => t.muted,
+            },
+          ),
+      ],
+    );
+  }
 
   Widget _form(
     BuildContext context,
@@ -84,9 +213,9 @@ class InsightsTab extends ConsumerWidget {
     List<MatchInsightsResponseFormHome> away,
   ) {
     if (home.isEmpty && away.isEmpty) return const SizedBox.shrink();
-    return SectionCard(title: context.tr('match.form'), children: [
+    return SectionCard(title: context.tr('match.form'), padded: true, children: [
       if (home.isNotEmpty) _formRow(context, home),
-      if (away.isNotEmpty) ...[const SizedBox(height: 6), _formRow(context, away)],
+      if (away.isNotEmpty) ...[const SizedBox(height: 8), _formRow(context, away)],
     ]);
   }
 
@@ -94,7 +223,12 @@ class InsightsTab extends ConsumerWidget {
     final all = [...home, ...away];
     if (all.isEmpty) return const SizedBox.shrink();
     return SectionCard(title: context.tr('match.next'), children: [
-      for (final n in all) Text('${n.opponent} · ${n.kickoffTime}'),
+      for (final n in all)
+        PanelRow(
+          leading: TeamFlag(n.opponentCode, height: 18),
+          title: Text(n.opponent),
+          trailing: Text(n.kickoffTime),
+        ),
     ]);
   }
 }
