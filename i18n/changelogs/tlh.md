@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [4.7.0] - 2026-09-06
+
 ### chelpu'
 
 - DaH Sar vo' Android De'wI'Hom Suqlu'laH. De' HaSta: Segh ngeHlu'ta', 'ab, ngoq mung je 'ang; vaj yIlan pa' De' yIqIm. Sarmey Hoch: pa' Duv.

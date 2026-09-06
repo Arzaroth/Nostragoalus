@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [4.7.0] - 2026-09-06
+
 ### Ajouté
 
 - L'application Android se télécharge désormais depuis le site. La page « À propos » indique la version publiée, sa taille et son empreinte pour vérifier le fichier avant de l'installer, et chaque page publique y renvoie.

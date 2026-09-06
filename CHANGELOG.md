@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [4.7.0] - 2026-09-06
+
 ### Added
 
 - The Android app can now be downloaded from the site. The about page lists the published build with its version, size and fingerprint so you can check the file before installing it, and every public page links to it.
