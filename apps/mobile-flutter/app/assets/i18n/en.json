@@ -1,4 +1,17 @@
 {
+  "androidApp": {
+    "title": "Android app",
+    "text": "Nostragoalus is also a native Android app: the same predictions, leagues and encrypted chat, built from this repository. It is not on Google Play, so you install the APK yourself.",
+    "download": "Download the APK",
+    "versionLabel": "Version",
+    "sizeLabel": "Size",
+    "size": "{n} MB",
+    "checksumLabel": "SHA-256",
+    "builtLabel": "Published",
+    "installNote": "Android asks permission to install from your browser the first time. Check the fingerprint above against the file you downloaded before you install it.",
+    "unavailable": "No build is published right now. The source is in the repository if you want to build it yourself.",
+    "footerLink": "Android app"
+  },
   "nudge": {
     "title": "Finish your picks",
     "openCount": "{n} matches still need a pick"

@@ -1,4 +1,17 @@
 {
+  "androidApp": {
+    "title": "Application Android",
+    "text": "Nostragoalus existe aussi en application Android native : mêmes pronostics, mêmes ligues, même messagerie chiffrée, compilée depuis ce dépôt. Elle n'est pas sur Google Play, l'APK s'installe donc à la main.",
+    "download": "Télécharger l'APK",
+    "versionLabel": "Version",
+    "sizeLabel": "Taille",
+    "size": "{n} Mo",
+    "checksumLabel": "SHA-256",
+    "builtLabel": "Publiée le",
+    "installNote": "Android demande l'autorisation d'installer depuis le navigateur la première fois. Vérifiez l'empreinte ci-dessus avec le fichier téléchargé avant de l'installer.",
+    "unavailable": "Aucune version publiée pour le moment. Le code source est dans le dépôt si vous voulez la compiler vous-même.",
+    "footerLink": "Application Android"
+  },
   "nudge": {
     "title": "Terminez vos pronostics",
     "openCount": "{n} matchs à pronostiquer"

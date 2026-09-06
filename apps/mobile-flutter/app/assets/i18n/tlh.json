@@ -1,4 +1,17 @@
 {
+  "androidApp": {
+    "title": "Android De'wI'Hom",
+    "text": "Android De'wI'Hom je ghaj Nostragoalus: mI'mey, ghommey, ja'chuq So'lu'bogh je rap. Google Play luHutlh; vaj APK yIlan.",
+    "download": "APK yISuq",
+    "versionLabel": "Segh",
+    "sizeLabel": "'ab",
+    "size": "{n} MB",
+    "checksumLabel": "SHA-256",
+    "builtLabel": "ngeHlu'ta'",
+    "installNote": "wa'DIch: De'wI'Hom lan 'e' chaw' Android 'e' tlhob. yIlan pa', ngoq mung yIqIm.",
+    "unavailable": "pagh ngeHlu'ta'. ngoq mung Daj DaneH'a'? yIchenmoH.",
+    "footerLink": "Android De'wI'Hom"
+  },
   "nudge": {
     "title": "DappoQ yIrIn",
     "openCount": "{n} Qojmey luSuq"
