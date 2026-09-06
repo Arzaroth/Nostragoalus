@@ -5,6 +5,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+
+- Dismissing a notification now sticks. The "your champion won" notification (and its Golden Boot counterpart) reappeared in the bell within minutes of being deleted, every time, because the background job that awards those bonuses kept re-creating it.
+- The Android download panel on the about page lines its version, size and publication date up in a column instead of staggering them.
+
 ## [4.7.0] - 2026-09-06
 
 ### Added

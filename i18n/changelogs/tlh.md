@@ -5,6 +5,11 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### tI'pu'
+
+- QIn DaHoHDI' Heghbej. "yay chavpu' SarlIj" QIn (Soulier je) cheghqa'taHpu', qaStaHvIS repHom puS; DaH mevpu'.
+- Android Suq HaSta: Segh, 'ab, ngeH jaj je rap lutaH; nIteb ghoSbe'.
+
 ## [4.7.0] - 2026-09-06
 
 ### chelpu'
