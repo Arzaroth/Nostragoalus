@@ -216,6 +216,11 @@ export default defineNuxtConfig({
     turnTlsPort: '5349',
     // Image storage backend. driver 'fs' (default) writes under storageFsRoot;
     // driver 's3' talks to any S3-compatible endpoint (the deploy runs rustfs).
+    // Directory holding the published Android APK (+ its .json sidecar), served
+    // by /download/nostragoalus.apk. Bind-mounted in the deploy so a new build is
+    // published without rebuilding the site. Unset = /data/downloads in
+    // production, ./.data/downloads in dev.
+    appDownloadDir: '',
     storageDriver: 'fs',
     storageFsRoot: '',
     storageS3Endpoint: '',

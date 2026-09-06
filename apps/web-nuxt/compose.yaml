@@ -154,6 +154,11 @@ services:
       NUXT_STORAGE_S3_BUCKET: ${NUXT_STORAGE_S3_BUCKET:-nostragoalus}
       NUXT_STORAGE_S3_ACCESS_KEY_ID: ${NUXT_STORAGE_S3_ACCESS_KEY_ID:-rustfsadmin}
       NUXT_STORAGE_S3_SECRET_ACCESS_KEY: ${NUXT_STORAGE_S3_SECRET_ACCESS_KEY:-rustfsadmin}
+    volumes:
+      # The published Android APK (written by `mise run apk-publish`), served at
+      # /download/nostragoalus.apk. Bind-mounted read-only rather than baked into
+      # the image, so publishing a new app build needs no site rebuild.
+      - ./downloads:/data/downloads:ro
     # Bound to loopback: put a reverse proxy (TLS, the public BETTER_AUTH_URL host)
     # in front. Set NG_APP_PORT in .env when the host port is taken (prod uses
     # 3333). Drop the 127.0.0.1 prefix only if exposing the app directly.

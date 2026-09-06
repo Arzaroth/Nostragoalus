@@ -5,6 +5,14 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Ajouté
+
+- L'application Android se télécharge désormais depuis le site. La page « À propos » indique la version publiée, sa taille et son empreinte pour vérifier le fichier avant de l'installer, et chaque page publique y renvoie.
+
+### Modifié
+
+- L'application mobile a un nouveau design, « Floodlit » : une esthétique de match en nocturne, avec les scores, les points et les classements en caractères de tableau d'affichage, des listes posées sur des panneaux lignés à la craie plutôt que des piles de cartes, un liseré rouge sur les matchs en cours et un mode clair cohérent. Tous les écrans le suivent, de la connexion à la messagerie.
+
 ## [4.6.0] - 2026-09-03
 
 ### Ajouté

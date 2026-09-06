@@ -57,3 +57,9 @@ backups/
 
 # Local code-review artifacts (feature-treatment / review sessions)
 reviews/
+
+# Published Android APK (mise run apk-publish) - a deploy artifact the site
+# serves; the directory itself is committed so the compose bind mount has a
+# host-owned target.
+apps/web-nuxt/downloads/*
+!apps/web-nuxt/downloads/.gitkeep

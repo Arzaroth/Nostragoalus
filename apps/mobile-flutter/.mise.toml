@@ -115,3 +115,19 @@ flutter test integration_test/main_path_test.dart \
   --dart-define=PROBE_EMAIL=${PROBE_EMAIL:-probe@example.com} \
   --dart-define=PROBE_PASSWORD=${PROBE_PASSWORD:-Probe-Password123!}
 """
+
+[tasks.apk-publish]
+description = "Build the release APK and publish it for the website to serve (apps/web-nuxt/downloads -> /download/nostragoalus.apk)"
+dir = "{{ config_root }}/app"
+run = """
+set -euo pipefail
+flutter build apk --release
+out="{{ config_root }}/../web-nuxt/downloads"
+mkdir -p "$out"
+cp build/app/outputs/flutter-apk/app-release.apk "$out/nostragoalus.apk"
+# The site shows the release version, not the pubspec's own (vestigial) one, so
+# the APK on /about reads as the same release as the site serving it.
+version=$(sed -n 's/.*"version": "\\([^"]*\\)".*/\\1/p' "{{ config_root }}/../web-nuxt/package.json" | head -1)
+printf '{"version":"%s","builtAt":"%s"}\\n' "$version" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$out/nostragoalus.apk.json"
+sha256sum "$out/nostragoalus.apk"
+"""

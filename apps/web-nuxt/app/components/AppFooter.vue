@@ -9,6 +9,7 @@ const config = useRuntimeConfig()
     <div>{{ t('footer.builtWith') }}</div>
     <div class="flex justify-center gap-4 text-xs">
       <NuxtLink to="/about" class="hover:underline">{{ t('about.title') }}</NuxtLink>
+      <NuxtLink to="/about#android" class="hover:underline">{{ t('androidApp.footerLink') }}</NuxtLink>
       <a href="https://git.arzaroth.com/Arzaroth/Nostragoalus" target="_blank" rel="noopener" class="hover:underline">{{ t('footer.source') }}</a>
       <NuxtLink to="/license" class="hover:underline">MIT / WTFPL</NuxtLink>
     </div>

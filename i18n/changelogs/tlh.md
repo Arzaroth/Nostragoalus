@@ -5,6 +5,14 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### chelpu'
+
+- DaH Sar vo' Android De'wI'Hom Suqlu'laH. De' HaSta: Segh ngeHlu'ta', 'ab, ngoq mung je 'ang; vaj yIlan pa' De' yIqIm. Sarmey Hoch: pa' Duv.
+
+### choHpu'
+
+- ngefang QuQ De' chu' ghaj: "Floodlit" ponglu'. ram QujmeH rur: mI'mey, QuQmey, patlhmey je 'angmeH mI' Sar lo'lu'; nagh tetlh rurbe', 'ach 'Iw pupmeH tetlh rur. Quj taHtaHbogh 'angmeH Doq. wovtaHvIS je qaq. Hoch HaSta rap: 'el vo' ja'chuq.
+
 ## [4.6.0] - 2026-09-03
 
 ### chelpu'

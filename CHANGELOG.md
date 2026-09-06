@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+
+- The Android app can now be downloaded from the site. The about page lists the published build with its version, size and fingerprint so you can check the file before installing it, and every public page links to it.
+
 ### Changed
 
 - The mobile app has a new design, "Floodlit": a night-match look with the scores, points and ranks set in a scoreboard face, lists on chalk-lined panels instead of card stacks, a live rail on matches in play, and a coherent light mode. Every screen follows it, from sign-in to chat.

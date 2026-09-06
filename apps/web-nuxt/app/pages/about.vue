@@ -168,6 +168,9 @@ const renderInline = (md: string): string =>
       <p v-else class="text-sm mt-4 italic" style="color: var(--p-text-muted-color)">{{ t('about.integrityUnavailable') }}</p>
     </section>
 
+    <!-- Android app -->
+    <AndroidAppCard />
+
     <!-- Tech stack -->
     <section>
       <h2 class="font-semibold text-xl mb-1">{{ t('about.stackTitle') }}</h2>
