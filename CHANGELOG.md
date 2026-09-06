@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+
+- Signing in with a company account (single sign-on) on Android was refused before it started in 4.7.3. It works again.
+
 ## [4.7.3] - 2026-09-07
 
 ### Security

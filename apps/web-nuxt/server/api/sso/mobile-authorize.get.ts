@@ -37,36 +37,44 @@ export default defineEventHandler(async (event) => {
 
   // Every failure ends at the App Link rather than on a web page, so the browser
   // tab closes back into the app and it can say the round trip failed. The
-  // reason is never echoed: this is a public endpoint and the app only needs to
-  // know that it did not work.
-  const bail = () => {
+  // reason is never echoed to the caller - this is a public endpoint and the app
+  // only needs to know it did not work - but it IS logged, because a silent bail
+  // here is indistinguishable from a user pressing Cancel, and that cost a
+  // release to work out.
+  const bail = (reason: string) => {
+    console.warn(`[sso] mobile-authorize refused: ${reason}`)
     const target = new URL(MOBILE_SSO_CALLBACK_PATH, origin)
     target.searchParams.set('state', isOpaqueNonce(state) ? state : '')
     target.searchParams.set('error', 'sso_failed')
     return sendRedirect(event, target.toString(), 302)
   }
 
-  if (!providerId || !isOpaqueNonce(state) || !isOpaqueNonce(challenge)) return bail()
+  if (!providerId || !isOpaqueNonce(state) || !isOpaqueNonce(challenge)) {
+    return bail('malformed request')
+  }
 
-  // This route drives a whole SSO round trip, and its product is a brand-new
-  // session for whoever's browser followed it. A page that navigates here from
-  // another site is doing that TO someone: it can pick the state and challenge,
-  // let the victim's live IdP session complete the hop silently, and collect the
-  // parked bearer. The app opens this itself, so the legitimate request has no
-  // initiator (`none`) or is same-origin. Absent means a client that does not
-  // send the header at all, which is not evidence of an attack - so this blocks
-  // the values a cross-site navigation actually carries rather than demanding a
-  // value, and cannot break a client that omits it.
-  const site = getRequestHeader(event, 'sec-fetch-site')
-  if (site === 'cross-site' || site === 'same-site') return bail()
+  // A page that navigates here from another site can pick the state and
+  // challenge, let a victim's live IdP session complete the hop silently, and
+  // collect the parked bearer - so a cross-site initiator is worth refusing.
+  //
+  // It is NOT refused yet, deliberately. Blocking on this header shipped in
+  // 4.7.3 and broke the sign-in outright: the tab opened, bailed instantly and
+  // closed, with no log to say why. What a Custom Tab actually sends here was an
+  // assumption, and it was wrong. So the value is recorded and the request
+  // proceeds; the refusal comes back once a real sign-in has shown what the
+  // header holds. App Links verification is the boundary either way - see TODO.
+  const site = getRequestHeader(event, 'sec-fetch-site') ?? '(absent)'
+  console.info(`[sso] mobile-authorize sec-fetch-site=${site}`)
 
-  if (!limiter.allow(getRequestIP(event, { xForwardedFor: true }) ?? 'unknown')) return bail()
+  if (!limiter.allow(getRequestIP(event, { xForwardedFor: true }) ?? 'unknown')) {
+    return bail('rate limited')
+  }
 
   // The /api/auth catch-all gates the CALLBACK on provider status, and calling
   // auth.api directly walks around it. Without this a draft or disabled provider
   // still answers here, which both leaks that it exists and points unsolicited
   // authorize traffic at an IdP the operator has not turned on.
-  if (!(await isProviderEnabled(db, providerId))) return bail()
+  if (!(await isProviderEnabled(db, providerId))) return bail(`provider ${providerId} not enabled`)
 
   try {
     const failure = new URL(MOBILE_SSO_CALLBACK_PATH, origin)
@@ -91,13 +99,13 @@ export default defineEventHandler(async (event) => {
       appendResponseHeader(event, 'set-cookie', cookie)
     }
     const body = (await res.json()) as { url?: unknown }
-    if (typeof body?.url !== 'string' || !body.url) return bail()
+    if (typeof body?.url !== 'string' || !body.url) return bail('sign-in returned no authorize url')
     return sendRedirect(event, body.url, 302)
   } catch (error) {
     // The app is told only that the round trip failed, so without a log here an
     // outage in this route is indistinguishable from a user pressing Cancel.
     console.error('[sso] mobile-authorize failed', error)
-    return bail()
+    return bail('sign-in threw')
   }
 })
 

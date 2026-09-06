@@ -5,6 +5,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Corrigé
+
+- La connexion avec un compte d'entreprise (authentification unique) sur Android était refusée avant même de démarrer en 4.7.3. Elle fonctionne à nouveau.
+
 ## [4.7.3] - 2026-09-07
 
 ### Sécurité

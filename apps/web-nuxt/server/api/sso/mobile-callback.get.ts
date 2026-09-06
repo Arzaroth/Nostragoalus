@@ -36,15 +36,20 @@ export default defineEventHandler(async (event) => {
   try {
     const session = await auth.api.getSession({ headers: event.headers })
     if (!(await isFreshSsoSession(db, session?.session.id))) {
-      throw new ValidationError('no sso sign-in to hand off')
+      throw new ValidationError(
+        session ? 'the session is not fresh enough to hand off' : 'no session on the callback request',
+      )
     }
     const token = getCookie(event, (await auth.$context).authCookies.sessionToken.name) ?? ''
     const code = await parkMobileSsoToken(db, { state, challenge, token })
     target.searchParams.set('state', state)
     target.searchParams.set('code', code)
-  } catch {
-    // Never echo the reason: the app only needs to know the round trip failed,
-    // and a public endpoint should not narrate its internals.
+  } catch (error) {
+    // Never echo the reason to the caller: the app only needs to know the round
+    // trip failed, and a public endpoint should not narrate its internals. It is
+    // logged, though - without that, a refusal here looks exactly like a user
+    // cancelling at the identity provider.
+    console.warn('[sso] mobile-callback refused:', error instanceof Error ? error.message : error)
     target.searchParams.set('state', isOpaqueNonce(state) ? state : '')
     target.searchParams.set('error', 'sso_failed')
   }

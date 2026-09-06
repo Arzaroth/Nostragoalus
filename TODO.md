@@ -2998,8 +2998,12 @@ The big one, and the reason everything below is possible:
       signing certificate the domain vouches for, so the whole flow rests on
       `NUXT_ANDROID_CERT_FINGERPRINTS` matching the published APK and on Android
       reporting the domain `verified`. Mitigated, not closed: the route refuses a
-      cross-site navigation (`Sec-Fetch-Site`), is rate limited, and gates on
-      provider status. A real fix needs the redemption bound to the app instance
+      cross-site navigation, is rate limited, and gates on provider status.
+      **The Sec-Fetch-Site refusal is currently observe-only**: enforcing it in
+      4.7.3 broke the sign-in outright (the tab opened, bailed and closed, with
+      nothing logged), because what a Custom Tab sends there was a guess. The
+      value is logged now; re-enable the refusal against the value a real
+      sign-in shows, not against an assumption. A real fix needs the redemption bound to the app instance
       that started the flow (attestation), which needs a Play account.
 - [ ] CI (`.github/workflows/ci.yml`) runs only the web gate, so the Flutter
       suite - and with it every cross-stack guard in `sso_test.dart`, the thing

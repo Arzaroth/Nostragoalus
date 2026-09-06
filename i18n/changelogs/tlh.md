@@ -5,6 +5,10 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### tI'pu'
+
+- 4.7.3: Android SSO 'el taghpu'be', lajQo'lu'pu'. DaH Qapqa'.
+
 ## [4.7.3] - 2026-09-07
 
 ### Hubqu'moH
