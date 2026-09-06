@@ -20,6 +20,14 @@ import '../state/providers.dart';
 /// server cannot complete this flow.
 const ssoCallbackPath = '/mobile/sso-callback';
 
+/// Where better-auth is told to land, which is NOT [ssoCallbackPath]. better-auth
+/// ends an SSO sign-in by setting a session cookie and redirecting verbatim, so a
+/// redirect straight to the App Link arrives with no credential and no code -
+/// the app would intercept it, find no `code`, and fail every time. This server
+/// route runs with that cookie, parks the bearer, and only then redirects to the
+/// App Link with the single-use code appended.
+const ssoParkPath = '/api/sso/mobile-callback';
+
 /// The ONE query parameter the callback carries the exchange code in. It is
 /// pinned, not probed: adopting whichever of several parameter names happens to
 /// be present is how an attacker-chosen value gets used.
@@ -97,7 +105,7 @@ class SsoService {
     // Relative, so better-auth resolves it against its own baseURL and no extra
     // trusted origin has to be configured for the app to sign in.
     final callbackUrl = Uri(
-      path: ssoCallbackPath,
+      path: ssoParkPath,
       queryParameters: {ssoStateParam: state, ssoChallengeParam: challenge},
     ).toString();
 

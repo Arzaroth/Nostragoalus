@@ -46,6 +46,45 @@ void main() {
     );
   }
 
+  test('better-auth is sent to the park route, not to the App Link', () async {
+    // The App Link is where the app listens; it is not where better-auth may
+    // land. better-auth redirects verbatim after setting a cookie, so pointing
+    // it at the App Link delivers no code and no credential. Only
+    // /api/sso/mobile-callback runs with that cookie and can mint the code.
+    final t = build((cb) => '${cb.replace(queryParameters: {
+          ssoStateParam: cb.queryParameters[ssoStateParam],
+          ssoCodeParam: 'the-code',
+        })}');
+    await t.sso.signIn('idp');
+    expect(t.callbacks.single.path, ssoParkPath);
+    expect(t.callbacks.single.path, isNot(ssoCallbackPath));
+    expect(t.callbacks.single.queryParameters[ssoChallengeParam], isNotNull,
+        reason: 'the park route binds the code to our challenge');
+  });
+
+  test('signs in against a callback that behaves like the real server', () async {
+    // The other cases hand the app a redirect built from whatever callbackURL it
+    // asked for, which cannot fail on a wrong one. This one plays the server:
+    // a code exists only because the request went through the park route.
+    final t = build((cb) {
+      if (cb.path != ssoParkPath) {
+        // better-auth redirecting verbatim: the App Link, no code appended.
+        return Uri.parse('https://goal.arzaroth.com')
+            .replace(path: cb.path, queryParameters: cb.queryParameters)
+            .toString();
+      }
+      return Uri.parse('https://goal.arzaroth.com').replace(
+        path: ssoCallbackPath,
+        queryParameters: {
+          ssoStateParam: cb.queryParameters[ssoStateParam],
+          ssoCodeParam: 'the-code',
+        },
+      ).toString();
+    });
+    expect(await t.sso.signIn('idp'), isTrue);
+    expect(t.tokens.token, 'bearer-from-exchange');
+  });
+
   test('the callback must echo the state we generated', () async {
     final t = build((_) => 'https://goal.arzaroth.com$ssoCallbackPath?state=forged&code=stolen');
     await expectLater(t.sso.signIn('idp'), throwsA(isA<SsoException>()));
