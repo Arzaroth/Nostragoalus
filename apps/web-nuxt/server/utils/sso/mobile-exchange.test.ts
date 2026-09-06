@@ -4,7 +4,14 @@ import { eq } from 'drizzle-orm'
 import { createTestDb } from '../../../tests/db'
 import { verification } from '../../../db/schema'
 import { NotFoundError, ValidationError } from '../errors'
-import { isOpaqueNonce, MOBILE_SSO_CALLBACK_PATH, parkMobileSsoToken, redeemMobileSsoCode } from './mobile-exchange'
+import {
+  isFreshSsoSession,
+  isOpaqueNonce,
+  MOBILE_SSO_CALLBACK_PATH,
+  MOBILE_SSO_MAX_SESSION_AGE_MS,
+  parkMobileSsoToken,
+  redeemMobileSsoCode,
+} from './mobile-exchange'
 
 const nonce = () => randomBytes(32).toString('base64url')
 const challengeOf = (verifier: string) => createHash('sha256').update(verifier).digest('base64url')
@@ -122,5 +129,37 @@ describe('mobile SSO exchange', () => {
     expect(isOpaqueNonce('has spaces and is long enough')).toBe(false)
     expect(isOpaqueNonce(undefined)).toBe(false)
     expect(MOBILE_SSO_CALLBACK_PATH.startsWith('/')).toBe(true)
+  })
+})
+
+describe('isFreshSsoSession', () => {
+  const now = new Date('2026-09-06T12:00:00Z')
+  const ago = (ms: number) => new Date(now.getTime() - ms)
+
+  it('accepts the session better-auth just created', () => {
+    // The real flow arrives milliseconds after createSession, so this is the
+    // only shape the callback should ever hand over.
+    expect(isFreshSsoSession(now, now)).toBe(true)
+    expect(isFreshSsoSession(ago(500), now)).toBe(true)
+    expect(isFreshSsoSession(ago(MOBILE_SSO_MAX_SESSION_AGE_MS), now)).toBe(true)
+  })
+
+  it('refuses a session the browser was already carrying', () => {
+    // The attack this exists for: a public GET that turns any logged-in
+    // browser's ambient cookie into a redeemable bearer.
+    expect(isFreshSsoSession(ago(MOBILE_SSO_MAX_SESSION_AGE_MS + 1), now)).toBe(false)
+    expect(isFreshSsoSession(ago(60 * 60 * 1000), now)).toBe(false)
+    expect(isFreshSsoSession(ago(30 * 24 * 60 * 60 * 1000), now)).toBe(false)
+  })
+
+  it('refuses a request with no session at all', () => {
+    expect(isFreshSsoSession(null, now)).toBe(false)
+    expect(isFreshSsoSession(undefined, now)).toBe(false)
+    expect(isFreshSsoSession('not a date', now)).toBe(false)
+  })
+
+  it('reads an ISO string, and tolerates a clock running ahead', () => {
+    expect(isFreshSsoSession(ago(1_000).toISOString(), now)).toBe(true)
+    expect(isFreshSsoSession(new Date(now.getTime() + 30_000), now)).toBe(true)
   })
 })

@@ -30,6 +30,32 @@ export const MOBILE_SSO_CALLBACK_PATH = '/mobile/sso-callback'
 // into a redirect can only ever carry [A-Za-z0-9_-].
 const OPAQUE = /^[A-Za-z0-9_-]{16,128}$/
 
+// How new the session must be for the callback to hand it over.
+//
+// Without this the route is a CSRF that mints a credential: it is a public GET
+// that reads whatever session cookie the browser happens to carry and parks THAT
+// bearer behind a code bound only to values the caller chose. Anyone who can
+// make a logged-in browser follow a link - and then receive the redirect, which
+// takes an unverified App Link - redeems someone else's session. PKCE does not
+// help, because the attacker supplied the challenge.
+//
+// better-auth's SSO callback always mints a NEW session (handleOAuthUserInfo ->
+// internalAdapter.createSession) and redirects here in the same breath, so the
+// legitimate arrival is milliseconds old. A long-lived browser session is not
+// this flow's session and is never handed over. Two minutes is slack for a slow
+// IdP hop and a phone with a bad clock, and still nowhere near a session's life.
+export const MOBILE_SSO_MAX_SESSION_AGE_MS = 2 * 60 * 1000
+
+// A future timestamp counts as fresh: clock skew between the app server and the
+// database is not evidence of an attack, and nobody who can set createdAt into
+// the future needs this endpoint.
+export function isFreshSsoSession(createdAt: Date | string | null | undefined, now: Date = new Date()): boolean {
+  if (!createdAt) return false
+  const created = createdAt instanceof Date ? createdAt : new Date(createdAt)
+  if (Number.isNaN(created.getTime())) return false
+  return now.getTime() - created.getTime() <= MOBILE_SSO_MAX_SESSION_AGE_MS
+}
+
 // Ten exchanges a minute per caller is ample for a human sign-in; the budget
 // only exists to stop someone grinding the code space.
 const limiter = createRateLimiter({ limit: 10, windowMs: 60_000 })

@@ -1,6 +1,12 @@
 import { auth } from '../../../lib/auth'
 import { db } from '../../../db'
-import { isOpaqueNonce, MOBILE_SSO_CALLBACK_PATH, parkMobileSsoToken } from '../../utils/sso/mobile-exchange'
+import {
+  isFreshSsoSession,
+  isOpaqueNonce,
+  MOBILE_SSO_CALLBACK_PATH,
+  parkMobileSsoToken,
+} from '../../utils/sso/mobile-exchange'
+import { ValidationError } from '../../utils/errors'
 
 // Public redirect target better-auth sends the mobile app's SSO round trip to.
 // Same exposure as /api/sso/test-callback: unauthenticated, reached by a
@@ -14,12 +20,24 @@ import { isOpaqueNonce, MOBILE_SSO_CALLBACK_PATH, parkMobileSsoToken } from '../
 // cookie value IS what the bearer plugin hands out as `set-auth-token`, so it is
 // the bearer the app needs. It gets parked behind a single-use code and never
 // touches the URL.
+//
+// Only a session better-auth just created is handed over - see
+// isFreshSsoSession. A cookie for some older session belongs to the browser, not
+// to this flow, and handing it to whoever followed a link is how a public GET
+// becomes credential theft.
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const state = typeof query.state === 'string' ? query.state : ''
   const challenge = typeof query.challenge === 'string' ? query.challenge : ''
-  const target = new URL(MOBILE_SSO_CALLBACK_PATH, getRequestURL(event).origin)
+  // The app's own origin, not the request's: Host is caller-controlled, and this
+  // route's whole output is a Location header.
+  const configured = process.env.BETTER_AUTH_URL ?? process.env.NUXT_PUBLIC_AUTH_URL
+  const target = new URL(MOBILE_SSO_CALLBACK_PATH, configured || getRequestURL(event).origin)
   try {
+    const session = await auth.api.getSession({ headers: event.headers })
+    if (!isFreshSsoSession(session?.session.createdAt)) {
+      throw new ValidationError('no sso sign-in to hand off')
+    }
     const token = getCookie(event, (await auth.$context).authCookies.sessionToken.name) ?? ''
     const code = await parkMobileSsoToken(db, { state, challenge, token })
     target.searchParams.set('state', state)

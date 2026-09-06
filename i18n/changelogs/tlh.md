@@ -5,6 +5,10 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### Hubqu'moH
+
+- Android De'wI'Hom: SSO 'el nobHa'meH mIw Hubqu'lu'. DaH 'elmeH chu'bogh qep neH ngeHlu'; qep tIQ, ngeHbe'lu'.
+
 ## [4.7.2] - 2026-09-06
 
 ### tI'pu'

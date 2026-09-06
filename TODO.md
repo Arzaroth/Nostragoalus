@@ -2974,19 +2974,17 @@ The big one, and the reason everything below is possible:
       SHA-256 is the server's `NUXT_ANDROID_CERT_FINGERPRINTS`, and `apk-publish`
       refuses to publish when no keystore is configured rather than letting
       `build.gradle.kts` fall back to the debug key. Still no Play account.
-- [ ] **The mobile SSO park route mints a bearer from whatever session cookie the
-      browser happens to hold.** `GET /api/sso/mobile-callback` is public and
-      unauthenticated: it reads the session cookie, parks that bearer under a
-      code bound only to the caller's own `state`/`challenge`, and redirects to
-      the App Link. Nothing proves an SSO flow just completed for that browser.
-      The only thing standing between that and session theft is App Links
-      verification - if a malicious app can receive `/mobile/sso-callback` (an
-      unverified link, a chooser, the CustomTabs fallback), it can pick its own
-      state and verifier, navigate the victim's logged-in browser to the park
-      route, and redeem the victim's session. PKCE does not help: the attacker
-      supplied the challenge. Pre-existing (v4.6.0), and this branch is what puts
-      it on the live path. Bind the parked token to something only the real flow
-      has, rather than to caller-chosen values.
+- [x] **The mobile SSO park route minted a bearer from whatever session cookie
+      the browser happened to hold.** `GET /api/sso/mobile-callback` is public and
+      unauthenticated: it read the session cookie and parked that bearer under a
+      code bound only to the caller's own `state`/`challenge`, with nothing
+      proving an SSO flow had just completed for that browser. Only App Links
+      verification stood between that and session theft. Done: the route now
+      hands over a session only while it is under two minutes old
+      (`isFreshSsoSession`), which is what better-auth's SSO callback always
+      produces (`handleOAuthUserInfo` -> `createSession`, then redirect) and what
+      an ambient long-lived cookie never is. The redirect origin is also pinned to
+      the configured `BETTER_AUTH_URL` instead of the request `Host`.
 - [ ] A cold start that cannot reach the server now resolves to signed-out with
       no explanation at all: `AuthController.build()` swallows the failure, so
       `err.offline` only ever renders after the user submits credentials. Better

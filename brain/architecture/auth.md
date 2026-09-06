@@ -228,7 +228,17 @@ The handoff, all of it in
 2. `GET /api/sso/mobile-callback` (public, unauthenticated, same exposure as
    `test-callback`) runs after better-auth created the session, so the request
    carries the session cookie. That cookie value **is** what `bearer()` hands out
-   as `set-auth-token`. `parkMobileSsoToken` stores it in the `verification`
+   as `set-auth-token`. It hands over **only a session created in the last two
+   minutes** (`isFreshSsoSession`): better-auth's SSO callback always mints a new
+   session and redirects here in the same breath, so the real arrival is
+   milliseconds old, while the ambient cookie of an already-signed-in browser is
+   not this flow's session. Without that check the route is a CSRF that mints a
+   credential - a public GET turning whatever cookie the browser carries into a
+   redeemable bearer bound only to values the caller chose, which anyone who can
+   make a logged-in browser follow a link and then receive the redirect (an
+   unverified App Link) could redeem. PKCE does not help there, because the
+   attacker supplied the challenge. The redirect origin comes from the
+   configured `BETTER_AUTH_URL`, not from the request's `Host`. `parkMobileSsoToken` stores it in the `verification`
    table under `_sso-mobile-<sha256(code)>` with a **2-minute** TTL, bound to the
    state and challenge, and the route 302s to
    `<origin>/mobile/sso-callback?state=&code=` - a verified App Link / Universal
