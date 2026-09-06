@@ -1589,6 +1589,7 @@
   },
   "err": {
     "signInFailed": "Sign in failed. Check your email and password.",
+    "offline": "Can't reach Nostragoalus. Check your connection and try again.",
     "notFound": "This one sailed over the bar - the page you're looking for is lost among the stars.",
     "generic": "Something went wrong on our side.",
     "teapot": "I'm a teapot. You asked it to brew something it just can't - so it is, politely, refusing.",

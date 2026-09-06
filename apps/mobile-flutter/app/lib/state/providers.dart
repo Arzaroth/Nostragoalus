@@ -121,8 +121,17 @@ class AuthController extends AsyncNotifier<AuthUser?> {
   @override
   Future<AuthUser?> build() async {
     ref.watch(sessionRevokedProvider);
-    await ref.watch(tokenStoreProvider).load();
-    return ref.watch(authRepositoryProvider).currentUser();
+    // A restore that fails means "not signed in", never "bad credentials". Both
+    // calls below can throw on a cold start - the keystore read after an APK
+    // upgrade, and any transport failure, which currentUser() does not catch -
+    // and an error here is what the sign-in screen renders. Left unguarded it
+    // accused the user of a typo on a form they had not touched yet.
+    try {
+      await ref.watch(tokenStoreProvider).load();
+      return await ref.watch(authRepositoryProvider).currentUser();
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> signIn(String email, String password) async {

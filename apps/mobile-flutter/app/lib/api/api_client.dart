@@ -8,6 +8,13 @@ import 'token_store.dart';
 Map<String, dynamic>? competitionQuery(String? competition) =>
     competition == null ? null : {'competition': competition};
 
+/// True when the request never got an answer - DNS, refused, timed out, TLS.
+/// `validateStatus` accepts every status, so Dio only throws for transport
+/// failures; anything the server actually answered is an [ApiException]. The UI
+/// needs the difference: "we could not reach the server" is not "your password
+/// is wrong", and telling the user the latter sends them to reset a fine one.
+bool isOfflineError(Object? error) => error is DioException;
+
 /// Thrown for a non-2xx API response, carrying the status so callers (and the
 /// auth layer) can branch on 401 without re-parsing Dio internals.
 class ApiException implements Exception {

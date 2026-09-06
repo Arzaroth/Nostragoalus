@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../api/api_client.dart';
 import '../auth/sso.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
@@ -164,7 +165,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                       if (auth.hasError) ...[
                         const SizedBox(height: 12),
                         Text(
-                          context.tr('err.signInFailed'),
+                          context.tr(isOfflineError(auth.error)
+                              ? 'err.offline'
+                              : 'err.signInFailed'),
                           style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error),
                           textAlign: TextAlign.center,
                         ),

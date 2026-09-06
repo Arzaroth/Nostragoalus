@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostragoalus/api/models.gen.dart';
+import 'package:nostragoalus/api/api_client.dart';
 import 'package:nostragoalus/api/token_store.dart';
 import 'package:nostragoalus/state/app_prefs.dart';
 import 'package:nostragoalus/state/providers.dart';
@@ -96,6 +97,84 @@ void main() {
       expect(c.read(presenceProvider), isEmpty);
       expect(c.read(viewersProvider), isEmpty);
       expect(c.read(viewedMatchProvider), isNull);
+    });
+  });
+
+  group('session restore failures do not become a credentials error', () {
+    // The sign-in screen renders any error on this notifier as "check your email
+    // and password". A cold start that cannot read the keystore or cannot reach
+    // the server must therefore resolve to signed-out, not to an error.
+    Future<void> expectQuietSignedOut(ProviderContainer c) async {
+      expect(await c.read(authControllerProvider.future), isNull);
+      expect(c.read(authControllerProvider).hasError, isFalse);
+    }
+
+    test('an unreachable server resolves to signed-out', () async {
+      final dio = Dio()
+        ..httpClientAdapter = RouteAdapter({
+          '/api/auth/get-session': () => throw DioException.connectionError(
+                requestOptions: RequestOptions(path: '/api/auth/get-session'),
+                reason: 'unreachable',
+              ),
+        });
+      final kv = InMemoryKv();
+      await kv.write('ng_bearer', 'tok');
+      final c = ProviderContainer(overrides: [
+        dioProvider.overrideWithValue(dio),
+        tokenStoreProvider.overrideWithValue(TokenStore(kv)),
+      ]);
+      addTearDown(c.dispose);
+      await expectQuietSignedOut(c);
+    });
+
+    test('a keystore read that throws resolves to signed-out', () async {
+      final dio = Dio()
+        ..httpClientAdapter = RouteAdapter({
+          '/api/auth/get-session': () => Reply(200, {'user': {'id': 'a', 'email': 'a@x'}}),
+        });
+      final c = ProviderContainer(overrides: [
+        dioProvider.overrideWithValue(dio),
+        tokenStoreProvider.overrideWithValue(TokenStore(_ThrowingKv())),
+      ]);
+      addTearDown(c.dispose);
+      await expectQuietSignedOut(c);
+    });
+
+    test('but a failed sign-in still surfaces its error', () async {
+      final dio = Dio()
+        ..httpClientAdapter = RouteAdapter({
+          '/api/auth/sign-in/email': () => Reply(401, {'error': 'bad'}),
+          '/api/auth/get-session': () => Reply(401, {'error': 'bad'}),
+        });
+      final c = ProviderContainer(overrides: [
+        dioProvider.overrideWithValue(dio),
+        tokenStoreProvider.overrideWithValue(TokenStore(InMemoryKv())),
+      ]);
+      addTearDown(c.dispose);
+      await c.read(authControllerProvider.future);
+      await c.read(authControllerProvider.notifier).signIn('a@x', 'nope');
+      expect(c.read(authControllerProvider).hasError, isTrue);
+      expect(isOfflineError(c.read(authControllerProvider).error), isFalse,
+          reason: 'the server answered, so this is a credentials failure');
+    });
+
+    test('a sign-in that cannot reach the server is classified as offline', () async {
+      final dio = Dio()
+        ..httpClientAdapter = RouteAdapter({
+          '/api/auth/sign-in/email': () => throw DioException.connectionError(
+                requestOptions: RequestOptions(path: '/api/auth/sign-in/email'),
+                reason: 'unreachable',
+              ),
+        });
+      final c = ProviderContainer(overrides: [
+        dioProvider.overrideWithValue(dio),
+        tokenStoreProvider.overrideWithValue(TokenStore(InMemoryKv())),
+      ]);
+      addTearDown(c.dispose);
+      await c.read(authControllerProvider.future);
+      await c.read(authControllerProvider.notifier).signIn('a@x', 'pw');
+      expect(c.read(authControllerProvider).hasError, isTrue);
+      expect(isOfflineError(c.read(authControllerProvider).error), isTrue);
     });
   });
 
@@ -268,4 +347,15 @@ void main() {
     await m.read(setJokerProvider)('l1', ModeValue.easy, 'm1', true);
     expect(modedAdapter.requests.single.path, '/api/leagues/l1/joker');
   });
+}
+
+/// A keystore that fails to read, as flutter_secure_storage does when the
+/// platform key is gone (reinstall, restored backup, changed signing key).
+class _ThrowingKv implements SecureKv {
+  @override
+  Future<String?> read(String key) async => throw Exception('keystore unavailable');
+  @override
+  Future<void> write(String key, String value) async {}
+  @override
+  Future<void> delete(String key) async {}
 }
