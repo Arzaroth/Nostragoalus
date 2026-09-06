@@ -764,6 +764,10 @@ effort buckets; order within a bucket is not priority.
     the web: night ground, chalk hairline panels, Barlow + Barlow Condensed
     scoreboard numerals, coherent light mode and RTL. On `feat/mobile-design-v2`,
     awaiting feature-treatment.
+  - [x] **The Android app is downloadable from the site** (v4.7.0): /about lists
+    the published build with its version, size and SHA-256, and every public page
+    links to it. The APK is a bind-mounted deploy artifact, not part of the web
+    image, so publishing a new build is a file copy with no redeploy.
   - [ ] Remaining: mobile push (needs new server FCM endpoints - the server
     speaks only web-push/VAPID), a real upload keystore (release currently
     signs with the debug key), coverage measurement in the mobile gate, and

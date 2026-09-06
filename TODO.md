@@ -2843,6 +2843,45 @@ majors a HIGH advisory forced: `nuxt` 4.4.7 -> 4.5.2 and `nodemailer` 8 -> 9.
       in each spec - worth doing if the override ever fights a Nuxt upgrade.
 ## Mobile app - deferred from the Floodlit design pass (feat/mobile-design-v2)
 
+Carried over from the max-effort review of that branch (all confirmed, none
+blocking):
+
+- [ ] `bracket_screen`'s `_TieRow` re-implements `MatchCard` (same mirrored
+      flag+name helper, same Expanded/ScorePill/Expanded row, same paddings), so
+      the bracket silently stops matching the fixtures list whenever MatchCard
+      changes. Making `MatchCard.kickoffLabel` optional would delete the class.
+- [ ] `leaderboard_screen` hand-rolls `Panel`'s surface as a `DecoratedSliver` and
+      computes each row's corner radius itself; `LeaderboardRowCard.radius` exists
+      only to serve that one caller. A `SliverPanel` would own both, and
+      `multiview_screen` + `map_screen` re-spell the same board surface too.
+- [ ] The "this row is you / selected" tint has no token: three alphas (0.08,
+      0.10, 0.14) and two blending mechanisms across 8 sites, so the same concept
+      renders at different strengths on the leaderboard, the champion screen and
+      the DM inbox.
+- [ ] The "big points numeral over a quiet pts caption" cell is rebuilt in 4
+      files at 2 sizes; the kickoff-label format (`medium date · time`) is
+      composed inline in 3; the 3px leading accent bar is spelled out in 3 with a
+      magic width. Each wants one small shared widget.
+- [ ] The busy-button "spinner or label" child is inlined in 11 places at two
+      inconsistent sizes (18 and 20, both inside `sign_in_screen`). Pre-existing,
+      but the design pass touched most of those files.
+- [ ] The secret "code on a raised block" surface is built twice
+      (`recovery_setup_screen`, `two_factor_screen`) with drifted padding and a
+      text style that inherits no size in one of them.
+
+## App downloads - deferred
+
+- [ ] `/download/nostragoalus.apk` sets an ETag but does not handle
+      `If-None-Match`, so a revalidating client re-downloads the whole ~60 MB
+      instead of taking a 304.
+- [ ] The Android build's response shape is declared three times: the service
+      interface, the route's zod schema, and a hand-typed copy in
+      `AndroidAppCard.vue`. The client copy is structural only, so a renamed
+      field type-checks while reading undefined.
+- [ ] The about page's metadata `<dt>` class string is repeated five times across
+      `about.vue` and `AndroidAppCard.vue`, already with one unexplained variant.
+
+
 - [ ] The DM inbox row has no last-message preview: `Thread` only carries
       `lastMessageAt` (the body is E2EE ciphertext server-side), so the muted
       line is the time. A client-side decrypted preview needs the thread key
