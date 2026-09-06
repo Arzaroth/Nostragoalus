@@ -196,8 +196,6 @@ class _Identity extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(l.name, style: theme.textTheme.headlineSmall),
-              const SizedBox(height: 10),
               Wrap(
                 spacing: 6,
                 runSpacing: 6,
