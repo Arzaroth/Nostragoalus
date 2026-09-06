@@ -25,7 +25,7 @@ const megabytes = computed(() => {
   const bytes = build.value?.sizeBytes
   return bytes == null ? null : (bytes / 1024 / 1024).toFixed(1)
 })
-const groupedDigest = computed(() => (build.value?.sha256?.match(/.{1,8}/g) ?? []).join(' '))
+const groupedDigest = computed(() => groupDigest(build.value?.sha256))
 // The ISO day, not a locale-formatted date: this renders on the server and
 // again in the browser, and a locale/timezone-dependent string would mismatch.
 const publishedOn = computed(() => build.value?.builtAt?.slice(0, 10) ?? null)

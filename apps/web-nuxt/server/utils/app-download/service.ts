@@ -1,10 +1,10 @@
 import { createHash } from 'node:crypto'
 import { createReadStream } from 'node:fs'
-import { readFile, stat } from 'node:fs/promises'
+import { lstat, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
 // The Android build the site offers for download. It is NOT part of the web
-// image: `mise run apk-publish` builds it from apps/mobile-flutter and drops it
+// image: `mise -C apps/mobile-flutter run apk-publish` builds it from apps/mobile-flutter and drops it
 // in the directory the app serves from (bind-mounted in the deploy), so a new
 // APK ships without rebuilding or redeploying the site.
 export const APK_FILENAME = 'nostragoalus.apk'
@@ -41,9 +41,15 @@ export function apkPath(dir: string): string {
 // file only changes when a new build is published, so key the digest on the
 // identity the filesystem already gives us.
 const digests = new Map<string, string>()
+// Hashes in flight, by the same key. The endpoint is public and unauthenticated,
+// so without this a burst arriving on a cold cache starts one full-file hash per
+// request and pins the event loop; sharing the first promise makes the burst cost
+// exactly one pass.
+const hashing = new Map<string, Promise<string>>()
 
 export function clearAndroidBuildCache(): void {
   digests.clear()
+  hashing.clear()
 }
 
 export async function sha256File(path: string): Promise<string> {
@@ -76,19 +82,26 @@ async function readSidecar(dir: string): Promise<{ version: string | null; built
 /// none (the default state: nothing is published until the deploy drops one in).
 export async function readAndroidBuild(dir: string): Promise<AndroidBuild> {
   const path = apkPath(dir)
-  let info: Awaited<ReturnType<typeof stat>>
+  let info: Awaited<ReturnType<typeof lstat>>
   try {
-    info = await stat(path)
+    info = await lstat(path)
   } catch {
     return NO_ANDROID_BUILD
   }
-  // A directory (or anything else) sitting at that name is not a download.
+  // lstat, not stat: a directory is obviously not a download, and a symlink is
+  // refused rather than followed, so whoever can write to the directory cannot
+  // turn it into a read of any other file in the container.
   if (!info.isFile() || info.size === 0) return NO_ANDROID_BUILD
 
   const key = `${path}:${info.mtimeMs}:${info.size}`
   let sha256 = digests.get(key)
   if (!sha256) {
-    sha256 = await sha256File(path)
+    let inFlight = hashing.get(key)
+    if (!inFlight) {
+      inFlight = sha256File(path).finally(() => hashing.delete(key))
+      hashing.set(key, inFlight)
+    }
+    sha256 = await inFlight
     // One entry per published build; a replaced APK makes the old key unreachable.
     digests.clear()
     digests.set(key, sha256)

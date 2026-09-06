@@ -582,7 +582,16 @@ See [features/mobile-app.md](features/mobile-app.md).
   (one family, two widths, OFL) because platform fonts differ per device and
   the condensed numerals are the identity. Light mode is kept coherent, not
   dropped, because the preference already exists on the account.
-  See [../features/mobile-app.md](../features/mobile-app.md).
+  See [features/mobile-app.md](features/mobile-app.md).
+- **The Android APK is a deploy artifact the site serves, not part of the web
+  image.** The web build has no Flutter toolchain, so baking the APK in would
+  couple every site release to an app build and put a ~60 MB binary in every
+  layer. Instead the app reads it off a bind-mounted directory at request time:
+  publishing a new build is a file copy, with no image rebuild, no redeploy and
+  no restart. The publish task stages and renames rather than copying in place,
+  because the server stats and hashes the file before streaming it and an
+  in-place overwrite would serve one build's bytes under another's length and
+  digest. See [features/app-downloads.md](features/app-downloads.md).
 - **A dependency whose feature is not built does not ship.**
   `flutter_callkit_incoming` was reachable only from dead Phase-0 spike code, yet
   merged `MANAGE_OWN_CALLS`, `USE_FULL_SCREEN_INTENT`, `DISABLE_KEYGUARD` and

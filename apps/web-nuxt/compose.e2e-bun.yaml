@@ -24,6 +24,8 @@ services:
     # dir is writable; Bun-as-non-root is validated separately. This stack exists
     # to exercise the Bun runtime over real HTTP, not the prod user.
     user: root
+    volumes:
+      - ./.data/downloads:/data/downloads:ro
     env_file:
       - path: .env
         required: false
@@ -41,6 +43,10 @@ services:
       NUXT_PUBLIC_AUTH_URL: http://localhost:3100
       BETTER_AUTH_URL: http://localhost:3100
       NUXT_ADMIN_EMAILS: verify@example.com
+      # The APK-download spec publishes its fixture from the host. app-bun runs
+      # the production build (which would read /data/downloads) and does not
+      # bind-mount the repo, so that path is mounted in above.
+      NUXT_APP_DOWNLOAD_DIR: /data/downloads
       # Self-contained fs storage (root-writable); these specs don't upload, so
       # this just avoids pulling in rustfs.
       NUXT_STORAGE_DRIVER: fs

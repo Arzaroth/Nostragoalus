@@ -25,7 +25,7 @@ const { data: integrity } = useFetch<BuildIntegrity | null>('/build-integrity.js
   // A missing file (dev, or a build without the post-step) is expected, not an error.
   default: () => null,
 })
-const groupedDigest = computed(() => (integrity.value?.digest.match(/.{1,8}/g) ?? []).join(' '))
+const groupedDigest = computed(() => groupDigest(integrity.value?.digest))
 
 // Parsed changelog + "since last seen" marker. Snapshot what the user had seen
 // BEFORE this visit marks everything read, so the newer entries stay
@@ -104,6 +104,15 @@ const stack: { group: string; items: StackItem[] }[] = [
       { name: 'resvg-js', icon: 'pi pi-image', desc: 'A high-performance SVG renderer and toolkit, powered by Rust', url: 'https://github.com/yisibl/resvg-js', license: 'MPL-2.0', licenseUrl: 'https://github.com/yisibl/resvg-js/blob/main/LICENSE' },
       { name: 'aws4fetch', icon: 'pi pi-cloud', desc: 'A compact AWS request signer (SigV4) for fetch', url: 'https://github.com/mhart/aws4fetch', license: 'MIT', licenseUrl: 'https://github.com/mhart/aws4fetch/blob/master/LICENSE' },
       { name: 'RustFS', icon: 'pi pi-database', desc: 'A high-performance, S3-compatible distributed object storage', url: 'https://rustfs.com', license: 'Apache-2.0', licenseUrl: 'https://github.com/rustfs/rustfs/blob/main/LICENSE' },
+    ],
+  },
+  {
+    group: 'Mobile app',
+    items: [
+      { name: 'Flutter', logo: 'flutter', desc: 'Build apps for any screen', url: 'https://flutter.dev', license: 'BSD-3-Clause', licenseUrl: 'https://github.com/flutter/flutter/blob/master/LICENSE' },
+      { name: 'Dart', logo: 'dart', desc: 'A client-optimized language for fast apps on any platform', url: 'https://dart.dev', license: 'BSD-3-Clause', licenseUrl: 'https://github.com/dart-lang/sdk/blob/main/LICENSE' },
+      { name: 'Barlow', icon: 'pi pi-pencil', desc: 'A grotesk type family, and the app\'s scoreboard face', url: 'https://tribby.com/fonts/barlow/', license: 'OFL-1.1', licenseUrl: 'https://github.com/jpt/barlow/blob/main/OFL.txt' },
+      { name: 'libsodium', icon: 'pi pi-lock', desc: 'A modern, portable, easy-to-use crypto library', url: 'https://doc.libsodium.org', license: 'ISC', licenseUrl: 'https://github.com/jedisct1/libsodium/blob/master/LICENSE' },
     ],
   },
   {

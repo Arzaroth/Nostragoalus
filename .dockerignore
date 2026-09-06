@@ -14,6 +14,8 @@ apps/web-nuxt/node_modules
 apps/web-nuxt/.nuxt
 apps/web-nuxt/.output
 apps/web-nuxt/.data
+# The published APK is a deploy artifact served from a bind mount, never baked in.
+apps/web-nuxt/downloads
 
 # Cross-app shared DATA: locale JSON is read at build via the app's
 # i18n/locales symlink into here; keep it in context so the symlink resolves.

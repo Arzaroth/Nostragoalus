@@ -1,4 +1,5 @@
 import { createReadStream } from 'node:fs'
+import { pipeline } from 'node:stream/promises'
 import { androidDownloadDir, apkPath, downloadFilename, readAndroidBuild } from '../../utils/app-download'
 
 // Serves the published Android APK. The path is fixed (no user input reaches the
@@ -21,5 +22,14 @@ export default defineEventHandler(async (event) => {
     etag: `"${build.sha256}"`,
     'cache-control': 'no-cache',
   })
-  return sendStream(event, createReadStream(apkPath(dir)))
+  // pipeline, not sendStream: h3's sendStream cancels with `stream.abort()`, which
+  // fs.ReadStream does not implement, so a cancelled download (a dropped mobile
+  // link on a ~60 MB file) would leak the file descriptor and never settle.
+  // pipeline destroys the read stream on abort and always resolves or rejects.
+  try {
+    await pipeline(createReadStream(apkPath(dir)), event.node.res)
+  } catch {
+    // The client went away mid-download. The stream is already destroyed and the
+    // response is gone, so there is nothing to report and nothing to clean up.
+  }
 })

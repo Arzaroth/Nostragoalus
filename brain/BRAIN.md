@@ -80,6 +80,7 @@ use the indexes.
 | [past-pick-counterfactual.md](features/past-pick-counterfactual.md) | Owner-only "an earlier pick of yours would have scored", live + full-time. |
 | [share-images.md](features/share-images.md) | Prediction share cards. |
 | [pwa.md](features/pwa.md) | Install + update UX. |
+| [app-downloads.md](features/app-downloads.md) | Serving the Android APK from the site, and how a new build is published. |
 | [image-storage.md](features/image-storage.md) | Blobs out of Postgres (feature view). |
 | [changelog.md](features/changelog.md) | In-app release history + "What's new" badge, rendered by locale. |
 | [achievements.md](features/achievements.md) | Competition-end trophies + milestone badges, the trophy cabinet and "my showcase". |
@@ -111,6 +112,7 @@ use the indexes.
 | How does a brand-new player learn the app (the spotlight tour)? | [features/onboarding-tour.md](features/onboarding-tour.md) |
 | What's the konami easter egg? | [features/easter-eggs.md](features/easter-eggs.md) |
 | How do I run or gate the Flutter mobile app? | [features/mobile-app.md](features/mobile-app.md) |
+| How do people get the Android app, and how do I publish a new APK? | [features/app-downloads.md](features/app-downloads.md) |
 
 ## Maintaining the brain
 

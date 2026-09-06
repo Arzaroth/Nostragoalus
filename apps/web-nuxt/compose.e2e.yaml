@@ -33,3 +33,7 @@ services:
       # The e2e admin (created by global-setup) must actually be an admin for the
       # finalize/SSO specs, so pin it here instead of leaning on the host .env.
       NUXT_ADMIN_EMAILS: verify@example.com
+      # The APK download spec publishes a fixture from the host. Point at a path
+      # under the repo bind mount, not the developer's real ./downloads, so the
+      # test cannot delete a locally published build.
+      NUXT_APP_DOWNLOAD_DIR: /app/apps/web-nuxt/.data/downloads

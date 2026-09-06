@@ -124,10 +124,15 @@ set -euo pipefail
 flutter build apk --release
 out="{{ config_root }}/../web-nuxt/downloads"
 mkdir -p "$out"
-cp build/app/outputs/flutter-apk/app-release.apk "$out/nostragoalus.apk"
 # The site shows the release version, not the pubspec's own (vestigial) one, so
 # the APK on /about reads as the same release as the site serving it.
 version=$(sed -n 's/.*"version": "\\([^"]*\\)".*/\\1/p' "{{ config_root }}/../web-nuxt/package.json" | head -1)
 printf '{"version":"%s","builtAt":"%s"}\\n' "$version" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$out/nostragoalus.apk.json"
+# Stage then rename: the server stats and hashes the APK before streaming it, so
+# copying over the live file in place would serve one build's bytes under another
+# build's length and digest. A rename within the directory is atomic, and a
+# download already in flight keeps reading the old inode.
+cp build/app/outputs/flutter-apk/app-release.apk "$out/.nostragoalus.apk.new"
+mv -f "$out/.nostragoalus.apk.new" "$out/nostragoalus.apk"
 sha256sum "$out/nostragoalus.apk"
 """

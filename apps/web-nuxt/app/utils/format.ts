@@ -156,3 +156,10 @@ export function searchable(text: string | null | undefined): string {
     .replace(/ı/g, 'i')
     .toLowerCase()
 }
+
+// A hex digest, split into eight-character groups so a human can compare it
+// against a published one without losing their place. Used by the client-code
+// fingerprint and the Android build's checksum, both on the about page.
+export function groupDigest(digest: string | null | undefined): string {
+  return (digest?.match(/.{1,8}/g) ?? []).join(' ')
+}

@@ -6,8 +6,11 @@ import { readAndroidBuild, type AndroidBuild } from './service'
 
 function defaultDownloadDir(): string {
   // The deploy bind-mounts the host's APK directory at /data/downloads (see
-  // compose.yaml); a bare local run reads the gitignored ./.data/downloads.
-  return process.env.NODE_ENV === 'production' ? '/data/downloads' : './.data/downloads'
+  // compose.yaml). Everywhere else, read ./downloads - the same directory the
+  // publish task writes to - so an APK published locally shows up in dev. The
+  // e2e stack points NUXT_APP_DOWNLOAD_DIR elsewhere so its fixture cannot
+  // delete a developer's published build.
+  return process.env.NODE_ENV === 'production' ? '/data/downloads' : './downloads'
 }
 
 export function androidDownloadDir(): string {

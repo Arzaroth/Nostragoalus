@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { flagUrl, playerPhotoUrl, squarePlayerPhoto, formatPlayerName, lineupName, isLocked, searchable, matchStatusLabel, pensResult, statusSeverity, tierLabel, roundLabel, halvePickPoints } from './format'
+import { flagUrl, groupDigest, playerPhotoUrl, squarePlayerPhoto, formatPlayerName, lineupName, isLocked, searchable, matchStatusLabel, pensResult, statusSeverity, tierLabel, roundLabel, halvePickPoints } from './format'
 import type { MatchStatus } from '#shared/types/match'
 
 const STATUSES: MatchStatus[] = [
@@ -154,5 +154,21 @@ describe('searchable', () => {
     expect(searchable('Côte d’Ivoire').startsWith('cote')).toBe(true)
     expect(searchable('SVN FRA').includes('fra')).toBe(true)
     expect(searchable(null)).toBe('')
+  })
+})
+
+describe('groupDigest', () => {
+  it('splits a digest into eights', () => {
+    expect(groupDigest('abcdef0123456789')).toBe('abcdef01 23456789')
+  })
+
+  it('leaves a trailing partial group as it is', () => {
+    expect(groupDigest('abcdef0123')).toBe('abcdef01 23')
+  })
+
+  it('renders nothing for a missing digest', () => {
+    expect(groupDigest(null)).toBe('')
+    expect(groupDigest(undefined)).toBe('')
+    expect(groupDigest('')).toBe('')
   })
 })

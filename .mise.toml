@@ -81,6 +81,7 @@ description = "Bring up the isolated e2e stack with the app under the BUN runtim
 # SSR (its cold first render can exceed a spec's visibility timeout - a flake, not
 # a bug); prewarming the routes the suite hits keeps the run deterministic.
 run = '''
+mkdir -p apps/web-nuxt/.data/downloads
 docker compose -p "ng-e2e-$(basename "$PWD" | tr . -)" -f apps/web-nuxt/compose.yaml -f apps/web-nuxt/compose.dev.yaml -f apps/web-nuxt/compose.e2e.yaml -f apps/web-nuxt/compose.e2e-bun.yaml --profile dev --profile e2e --profile e2e-bun up -d --build --wait db maildev keycloak app-bun
 for p in / /admin /roadmap /leagues /rankings /about /login /signup; do curl -s -o /dev/null --max-time 30 "http://localhost:3100$p" || true; done
 '''

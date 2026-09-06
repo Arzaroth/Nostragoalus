@@ -26,7 +26,7 @@ test('the about page offers the Android app once a build is published', async ({
   await expect(card).toContainText('No build is published right now')
   await expect(card.locator('a[download]')).toHaveCount(0)
 
-  // Publish one, the way `mise run apk-publish` does.
+  // Publish one, the way `mise -C apps/mobile-flutter run apk-publish` does.
   await mkdir(DIR, { recursive: true })
   await writeFile(APK, BYTES)
   await writeFile(SIDECAR, JSON.stringify({ version: '9.9.9', builtAt: '2026-09-06T09:30:00.000Z' }))
