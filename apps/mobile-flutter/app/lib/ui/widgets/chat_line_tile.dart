@@ -4,7 +4,7 @@ import '../../api/models.gen.dart' show MineValue, Total;
 import '../../chat/chat_providers.dart' show ChatLine;
 import '../../reactions.dart';
 import '../../theme/app_theme.dart';
-import 'panel.dart';
+import 'user_avatar.dart';
 
 /// A stored ISO timestamp as local wall-clock time, with the short date once the
 /// message is no longer from today. Falls back to the raw string if unparsable.
@@ -19,37 +19,6 @@ String formatChatTime(BuildContext context, String iso) {
   final now = DateTime.now();
   final today = now.year == ts.year && now.month == ts.month && now.day == ts.day;
   return today ? time : '${l10n.formatShortDate(ts)} $time';
-}
-
-/// The chat avatar: the picture when there is one, else a condensed initial on
-/// the primary container. Shared by message rows, the DM inbox and the pickers.
-class ChatAvatar extends StatelessWidget {
-  const ChatAvatar({super.key, required this.name, this.image, this.radius = 16});
-  final String name;
-  final String? image;
-  final double radius;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final url = image;
-    return CircleAvatar(
-      radius: radius,
-      backgroundColor: scheme.primaryContainer,
-      foregroundImage: url == null ? null : NetworkImage(url),
-      // A broken avatar URL must degrade to the initial, not throw.
-      onForegroundImageError: url == null ? null : (_, __) {},
-      child: Text(
-        name.isEmpty ? '?' : name.characters.first.toUpperCase(),
-        style: TextStyle(
-          fontFamily: AppTheme.displayFamily,
-          fontSize: radius,
-          fontWeight: FontWeight.w600,
-          color: scheme.onPrimaryContainer,
-        ),
-      ),
-    );
-  }
 }
 
 /// One delivered chat message as a bubble: author, body (or the undecryptable
@@ -147,7 +116,7 @@ class ChatLineTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!own && name != null) ...[
-            ChatAvatar(name: name, image: authorImage),
+            UserAvatar(name: name, image: authorImage, radius: 16),
             const SizedBox(width: 8),
           ],
           ConstrainedBox(constraints: BoxConstraints(maxWidth: maxWidth), child: bubble),
@@ -158,7 +127,7 @@ class ChatLineTile extends StatelessWidget {
 }
 
 /// The reaction totals a message carries, as one stadium chip per non-zero
-/// emoji on a hairline. The caller's own reaction is outlined in primary.
+/// emoji. The caller's own reaction is outlined in primary.
 /// Renders nothing when nobody reacted.
 class _ReactionChips extends StatelessWidget {
   const _ReactionChips({required this.totals, required this.mine});
@@ -188,7 +157,7 @@ class _ReactionChips extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(padding: EdgeInsets.symmetric(vertical: 6), child: Hairline()),
+        const SizedBox(height: 6),
         Wrap(
           spacing: 4,
           runSpacing: 4,

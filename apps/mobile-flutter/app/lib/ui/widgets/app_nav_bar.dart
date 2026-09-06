@@ -35,54 +35,59 @@ class AppNavBar extends StatelessWidget {
         decoration: BoxDecoration(border: Border(top: BorderSide(color: t.rule))),
         child: SafeArea(
           top: false,
-          child: SizedBox(
-            height: 60,
-            child: Row(
-              children: [
-                for (var i = 0; i < items.length; i++)
-                  Expanded(
-                    child: Semantics(
-                      button: true,
-                      selected: i == selectedIndex,
-                      label: items[i].label,
-                      child: InkWell(
-                        onTap: () => onSelected(i),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            AnimatedContainer(
-                              duration: const Duration(milliseconds: 180),
-                              curve: Curves.easeOut,
-                              width: i == selectedIndex ? 20 : 0,
-                              height: 2,
-                              margin: const EdgeInsets.only(bottom: 6),
-                              decoration: BoxDecoration(
-                                color: scheme.primary,
-                                borderRadius: BorderRadius.circular(1),
+          child: ConstrainedBox(
+            // A minimum, not a fixed height: the labels grow with the system
+            // font scale and must not be clipped.
+            constraints: const BoxConstraints(minHeight: 60),
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (var i = 0; i < items.length; i++)
+                    Expanded(
+                      child: Semantics(
+                        button: true,
+                        selected: i == selectedIndex,
+                        label: items[i].label,
+                        child: InkWell(
+                          onTap: () => onSelected(i),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              AnimatedContainer(
+                                duration: const Duration(milliseconds: 180),
+                                curve: Curves.easeOut,
+                                width: i == selectedIndex ? 20 : 0,
+                                height: 2,
+                                margin: const EdgeInsets.only(bottom: 6),
+                                decoration: BoxDecoration(
+                                  color: scheme.primary,
+                                  borderRadius: BorderRadius.circular(1),
+                                ),
                               ),
-                            ),
-                            Icon(
-                              i == selectedIndex ? items[i].activeIcon : items[i].icon,
-                              size: 22,
-                              color: i == selectedIndex ? scheme.onSurface : t.muted,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              items[i].label,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                fontSize: 11,
-                                fontWeight: i == selectedIndex ? FontWeight.w600 : FontWeight.w500,
+                              Icon(
+                                i == selectedIndex ? items[i].activeIcon : items[i].icon,
+                                size: 22,
                                 color: i == selectedIndex ? scheme.onSurface : t.muted,
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 4),
+                              Text(
+                                items[i].label,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  fontSize: 11,
+                                  fontWeight: i == selectedIndex ? FontWeight.w600 : FontWeight.w500,
+                                  color: i == selectedIndex ? scheme.onSurface : t.muted,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

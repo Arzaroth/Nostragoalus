@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../config.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
 import '../theme/app_theme.dart';
@@ -34,6 +33,7 @@ import 'two_factor_screen.dart';
 import 'verify_screen.dart';
 import 'widgets/panel.dart';
 import 'widgets/section_card.dart';
+import 'widgets/user_avatar.dart';
 import 'wrapped_screen.dart';
 
 class _Entry {
@@ -165,8 +165,6 @@ class _Identity extends ConsumerWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final t = context.tokens;
-    final image = user?.image;
-    final hasImage = image != null && image.isNotEmpty;
     final title = user?.name ?? user?.email ?? '';
     return Panel(
       children: [
@@ -179,17 +177,7 @@ class _Identity extends ConsumerWidget {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor: scheme.primaryContainer,
-                  foregroundImage: hasImage
-                      ? NetworkImage(image.startsWith('http') ? image : '${AppConfig.apiBase}$image')
-                      : null,
-                  child: Text(
-                    (user?.name ?? user?.email ?? '?').characters.first.toUpperCase(),
-                    style: t.score(26, weight: FontWeight.w600, color: scheme.onPrimaryContainer),
-                  ),
-                ),
+                UserAvatar(radius: 30, name: title, image: user?.image),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(

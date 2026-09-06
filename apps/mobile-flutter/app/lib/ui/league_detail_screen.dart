@@ -15,6 +15,7 @@ import 'moderation_screen.dart';
 import 'widgets/async_value_view.dart';
 import 'widgets/online_dot.dart';
 import 'widgets/panel.dart';
+import 'widgets/user_avatar.dart';
 
 /// A league's home: identity (name, competition, mode, invite code), the ways
 /// in (board, chat, settings, moderation), then the members, invites, prizes
@@ -251,26 +252,13 @@ class _MemberAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final url = member.image;
-    final initial = member.name.isEmpty ? '?' : member.name.characters.first.toUpperCase();
     return SizedBox(
       width: 36,
       height: 36,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          CircleAvatar(
-            radius: 18,
-            backgroundColor: scheme.primaryContainer,
-            foregroundImage: (url != null && url.startsWith('http')) ? NetworkImage(url) : null,
-            child: Text(initial,
-                style: TextStyle(
-                    fontFamily: AppTheme.displayFamily,
-                    fontSize: 17,
-                    color: scheme.onPrimaryContainer,
-                    fontWeight: FontWeight.w600)),
-          ),
+          UserAvatar(name: member.name, image: member.image),
           PositionedDirectional(end: 0, bottom: 0, child: OnlineDot(userId: member.userId)),
         ],
       ),
@@ -476,12 +464,7 @@ class _RankingRow extends StatelessWidget {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final t = context.tokens;
-    final rankColor = switch (rank) {
-      1 => t.gold,
-      2 => t.silver,
-      3 => t.bronze,
-      _ => t.muted,
-    };
+    final rankColor = t.rankColor(rank);
     final body = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       child: Row(

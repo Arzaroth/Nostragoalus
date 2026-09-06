@@ -6,6 +6,7 @@ import '../../../i18n/i18n_scope.dart';
 import '../../../state/providers.dart';
 import '../../../theme/app_theme.dart';
 import '../../widgets/async_value_view.dart';
+import '../../widgets/group_standings_table.dart';
 import '../../widgets/panel.dart';
 import '../../widgets/section_card.dart';
 import '../../widgets/team_flag.dart';
@@ -15,8 +16,6 @@ class InsightsTab extends ConsumerWidget {
   const InsightsTab({super.key, required this.matchId});
   final String matchId;
 
-  static const _numWidth = 40.0;
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return AsyncValueView<MatchInsightsResponse>(
@@ -25,7 +24,8 @@ class InsightsTab extends ConsumerWidget {
       data: (res) => ListView(
         padding: const EdgeInsets.only(bottom: 24),
         children: [
-          if (res.standings != null && res.standings!.isNotEmpty) _standings(context, res.standings!),
+          if (res.standings != null && res.standings!.isNotEmpty)
+            GroupStandingsTable(title: context.tr('nav.standings'), rows: res.standings!),
           if (res.possession.home != null || res.possession.away != null)
             _possession(context, res.possession.home?.toInt() ?? 0, res.possession.away?.toInt() ?? 0),
           if (res.h2hAll != null) _allTime(context, res.h2hAll!),
@@ -49,47 +49,6 @@ class InsightsTab extends ConsumerWidget {
         ],
       ),
     );
-  }
-
-  Widget _standings(BuildContext context, List<GroupRow> rows) {
-    final theme = Theme.of(context);
-    final t = context.tokens;
-    final head = theme.textTheme.labelSmall?.copyWith(color: t.faint);
-    Widget num(String s, {TextStyle? style}) =>
-        SizedBox(width: _numWidth, child: Text(s, textAlign: TextAlign.center, style: style));
-    return SectionCard(title: context.tr('nav.standings'), children: [
-      Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
-        child: Row(
-          children: [
-            Expanded(child: Text(context.tr('standings.team'), style: head)),
-            num(context.tr('standings.p'), style: head),
-            num(context.tr('standings.gd'), style: head),
-            num(context.tr('standings.pts'), style: head),
-          ],
-        ),
-      ),
-      for (final r in rows)
-        Padding(
-          padding: const EdgeInsetsDirectional.fromSTEB(16, 10, 8, 10),
-          child: Row(
-            children: [
-              TeamFlag(r.code, height: 18),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(r.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
-              ),
-              num('${r.played.toInt()}', style: t.score(17, weight: FontWeight.w500, color: t.muted)),
-              num('${r.gd.toInt() > 0 ? '+' : ''}${r.gd.toInt()}',
-                  style: t.score(17, weight: FontWeight.w500, color: t.muted)),
-              num('${r.points.toInt()}', style: t.score(20)),
-            ],
-          ),
-        ),
-    ]);
   }
 
   Widget _possession(BuildContext context, int home, int away) {

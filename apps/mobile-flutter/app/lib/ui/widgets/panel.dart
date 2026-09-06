@@ -233,9 +233,15 @@ class _LiveDotState extends State<LiveDot> with SingleTickerProviderStateMixin {
       AnimationController(vsync: this, duration: const Duration(milliseconds: 1400));
 
   @override
-  void initState() {
-    super.initState();
-    _c.repeat(reverse: true);
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Under "remove animations" the ticker must not run at all: a repeating
+    // controller would schedule a frame every vsync forever.
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _c.stop();
+    } else if (!_c.isAnimating) {
+      _c.repeat(reverse: true);
+    }
   }
 
   @override

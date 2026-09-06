@@ -31,13 +31,7 @@ class LeagueTab extends ConsumerWidget {
                       leading: SizedBox(
                         width: 28,
                         child: Text('${r.rank.toInt()}',
-                            style: t.score(20,
-                                color: switch (r.rank.toInt()) {
-                                  1 => t.gold,
-                                  2 => t.silver,
-                                  3 => t.bronze,
-                                  _ => t.muted,
-                                })),
+                            style: t.score(20, color: t.rankColor(r.rank.toInt()))),
                       ),
                       title: Row(
                         children: [

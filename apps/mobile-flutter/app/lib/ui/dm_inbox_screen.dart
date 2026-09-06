@@ -9,10 +9,11 @@ import '../theme/app_theme.dart';
 import 'dm_room_screen.dart';
 import 'feedback.dart';
 import 'widgets/async_value_view.dart';
-import 'widgets/chat_line_tile.dart' show ChatAvatar, formatChatTime;
+import 'widgets/chat_line_tile.dart' show formatChatTime;
 import 'widgets/empty_state.dart';
 import 'widgets/online_dot.dart';
 import 'widgets/panel.dart';
+import 'widgets/user_avatar.dart';
 
 /// Direct-message inbox: existing 1:1 threads + start a new one.
 class DmInboxScreen extends ConsumerWidget {
@@ -70,7 +71,7 @@ class DmInboxScreen extends ConsumerWidget {
               children: [
                 for (final r in res.recipients)
                   ListTile(
-                    leading: ChatAvatar(name: r.name),
+                    leading: UserAvatar(name: r.name, radius: 16),
                     title: Text(r.name),
                     onTap: () => Navigator.pop(context, r),
                   ),
@@ -136,7 +137,7 @@ class _ThreadRow extends StatelessWidget {
         child: Stack(
           clipBehavior: Clip.none,
           children: [
-            ChatAvatar(name: thread.other.name, image: thread.other.image, radius: 20),
+            UserAvatar(name: thread.other.name, image: thread.other.image, radius: 20),
             PositionedDirectional(
               end: -1,
               bottom: -1,

@@ -63,6 +63,20 @@ void main() {
       expect(copy.emerald, base.emerald);
       expect(copy.gold, base.gold);
       expect(copy.glowB, base.glowB);
+      final untouched = base.copyWith();
+      expect(untouched.live, base.live);
+      expect(untouched.board, base.board);
+      expect(untouched.ground, base.ground);
+      expect(untouched.glowA, base.glowA);
+    });
+
+    test('rankColor gives the podium its metal, everyone else the muted ink', () {
+      final t = AppTheme.darkTokens();
+      expect(t.rankColor(1), t.gold);
+      expect(t.rankColor(2), t.silver);
+      expect(t.rankColor(3), t.bronze);
+      expect(t.rankColor(4), t.muted);
+      expect(t.rankColor(null), t.muted);
     });
 
     test('lerp blends every token and returns itself against null', () {

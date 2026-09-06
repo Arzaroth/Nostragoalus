@@ -6,9 +6,9 @@ import 'package:image_picker/image_picker.dart';
 
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
-import '../theme/app_theme.dart';
 import 'feedback.dart';
 import 'widgets/panel.dart';
+import 'widgets/user_avatar.dart';
 
 /// Edit the display name and avatar. Avatar is uploaded as a data: URL (the same
 /// contract as the web account page's update-user call).
@@ -65,9 +65,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authControllerProvider).valueOrNull;
-    final initial = (user?.name ?? user?.email ?? '?').characters.first.toUpperCase();
-    final scheme = Theme.of(context).colorScheme;
-    final t = context.tokens;
+    final name = user?.name ?? user?.email ?? '';
     return Scaffold(
       appBar: AppBar(title: Text(context.tr('profile.editTitle'))),
       body: ListView(
@@ -77,16 +75,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             child: Stack(
               alignment: AlignmentDirectional.bottomEnd,
               children: [
-                CircleAvatar(
+                UserAvatar(
                   radius: 44,
-                  backgroundColor: scheme.primaryContainer,
-                  backgroundImage: _imageDataUrl != null
-                      ? MemoryImage(base64Decode(_imageDataUrl!.split(',').last))
-                      : null,
-                  child: _imageDataUrl == null
-                      ? Text(initial,
-                          style: t.score(36, weight: FontWeight.w600, color: scheme.onPrimaryContainer))
-                      : null,
+                  name: name,
+                  imageProvider: _imageDataUrl == null
+                      ? null
+                      : MemoryImage(base64Decode(_imageDataUrl!.split(',').last)),
                 ),
                 IconButton.filled(
                   icon: const Icon(Icons.photo_camera_outlined, size: 18),

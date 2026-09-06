@@ -101,14 +101,7 @@ class _BoardTile extends StatelessWidget {
     final t = context.tokens;
     final out = row.isOut;
     final rank = row.rank;
-    final rankColor = out
-        ? t.faint
-        : switch (rank) {
-            1 => t.gold,
-            2 => t.silver,
-            3 => t.bronze,
-            _ => t.muted,
-          };
+    final rankColor = out ? t.faint : t.rankColor(rank);
     final valueColor = out ? t.faint : scheme.onSurface;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

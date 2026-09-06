@@ -270,13 +270,19 @@ void main() {
     h.roster(['self', 'zzz']);
     await settle();
 
-    await h.socket.drop();
-    await settle();
-    final suspended = h.voice.state.value;
-    expect(suspended, isA<VoiceConnecting>());
-    expect((suspended as VoiceConnecting).reconnecting, isTrue);
+    // The socket's reconnect backoff and settle() are both 5ms, so sampling the
+    // state between them races the reconnect. Record the transitions instead.
+    final seen = <VoiceCallState>[];
+    void record() => seen.add(h.voice.state.value);
+    h.voice.state.addListener(record);
 
+    await h.socket.drop();
     await settle(30);
+    h.voice.state.removeListener(record);
+
+    final suspended = seen.whereType<VoiceConnecting>().toList();
+    expect(suspended, isNotEmpty, reason: 'the drop suspends the call');
+    expect(suspended.first.reconnecting, isTrue);
     expect(h.voice.state.value, isA<VoiceInCall>());
     expect(h.sentOf('voice:join'), hasLength(1), reason: 're-joined on the new socket');
     expect(h.peers.single.closed, isTrue, reason: 'the old peer link is dead');

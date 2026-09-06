@@ -500,6 +500,15 @@ class AppTokens extends ThemeExtension<AppTokens> {
   final Color glowA;
   final Color glowB;
 
+  /// The podium metal for a rank, quiet muted off the podium (and for an
+  /// unranked row).
+  Color rankColor(int? rank) => switch (rank) {
+        1 => gold,
+        2 => silver,
+        3 => bronze,
+        _ => muted,
+      };
+
   /// Scoreboard numerals: the condensed display face with tabular figures.
   TextStyle score(double size, {FontWeight weight = FontWeight.w700, Color? color}) => TextStyle(
         fontFamily: AppTheme.displayFamily,

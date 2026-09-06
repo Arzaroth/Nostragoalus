@@ -10,6 +10,7 @@ import 'feedback.dart';
 import 'widgets/async_value_view.dart';
 import 'widgets/empty_state.dart';
 import 'widgets/panel.dart';
+import 'widgets/user_avatar.dart';
 
 /// League chat moderation queue (owner/moderators): reported messages decrypted
 /// client-side, each removable or restorable.
@@ -85,20 +86,7 @@ class _ReportRow extends StatelessWidget {
           if (author != null) ...[
             Row(
               children: [
-                CircleAvatar(
-                  radius: 12,
-                  backgroundColor: scheme.primaryContainer,
-                  foregroundImage: r.authorImage == null ? null : NetworkImage(r.authorImage!),
-                  onForegroundImageError: r.authorImage == null ? null : (_, __) {},
-                  child: Text(
-                    author.isEmpty ? '?' : author.characters.first.toUpperCase(),
-                    style: TextStyle(
-                        fontFamily: AppTheme.displayFamily,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: scheme.onPrimaryContainer),
-                  ),
-                ),
+                UserAvatar(radius: 12, name: author, image: r.authorImage),
                 const SizedBox(width: 8),
                 Text(author, style: theme.textTheme.labelMedium),
               ],

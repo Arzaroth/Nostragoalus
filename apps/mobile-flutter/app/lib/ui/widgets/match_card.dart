@@ -56,12 +56,20 @@ class MatchCard extends StatelessWidget {
         Icon(Icons.lock, size: 12, color: t.faint),
         const SizedBox(width: 4),
       ],
-      Text(finished ? ScorePill.statusLabel(context, status) : kickoffLabel,
-          style: theme.textTheme.labelSmall?.copyWith(color: t.faint)),
+      Flexible(
+        child: Text(kickoffLabel,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.labelSmall?.copyWith(color: t.faint)),
+      ),
       if (pickLabel != null) ...[
         const SizedBox(width: 10),
-        Text(pickLabel!,
-            style: theme.textTheme.labelSmall?.copyWith(color: t.muted, fontWeight: FontWeight.w600)),
+        Flexible(
+          child: Text(pickLabel!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelSmall?.copyWith(color: t.muted, fontWeight: FontWeight.w600)),
+        ),
       ],
     ];
     return InkWell(

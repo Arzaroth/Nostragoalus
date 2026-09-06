@@ -18,6 +18,7 @@ import 'widgets/chat_message_list.dart';
 import 'widgets/chat_recovery_gate.dart';
 import 'widgets/empty_state.dart';
 import 'widgets/typing_indicator.dart';
+import 'widgets/user_avatar.dart';
 
 /// The league members named with a literal `@Name` in [text]. Derived at send
 /// time so an edited-away or image-interrupted mention cannot ride along on a
@@ -120,7 +121,7 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
           children: [
             for (final m in members)
               ListTile(
-                leading: ChatAvatar(name: m.name, image: m.image),
+                leading: UserAvatar(name: m.name, image: m.image, radius: 16),
                 title: Text(m.name),
                 onTap: () => Navigator.pop(context, m),
               ),

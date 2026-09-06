@@ -6,6 +6,7 @@ import '../../theme/app_theme.dart';
 import 'panel.dart';
 import 'movement_arrow.dart';
 import 'team_flag.dart';
+import 'user_avatar.dart';
 
 /// One standings row: the rank in condensed numerals (gold, silver, bronze for
 /// the podium) with its movement, the avatar, the name flanked by the player's
@@ -35,12 +36,7 @@ class LeaderboardRowCard extends StatelessWidget {
     final t = context.tokens;
     final isMe = meId != null && row.userId == meId;
     final rank = row.rank.toInt();
-    final rankColor = switch (rank) {
-      1 => t.gold,
-      2 => t.silver,
-      3 => t.bronze,
-      _ => t.muted,
-    };
+    final rankColor = t.rankColor(rank);
 
     final body = Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -57,7 +53,7 @@ class LeaderboardRowCard extends StatelessWidget {
               ],
             ),
           ),
-          _Avatar(image: row.image, name: row.displayName),
+          UserAvatar(name: row.displayName, image: row.image),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -81,7 +77,7 @@ class LeaderboardRowCard extends StatelessWidget {
                     ],
                     if (isMe) ...[
                       const SizedBox(width: 8),
-                      Tag(context.tr('leaderboard.you').replaceAll(RegExp(r'[()]'), ''), color: scheme.primary),
+                      Tag(context.tr('leaderboard.you'), color: scheme.primary),
                     ],
                   ],
                 ),
@@ -133,30 +129,6 @@ class LeaderboardRowCard extends StatelessWidget {
     if (row.championPoints > 0) parts.add('+${row.championPoints.toInt()} 👑');
     if (row.bestScorerPoints > 0) parts.add('+${row.bestScorerPoints.toInt()} ⚽');
     return parts.join('  ');
-  }
-}
-
-class _Avatar extends StatelessWidget {
-  const _Avatar({required this.image, required this.name});
-  final String? image;
-  final String name;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final url = image;
-    final initial = name.isEmpty ? '?' : name.characters.first.toUpperCase();
-    return CircleAvatar(
-      radius: 18,
-      backgroundColor: scheme.primaryContainer,
-      foregroundImage: (url != null && url.startsWith('http')) ? NetworkImage(url) : null,
-      child: Text(initial,
-          style: TextStyle(
-              fontFamily: AppTheme.displayFamily,
-              fontSize: 17,
-              color: scheme.onPrimaryContainer,
-              fontWeight: FontWeight.w600)),
-    );
   }
 }
 

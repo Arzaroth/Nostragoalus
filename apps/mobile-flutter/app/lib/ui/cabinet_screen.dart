@@ -10,6 +10,7 @@ import '../theme/app_theme.dart';
 import 'feedback.dart';
 import 'widgets/async_value_view.dart';
 import 'widgets/panel.dart';
+import 'widgets/user_avatar.dart';
 
 /// A user's public trophy cabinet: trophies + earned achievements.
 class CabinetScreen extends ConsumerWidget {
@@ -51,16 +52,7 @@ class CabinetScreen extends ConsumerWidget {
               children: [
                 const SizedBox(height: 16),
                 Center(
-                  child: CircleAvatar(
-                    radius: 32,
-                    backgroundColor: theme.colorScheme.primaryContainer,
-                    child: Text(c.displayName.characters.first.toUpperCase(),
-                        style: TextStyle(
-                            fontFamily: AppTheme.displayFamily,
-                            fontSize: 30,
-                            fontWeight: FontWeight.w600,
-                            color: theme.colorScheme.onPrimaryContainer)),
-                  ),
+                  child: UserAvatar(radius: 32, name: c.displayName),
                 ),
                 const SizedBox(height: 10),
                 Center(child: Text(c.displayName, style: theme.textTheme.headlineSmall)),
