@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 /// "Floodlit": a night match. The ground is the dark stadium, chalk hairlines
 /// are the structure, and the scoreboard numerals (Barlow Condensed) are the one
@@ -230,6 +231,11 @@ class AppTheme {
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         scrolledUnderElevation: 0,
+        // The ground is painted behind a transparent bar, so the bar cannot
+        // infer the status-bar icon colour from its own background.
+        systemOverlayStyle: scheme.brightness == Brightness.dark
+            ? SystemUiOverlayStyle.light
+            : SystemUiOverlayStyle.dark,
         centerTitle: false,
         titleSpacing: 20,
         toolbarHeight: 60,

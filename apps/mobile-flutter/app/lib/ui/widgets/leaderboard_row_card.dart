@@ -81,7 +81,7 @@ class LeaderboardRowCard extends StatelessWidget {
                     ],
                     if (isMe) ...[
                       const SizedBox(width: 8),
-                      Tag(context.tr('leaderboard.you'), color: scheme.primary),
+                      Tag(context.tr('leaderboard.you').replaceAll(RegExp(r'[()]'), ''), color: scheme.primary),
                     ],
                   ],
                 ),
