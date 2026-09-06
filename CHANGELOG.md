@@ -14,6 +14,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ### Fixed
 
+- Share images render again. The text-shaping component was missing from the production build, so every server start logged a crash and share cards could not be drawn.
+
 - The Android app downloaded from the site could not reach the server at all: it was built pointing at a development address, so every screen failed and signing in reported a wrong password no matter what you typed. It now talks to the real site, and its version and size match the build the page advertises.
 - Signing in with your company account (single sign-on) works in the Android app. It always failed at the last step before.
 - The Android app no longer claims your password is wrong when it simply cannot reach the server. It says so instead.

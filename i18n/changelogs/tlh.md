@@ -14,6 +14,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ### tI'pu'
 
+- HaSta ngeHmeH nagh: DaH chenlaH. mu'mey chenmoHmeH Doch chIlpu' chenmoHbogh Duv; vaj Duv taghDI' Hoch, Qagh qonlu', 'ej HaSta chenlaHbe'.
+
 - Sar vo' Suqbogh Android De'wI'Hom: qach SamlaHbe'pu'. chenmoHmeH Duv chu'be' lo'lu'pu', vaj Hoch luj; 'ej nuq Damugh 'e' bIH, mu'qaD ghItlhwI' lughbe' 'e' ja'. DaH Sar teH jatlh; Segh 'ab je rap.
 - Android De'wI'Hom: qorDu' De'wI' Segh (SSO) lo'laH. wa'DIch Hoch luj.
 - Android De'wI'Hom: qachvaD SamlaHbe'DI', mu'qaD ghItlhwI' lughbe' 'e' ja'be'qa'. lugh ja'.

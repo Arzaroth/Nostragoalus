@@ -1,3 +1,6 @@
+import { copyFile, mkdir } from 'node:fs/promises'
+import { createRequire } from 'node:module'
+import { dirname, join } from 'node:path'
 import { NostraTheme } from './lib/theme'
 import pkg from './package.json'
 import { scheduledTasksMap } from './server/utils/tasks/registry'
@@ -173,6 +176,27 @@ export default defineNuxtConfig({
     // path does not work under Bun).
     preset: process.env.NITRO_PRESET ?? 'node-server',
     experimental: { tasks: true, websocket: true, openAPI: true },
+    hooks: {
+      // satori shapes text through harfbuzzjs, whose hb.js reads hb.wasm by path
+      // at runtime instead of requiring it. The dependency trace only follows
+      // requires, so the build shipped hb.js without the wasm beside it and every
+      // boot threw an unhandled "failed to asynchronously prepare wasm", taking
+      // share-image rendering with it. externals.traceInclude does not cover it -
+      // a wasm file is not a module it can resolve - so the file is copied here.
+      // Resolving through require means a satori upgrade that drops harfbuzzjs
+      // fails the build loudly rather than silently shipping the same hole again.
+      async compiled(nitro) {
+        // Resolved THROUGH satori, not from here: harfbuzzjs is satori's
+        // dependency, not ours, so under pnpm it is only guaranteed to exist
+        // next to satori. Resolving it from this file relies on hoisting that
+        // need not hold in another install (the Docker builder, a fresh clone).
+        const fromHere = createRequire(import.meta.url)
+        const src = createRequire(fromHere.resolve('satori')).resolve('harfbuzzjs/hb.wasm')
+        const dest = join(nitro.options.output.serverDir, 'node_modules/harfbuzzjs/hb.wasm')
+        await mkdir(dirname(dest), { recursive: true })
+        await copyFile(src, dest)
+      },
+    },
     openAPI: {
       production: 'runtime',
       meta: {

@@ -14,6 +14,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ### Corrigé
 
+- Les images de partage s'affichent à nouveau. Le composant de mise en forme du texte manquait dans la version de production : chaque démarrage du serveur enregistrait une erreur et les cartes de partage ne pouvaient pas être dessinées.
+
 - L'application Android téléchargée depuis le site ne pouvait pas joindre le serveur du tout : elle était compilée avec une adresse de développement, donc tout échouait et la connexion annonçait un mot de passe incorrect quoi que vous saisissiez. Elle parle désormais au vrai site, et sa version et sa taille correspondent à la build annoncée sur la page.
 - La connexion avec un compte d'entreprise (authentification unique) fonctionne dans l'application Android. Elle échouait jusqu'ici à la dernière étape.
 - L'application Android n'annonce plus un mot de passe incorrect quand elle ne parvient simplement pas à joindre le serveur. Elle le dit.
