@@ -2871,6 +2871,12 @@ blocking):
 
 ## App downloads - deferred
 
+- [ ] The published APK is a universal build (arm64-v8a + armeabi-v7a in one
+      file), which is why it is ~90 MiB. `flutter build apk --split-per-abi` would
+      roughly halve what a phone downloads, but the download route serves one
+      fixed filename, so it needs the route (and the sidecar) to carry a per-ABI
+      set plus a sensible default for an unknown user agent.
+
 - [ ] `/download/nostragoalus.apk` sets an ETag but does not handle
       `If-None-Match`, so a revalidating client re-downloads the whole ~60 MB
       instead of taking a 304.
