@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/models.gen.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
+import '../theme/app_theme.dart';
 import 'feedback.dart';
 import 'league_rewards_editor_screen.dart';
+import 'widgets/panel.dart';
 
 /// The edited form values, so the changed-fields diff can be computed (and
 /// tested) without a widget tree.
@@ -128,105 +130,124 @@ class _LeagueSettingsScreenState extends ConsumerState<LeagueSettingsScreen> {
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
           children: [
-            TextFormField(
-              controller: _name,
-              decoration: InputDecoration(
-                labelText: context.tr('leagues.name'),
-                border: const OutlineInputBorder(),
-              ),
-              validator: (v) =>
-                  (v == null || v.trim().length < 3) ? context.tr('leagues.nameTooShort') : null,
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<VisibilityValue>(
-              initialValue: _visibility,
-              decoration: InputDecoration(
-                labelText: context.tr('leagues.visibility'),
-                border: const OutlineInputBorder(),
-              ),
-              items: [
-                for (final v in pickable(VisibilityValue.values, VisibilityValue.unknown))
-                  DropdownMenuItem(value: v, child: Text(context.tr(visibilityLabelKey(v)))),
-              ],
-              onChanged: (v) => setState(() => _visibility = v ?? _visibility),
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<ModeValue>(
-              initialValue: _mode,
-              decoration: InputDecoration(
-                labelText: context.tr('leagues.mode'),
-                border: const OutlineInputBorder(),
-              ),
-              items: [
-                for (final m in pickable(ModeValue.values, ModeValue.unknown))
-                  DropdownMenuItem(value: m, child: Text(context.tr(modeLabelKey(m)))),
-              ],
-              onChanged: (v) => setState(() => _mode = v ?? _mode),
-            ),
-            if (_mode == ModeValue.hardcore) ...[
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Text(context.tr('leagues.lives')),
-                  const Spacer(),
-                  IconButton(
-                      onPressed: _lives > 1 ? () => setState(() => _lives--) : null,
-                      icon: const Icon(Icons.remove)),
-                  Text('$_lives'),
-                  IconButton(
-                      onPressed: _lives < 99 ? () => setState(() => _lives++) : null,
-                      icon: const Icon(Icons.add)),
+            Panel(
+              margin: EdgeInsets.zero,
+              padding: const EdgeInsets.all(16),
+              dividers: false,
+              children: [
+                TextFormField(
+                  controller: _name,
+                  decoration: InputDecoration(labelText: context.tr('leagues.name')),
+                  validator: (v) => (v == null || v.trim().length < 3)
+                      ? context.tr('leagues.nameTooShort')
+                      : null,
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<VisibilityValue>(
+                  initialValue: _visibility,
+                  decoration: InputDecoration(labelText: context.tr('leagues.visibility')),
+                  items: [
+                    for (final v in pickable(VisibilityValue.values, VisibilityValue.unknown))
+                      DropdownMenuItem(value: v, child: Text(context.tr(visibilityLabelKey(v)))),
+                  ],
+                  onChanged: (v) => setState(() => _visibility = v ?? _visibility),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<ModeValue>(
+                  initialValue: _mode,
+                  decoration: InputDecoration(labelText: context.tr('leagues.mode')),
+                  items: [
+                    for (final m in pickable(ModeValue.values, ModeValue.unknown))
+                      DropdownMenuItem(value: m, child: Text(context.tr(modeLabelKey(m)))),
+                  ],
+                  onChanged: (v) => setState(() => _mode = v ?? _mode),
+                ),
+                if (_mode == ModeValue.hardcore) ...[
+                  const SizedBox(height: 8),
+                  LivesStepper(lives: _lives, onChanged: (v) => setState(() => _lives = v)),
                 ],
-              ),
-            ],
-            const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              initialValue: _featuredTeam,
-              isExpanded: true,
-              decoration: InputDecoration(
-                labelText: context.tr('leagues.featuredTeam'),
-                border: const OutlineInputBorder(),
-              ),
-              items: [
-                // The league response carries no featuredTeamCode yet, so the
-                // control cannot show the current pick; say so instead of
-                // rendering a blank that reads as "none".
-                DropdownMenuItem(value: null, child: Text(context.tr('leagues.featuredTeamKeep'))),
-                DropdownMenuItem(value: '', child: Text(context.tr('leagues.noFeaturedTeam'))),
-                for (final t in teams) DropdownMenuItem(value: t.code, child: Text(t.name)),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: _featuredTeam,
+                  isExpanded: true,
+                  decoration: InputDecoration(labelText: context.tr('leagues.featuredTeam')),
+                  items: [
+                    // The league response carries no featuredTeamCode yet, so the
+                    // control cannot show the current pick; say so instead of
+                    // rendering a blank that reads as "none".
+                    DropdownMenuItem(
+                        value: null, child: Text(context.tr('leagues.featuredTeamKeep'))),
+                    DropdownMenuItem(value: '', child: Text(context.tr('leagues.noFeaturedTeam'))),
+                    for (final t in teams) DropdownMenuItem(value: t.code, child: Text(t.name)),
+                  ],
+                  onChanged: (v) => setState(() => _featuredTeam = v),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _description,
+                  maxLines: 4,
+                  decoration: InputDecoration(labelText: context.tr('leagues.description')),
+                ),
+                const SizedBox(height: 16),
+                FilledButton(
+                  onPressed: _busy ? null : _save,
+                  child: _busy
+                      ? const SizedBox(
+                          height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                      : Text(context.tr('common.save')),
+                ),
               ],
-              onChanged: (v) => setState(() => _featuredTeam = v),
             ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _description,
-              maxLines: 4,
-              decoration: InputDecoration(
-                labelText: context.tr('leagues.description'),
-                border: const OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 8),
-            OutlinedButton.icon(
-              icon: const Icon(Icons.card_giftcard),
-              label: Text(context.tr('leagues.editPrizes')),
-              onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => LeagueRewardsEditorScreen(leagueId: widget.league.id),
-              )),
-            ),
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: _busy ? null : _save,
-              child: _busy
-                  ? const SizedBox(
-                      height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                  : Text(context.tr('common.save')),
+            const SizedBox(height: 12),
+            Panel(
+              margin: EdgeInsets.zero,
+              children: [
+                PanelRow(
+                  leading: const Icon(Icons.emoji_events_outlined),
+                  title: Text(context.tr('leagues.editPrizes')),
+                  chevron: true,
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => LeagueRewardsEditorScreen(leagueId: widget.league.id),
+                  )),
+                ),
+              ],
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+/// The HARDCORE lives count: label, minus / plus, the count as a numeral.
+/// Clamped to 1..99, the server's range.
+class LivesStepper extends StatelessWidget {
+  const LivesStepper({super.key, required this.lives, required this.onChanged});
+  final int lives;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    return Row(
+      children: [
+        Text(context.tr('leagues.lives')),
+        const Spacer(),
+        IconButton(
+            onPressed: lives > 1 ? () => onChanged(lives - 1) : null,
+            icon: const Icon(Icons.remove)),
+        SizedBox(
+          width: 40,
+          child: Text('$lives',
+              textAlign: TextAlign.center,
+              style: t.score(24, color: Theme.of(context).colorScheme.onSurface)),
+        ),
+        IconButton(
+            onPressed: lives < 99 ? () => onChanged(lives + 1) : null,
+            icon: const Icon(Icons.add)),
+      ],
     );
   }
 }

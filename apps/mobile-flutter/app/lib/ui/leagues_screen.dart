@@ -4,10 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/models.gen.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
+import '../theme/app_theme.dart';
 import 'create_league_screen.dart';
 import 'feedback.dart';
 import 'league_detail_screen.dart';
+import 'league_settings_screen.dart' show modeLabelKey;
 import 'widgets/async_value_view.dart';
+import 'widgets/empty_state.dart';
+import 'widgets/panel.dart';
 
 /// The user's leagues, with browse-public and join-by-code entry points.
 class LeaguesScreen extends ConsumerWidget {
@@ -31,7 +35,7 @@ class LeaguesScreen extends ConsumerWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _joinByCode(context, ref),
-        icon: const Icon(Icons.vpn_key),
+        icon: const Icon(Icons.vpn_key_outlined),
         label: Text(context.tr('leagues.join')),
       ),
       body: RefreshIndicator(
@@ -39,33 +43,44 @@ class LeaguesScreen extends ConsumerWidget {
         child: AsyncValueView<LeaguesResponse>(
           value: leagues,
           onRetry: () => ref.invalidate(leaguesProvider),
-          data: (res) => ListView(
-            children: [
-              const _NudgeBanner(),
-              for (final l in res.leagues)
-                ListTile(
-                  leading: const Icon(Icons.groups),
-                  title: Text(l.name),
-                  subtitle: Text('${l.competition.name} · ${l.memberCount.toInt()}'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => LeagueDetailScreen(leagueId: l.id),
-                  )),
+          data: (res) {
+            if (res.leagues.isEmpty) {
+              return EmptyState(
+                icon: Icons.groups_outlined,
+                message: context.tr('leagues.empty'),
+                action: OutlinedButton.icon(
+                  icon: const Icon(Icons.public_outlined),
+                  label: Text(context.tr('leagues.browse')),
+                  onPressed: () => _browse(context),
                 ),
-              const Divider(),
-              ListTile(
-                leading: const Icon(Icons.public),
-                title: Text(context.tr('leagues.browse')),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => Navigator.of(context)
-                    .push(MaterialPageRoute(builder: (_) => const _PublicLeagues())),
-              ),
-            ],
-          ),
+              );
+            }
+            return ListView(
+              padding: const EdgeInsets.only(top: 4, bottom: 96),
+              children: [
+                const _NudgeBanner(),
+                Panel(children: [for (final l in res.leagues) _LeagueRow(l)]),
+                const SizedBox(height: 12),
+                Panel(
+                  children: [
+                    PanelRow(
+                      leading: const Icon(Icons.public_outlined),
+                      title: Text(context.tr('leagues.browse')),
+                      chevron: true,
+                      onTap: () => _browse(context),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
   }
+
+  void _browse(BuildContext context) =>
+      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const _PublicLeagues()));
 
   Future<void> _joinByCode(BuildContext context, WidgetRef ref) async {
     final controller = TextEditingController();
@@ -102,6 +117,40 @@ class LeaguesScreen extends ConsumerWidget {
 Future<bool> joinLeague(BuildContext context, Future<void> Function() action) =>
     runAction(context, action, successKey: 'leagues.joined');
 
+/// One league on the board: name, competition and mode, the member count as a
+/// scoreboard numeral.
+class _LeagueRow extends StatelessWidget {
+  const _LeagueRow(this.league);
+  final LeaguesResponseLeague league;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final t = context.tokens;
+    return PanelRow(
+      leading: const Icon(Icons.groups_outlined),
+      title: Text(league.name,
+          maxLines: 1, overflow: TextOverflow.ellipsis, style: theme.textTheme.titleSmall),
+      subtitle: Text('${league.competition.name} · ${context.tr(modeLabelKey(league.mode))}',
+          maxLines: 1, overflow: TextOverflow.ellipsis),
+      trailing: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('${league.memberCount.toInt()}',
+              style: t.score(22, color: theme.colorScheme.onSurface)),
+          Text(context.tr('leagues.members'),
+              style: theme.textTheme.labelSmall?.copyWith(color: t.faint)),
+        ],
+      ),
+      chevron: true,
+      onTap: () => Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => LeagueDetailScreen(leagueId: league.id),
+      )),
+    );
+  }
+}
+
 /// Prompts to finish picks in any league that still has open matches uncovered.
 /// Silent when everything is complete (or the read errors/loads).
 class _NudgeBanner extends ConsumerWidget {
@@ -117,29 +166,29 @@ class _NudgeBanner extends ConsumerWidget {
       if (open > 0) needy.add((league, open));
     }
     if (needy.isEmpty) return const SizedBox.shrink();
-    return Card(
-      margin: const EdgeInsets.all(12),
-      color: Theme.of(context).colorScheme.tertiaryContainer,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    final theme = Theme.of(context);
+    final t = context.tokens;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Panel(
+        tint: t.amber.withValues(alpha: 0.10),
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
-                const Icon(Icons.notifications_active),
-                const SizedBox(width: 8),
-                Text(context.tr('nudge.title'),
-                    style: Theme.of(context).textTheme.titleSmall),
+                Icon(Icons.notifications_active_outlined, size: 20, color: t.amber),
+                const SizedBox(width: 10),
+                Text(context.tr('nudge.title'), style: theme.textTheme.titleSmall),
               ],
             ),
           ),
           for (final (league, open) in needy)
-            ListTile(
-              dense: true,
-              title: Text(league.name),
+            PanelRow(
+              title: Text(league.name, maxLines: 1, overflow: TextOverflow.ellipsis),
               subtitle: Text(context.tr('nudge.openCount', {'n': open})),
-              trailing: const Icon(Icons.chevron_right),
+              trailing: Text('$open', style: t.score(22, color: t.amber)),
+              chevron: true,
               onTap: () => Navigator.of(context).push(MaterialPageRoute(
                 builder: (_) => LeagueDetailScreen(leagueId: league.leagueId),
               )),
@@ -156,28 +205,45 @@ class _PublicLeagues extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final pub = ref.watch(publicLeaguesProvider);
+    final theme = Theme.of(context);
+    final t = context.tokens;
     return Scaffold(
       appBar: AppBar(title: Text(context.tr('leagues.browse'))),
       body: AsyncValueView<PublicLeaguesResponse>(
         value: pub,
         onRetry: () => ref.invalidate(publicLeaguesProvider),
         data: (res) => res.leagues.isEmpty
-            ? Center(child: Text(context.tr('leagues.emptyPublic')))
+            ? EmptyState(icon: Icons.public_outlined, message: context.tr('leagues.emptyPublic'))
             : ListView(
+                padding: const EdgeInsets.only(top: 4, bottom: 24),
                 children: [
-                  for (final l in res.leagues)
-                    ListTile(
-                      leading: const Icon(Icons.groups_2),
-                      title: Text(l.name),
-                      subtitle: Text('${l.memberCount.toInt()}'),
-                      trailing: TextButton(
-                        onPressed: () => joinLeague(context, () async {
-                          await ref.read(apiProvider).joinLeague(l.id);
-                          ref.invalidate(leaguesProvider);
-                        }),
-                        child: Text(context.tr('leagues.join')),
-                      ),
-                    ),
+                  Panel(
+                    children: [
+                      for (final l in res.leagues)
+                        PanelRow(
+                          leading: const Icon(Icons.groups_2_outlined),
+                          title: Text(l.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.titleSmall),
+                          subtitle: Row(
+                            children: [
+                              Text('${l.memberCount.toInt()}',
+                                  style: t.score(15, weight: FontWeight.w600, color: t.muted)),
+                              const SizedBox(width: 4),
+                              Text(context.tr('leagues.members')),
+                            ],
+                          ),
+                          trailing: TextButton(
+                            onPressed: () => joinLeague(context, () async {
+                              await ref.read(apiProvider).joinLeague(l.id);
+                              ref.invalidate(leaguesProvider);
+                            }),
+                            child: Text(context.tr('leagues.join')),
+                          ),
+                        ),
+                    ],
+                  ),
                 ],
               ),
       ),

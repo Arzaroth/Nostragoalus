@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../api/models.gen.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
+import '../theme/app_theme.dart';
 import 'feedback.dart';
 import 'widgets/async_value_view.dart';
+import 'widgets/section_card.dart';
 
 /// The full per-criterion prize editor (owner/moderator). Each criterion gets a
 /// label + optional note + link; a blank label removes that prize. Replace-set:
@@ -107,44 +109,47 @@ class _RewardsFormState extends ConsumerState<_RewardsForm> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final t = context.tokens;
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.only(bottom: 32),
       children: [
-        Text(context.tr('leagues.editPrizesHint'), style: Theme.of(context).textTheme.bodySmall),
-        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+          child: Text(context.tr('leagues.editPrizesHint'),
+              style: theme.textTheme.bodyMedium?.copyWith(color: t.muted)),
+        ),
         for (final type in widget.criteria)
-          Card(
-            margin: const EdgeInsets.symmetric(vertical: 6),
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(context.tr('reward.criterion.$type.name'),
-                      style: Theme.of(context).textTheme.titleSmall),
-                  TextField(
-                    controller: _label[type],
-                    decoration: InputDecoration(labelText: context.tr('leagues.prizeLabel')),
-                  ),
-                  TextField(
-                    controller: _note[type],
-                    decoration: InputDecoration(labelText: context.tr('leagues.prizeNote')),
-                  ),
-                  TextField(
-                    controller: _link[type],
-                    keyboardType: TextInputType.url,
-                    decoration: InputDecoration(labelText: context.tr('leagues.prizeLink')),
-                  ),
-                ],
+          SectionCard(
+            title: context.tr('reward.criterion.$type.name'),
+            padded: true,
+            children: [
+              TextField(
+                controller: _label[type],
+                decoration: InputDecoration(labelText: context.tr('leagues.prizeLabel')),
               ),
-            ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _note[type],
+                decoration: InputDecoration(labelText: context.tr('leagues.prizeNote')),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _link[type],
+                keyboardType: TextInputType.url,
+                decoration: InputDecoration(labelText: context.tr('leagues.prizeLink')),
+              ),
+            ],
           ),
-        const SizedBox(height: 16),
-        FilledButton(
-          onPressed: _busy ? null : _save,
-          child: _busy
-              ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
-              : Text(context.tr('common.save')),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+          child: FilledButton(
+            onPressed: _busy ? null : _save,
+            child: _busy
+                ? const SizedBox(
+                    height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                : Text(context.tr('common.save')),
+          ),
         ),
       ],
     );

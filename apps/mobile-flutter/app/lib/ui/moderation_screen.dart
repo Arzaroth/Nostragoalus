@@ -5,9 +5,11 @@ import '../api/models.gen.dart';
 import '../chat/chat_providers.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
+import '../theme/app_theme.dart';
 import 'feedback.dart';
 import 'widgets/async_value_view.dart';
 import 'widgets/empty_state.dart';
+import 'widgets/panel.dart';
 
 /// League chat moderation queue (owner/moderators): reported messages decrypted
 /// client-side, each removable or restorable.
@@ -28,72 +30,18 @@ class ModerationScreen extends ConsumerWidget {
           data: (list) => list.isEmpty
               ? EmptyState(message: context.tr('moderation.empty'), icon: Icons.flag_outlined)
               : ListView(
+                  padding: const EdgeInsets.only(top: 4, bottom: 24),
                   children: [
-                    for (final r in list)
-                      Card(
-                        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (r.authorName != null)
-                                Row(
-                                  children: [
-                                    CircleAvatar(
-                                      radius: 12,
-                                      foregroundImage: r.authorImage == null
-                                          ? null
-                                          : NetworkImage(r.authorImage!),
-                                      onForegroundImageError:
-                                          r.authorImage == null ? null : (_, __) {},
-                                      child: Text(r.authorName!.isEmpty
-                                          ? '?'
-                                          : r.authorName!.characters.first.toUpperCase()),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(r.authorName!,
-                                        style: Theme.of(context).textTheme.labelMedium),
-                                  ],
-                                ),
-                              if (r.authorName != null) const SizedBox(height: 6),
-                              Text(r.text ?? context.tr('chat.undecryptable'),
-                                  style: r.text == null
-                                      ? const TextStyle(fontStyle: FontStyle.italic)
-                                      : null),
-                              const SizedBox(height: 6),
-                              Row(
-                                children: [
-                                  Chip(
-                                    label: Text(context
-                                        .tr('moderation.reportCount')
-                                        .replaceAll('{n}', '${r.reports}')),
-                                    visualDensity: VisualDensity.compact,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(r.moderation.wire,
-                                      style: Theme.of(context).textTheme.bodySmall),
-                                  const Spacer(),
-                                  if (r.moderation == ModerationValue.removed)
-                                    TextButton(
-                                      onPressed: () =>
-                                          _act(context, ref, r.messageId, 'restore'),
-                                      child: Text(context.tr('moderation.restore')),
-                                    )
-                                  else
-                                    TextButton(
-                                      style: TextButton.styleFrom(
-                                          foregroundColor: Theme.of(context).colorScheme.error),
-                                      onPressed: () =>
-                                          _act(context, ref, r.messageId, 'remove'),
-                                      child: Text(context.tr('moderation.remove')),
-                                    ),
-                                ],
-                              ),
-                            ],
+                    Panel(
+                      children: [
+                        for (final r in list)
+                          _ReportRow(
+                            report: r,
+                            onRestore: () => _act(context, ref, r.messageId, 'restore'),
+                            onRemove: () => _act(context, ref, r.messageId, 'remove'),
                           ),
-                        ),
-                      ),
+                      ],
+                    ),
                   ],
                 ),
         ),
@@ -109,5 +57,80 @@ class ModerationScreen extends ConsumerWidget {
       successKey: 'chat.moderation.done',
     );
     if (ok) ref.invalidate(moderationReportsProvider(leagueId));
+  }
+}
+
+/// One reported message: the author line, the decrypted text (or the
+/// undecryptable notice), the report count and state, and the one action the
+/// current state allows.
+class _ReportRow extends StatelessWidget {
+  const _ReportRow({required this.report, required this.onRestore, required this.onRemove});
+  final ModerationReport report;
+  final VoidCallback onRestore;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    final t = context.tokens;
+    final r = report;
+    final author = r.authorName;
+    final removed = r.moderation == ModerationValue.removed;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (author != null) ...[
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 12,
+                  backgroundColor: scheme.primaryContainer,
+                  foregroundImage: r.authorImage == null ? null : NetworkImage(r.authorImage!),
+                  onForegroundImageError: r.authorImage == null ? null : (_, __) {},
+                  child: Text(
+                    author.isEmpty ? '?' : author.characters.first.toUpperCase(),
+                    style: TextStyle(
+                        fontFamily: AppTheme.displayFamily,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: scheme.onPrimaryContainer),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(author, style: theme.textTheme.labelMedium),
+              ],
+            ),
+            const SizedBox(height: 8),
+          ],
+          Text(
+            r.text ?? context.tr('chat.undecryptable'),
+            style: r.text == null
+                ? theme.textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic, color: t.muted)
+                : theme.textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Tag(context.tr('moderation.reportCount').replaceAll('{n}', '${r.reports}'),
+                  color: t.live, icon: Icons.flag_outlined),
+              const SizedBox(width: 6),
+              Tag(r.moderation.wire, color: removed ? t.faint : null),
+              const Spacer(),
+              if (removed)
+                TextButton(onPressed: onRestore, child: Text(context.tr('moderation.restore')))
+              else
+                TextButton(
+                  style: TextButton.styleFrom(foregroundColor: scheme.error),
+                  onPressed: onRemove,
+                  child: Text(context.tr('moderation.remove')),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -5,7 +5,9 @@ import '../api/models.gen.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
 import 'feedback.dart';
-import 'league_settings_screen.dart' show modeLabelKey, pickable, visibilityLabelKey;
+import 'league_settings_screen.dart'
+    show LivesStepper, modeLabelKey, pickable, visibilityLabelKey;
+import 'widgets/panel.dart';
 
 class CreateLeagueScreen extends ConsumerStatefulWidget {
   const CreateLeagueScreen({super.key});
@@ -57,83 +59,72 @@ class _CreateLeagueScreenState extends ConsumerState<CreateLeagueScreen> {
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
           children: [
-            TextFormField(
-              controller: _name,
-              decoration: InputDecoration(
-                labelText: context.tr('leagues.name'),
-                border: const OutlineInputBorder(),
-              ),
-              validator: (v) =>
-                  (v == null || v.trim().length < 3) ? context.tr('leagues.nameTooShort') : null,
-            ),
-            const SizedBox(height: 16),
-            comps.maybeWhen(
-              data: (res) => DropdownButtonFormField<String>(
-                initialValue: _competition,
-                decoration: InputDecoration(
-                  labelText: context.tr('nav.competition'),
-                  border: const OutlineInputBorder(),
+            Panel(
+              margin: EdgeInsets.zero,
+              padding: const EdgeInsets.all(16),
+              dividers: false,
+              children: [
+                TextFormField(
+                  controller: _name,
+                  decoration: InputDecoration(labelText: context.tr('leagues.name')),
+                  validator: (v) => (v == null || v.trim().length < 3)
+                      ? context.tr('leagues.nameTooShort')
+                      : null,
                 ),
-                items: [
-                  for (final c in res.competitions)
-                    DropdownMenuItem(value: c.slug, child: Text(c.name)),
+                const SizedBox(height: 12),
+                comps.maybeWhen(
+                  data: (res) => DropdownButtonFormField<String>(
+                    initialValue: _competition,
+                    decoration: InputDecoration(labelText: context.tr('nav.competition')),
+                    items: [
+                      for (final c in res.competitions)
+                        DropdownMenuItem(value: c.slug, child: Text(c.name)),
+                    ],
+                    validator: (v) => v == null ? context.tr('leagues.competitionRequired') : null,
+                    onChanged: (v) => setState(() => _competition = v),
+                  ),
+                  orElse: () => const LinearProgressIndicator(),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<VisibilityValue>(
+                  initialValue: _visibility,
+                  decoration: InputDecoration(labelText: context.tr('leagues.visibility')),
+                  items: [
+                    for (final v in pickable(VisibilityValue.values, VisibilityValue.unknown))
+                      DropdownMenuItem(value: v, child: Text(context.tr(visibilityLabelKey(v)))),
+                  ],
+                  onChanged: (v) => setState(() => _visibility = v ?? VisibilityValue.private),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<ModeValue>(
+                  initialValue: _mode,
+                  decoration: InputDecoration(labelText: context.tr('leagues.mode')),
+                  items: [
+                    for (final m in pickable(ModeValue.values, ModeValue.unknown))
+                      DropdownMenuItem(value: m, child: Text(context.tr(modeLabelKey(m)))),
+                  ],
+                  onChanged: (v) => setState(() => _mode = v ?? ModeValue.normal),
+                ),
+                // HARDCORE is the only mode the server accepts a lives count for,
+                // and it rejects the create without one.
+                if (_mode == ModeValue.hardcore) ...[
+                  const SizedBox(height: 8),
+                  LivesStepper(
+                    lives: _lives,
+                    onChanged: (v) => setState(() => _lives = v),
+                  ),
                 ],
-                validator: (v) => v == null ? context.tr('leagues.competitionRequired') : null,
-                onChanged: (v) => setState(() => _competition = v),
-              ),
-              orElse: () => const LinearProgressIndicator(),
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<VisibilityValue>(
-              initialValue: _visibility,
-              decoration: InputDecoration(
-                labelText: context.tr('leagues.visibility'),
-                border: const OutlineInputBorder(),
-              ),
-              items: [
-                for (final v in pickable(VisibilityValue.values, VisibilityValue.unknown))
-                  DropdownMenuItem(value: v, child: Text(context.tr(visibilityLabelKey(v)))),
+                const SizedBox(height: 16),
+                FilledButton(
+                  onPressed: _busy ? null : _create,
+                  child: _busy
+                      ? const SizedBox(
+                          height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                      : Text(context.tr('leagues.create')),
+                ),
               ],
-              onChanged: (v) => setState(() => _visibility = v ?? VisibilityValue.private),
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<ModeValue>(
-              initialValue: _mode,
-              decoration: InputDecoration(
-                labelText: context.tr('leagues.mode'),
-                border: const OutlineInputBorder(),
-              ),
-              items: [
-                for (final m in pickable(ModeValue.values, ModeValue.unknown))
-                  DropdownMenuItem(value: m, child: Text(context.tr(modeLabelKey(m)))),
-              ],
-              onChanged: (v) => setState(() => _mode = v ?? ModeValue.normal),
-            ),
-            // HARDCORE is the only mode the server accepts a lives count for,
-            // and it rejects the create without one.
-            if (_mode == ModeValue.hardcore)
-              Row(
-                children: [
-                  Text(context.tr('leagues.lives')),
-                  const Spacer(),
-                  IconButton(
-                      onPressed: _lives > 1 ? () => setState(() => _lives--) : null,
-                      icon: const Icon(Icons.remove)),
-                  Text('$_lives'),
-                  IconButton(
-                      onPressed: _lives < 99 ? () => setState(() => _lives++) : null,
-                      icon: const Icon(Icons.add)),
-                ],
-              ),
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: _busy ? null : _create,
-              child: _busy
-                  ? const SizedBox(
-                      height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                  : Text(context.tr('leagues.create')),
             ),
           ],
         ),
