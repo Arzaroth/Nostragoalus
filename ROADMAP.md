@@ -760,6 +760,10 @@ effort buckets; order within a bucket is not priority.
     fergie-time, commit-reveal, key transparency and E2EE are proven bit-for-bit
     against TS. Roughly 50 screens; per-feature status in
     `apps/mobile-flutter/PARITY.md`, docs in `apps/mobile-flutter/README.md`.
+  - [x] **Own design system ("Floodlit")** rather than a Material re-skin of
+    the web: night ground, chalk hairline panels, Barlow + Barlow Condensed
+    scoreboard numerals, coherent light mode and RTL. On `feat/mobile-design-v2`,
+    awaiting feature-treatment.
   - [ ] Remaining: mobile push (needs new server FCM endpoints - the server
     speaks only web-push/VAPID), a real upload keystore (release currently
     signs with the debug key), coverage measurement in the mobile gate, and

@@ -2841,6 +2841,23 @@ majors a HIGH advisory forced: `nuxt` 4.4.7 -> 4.5.2 and `nodemailer` 8 -> 9.
       `app:templates` override in `apps/web-nuxt/nuxt.config.ts` that resolves
       the global per call. The sanctioned fix is `mockNuxtImport('$fetch', ...)`
       in each spec - worth doing if the override ever fights a Nuxt upgrade.
+## Mobile app - deferred from the Floodlit design pass (feat/mobile-design-v2)
+
+- [ ] The DM inbox row has no last-message preview: `Thread` only carries
+      `lastMessageAt` (the body is E2EE ciphertext server-side), so the muted
+      line is the time. A client-side decrypted preview needs the thread key
+      resolved at list time.
+- [ ] The voice bar has no per-peer speaking state, so the "speaking" emerald
+      highlight is the established-call state, not a per-speaker meter.
+- [ ] A normal-mode league still links "View rankings" to the mode board, which
+      answers 400 for anything but hard/hardcore; hide the row (or route it to
+      the plain league leaderboard) for easy leagues.
+- [ ] No i18n key for a "Security" heading; the account hub heads that group
+      with `account.title`. Add `account.security` in all five locales.
+- [ ] The chat body was reviewed by tests only: with one probe account the
+      room sits on "waiting to be let in", so the bubbles have not been seen on
+      a device. Seed a second identity in `tool/seed_e2e.sh` for that.
+
 ## Mobile app (apps/mobile-flutter) - tech debt from the gaps review
 
 The big one, and the reason everything below is possible:
