@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [4.8.0] - 2026-09-07
+
 ### Ajouté
 
 - Application Android : un onglet Discussion. Les discussions de vos ligues et vos messages privés sont maintenant à un geste depuis n'importe quel écran, avec une pastille pour les messages non lus, au lieu d'être enfouis dans une ligue.

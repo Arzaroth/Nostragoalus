@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [4.8.0] - 2026-09-07
+
 ### chelpu'
 
 - Android De'wI'Hom: ja'chuq 'ay'. DaH Hoch HaStavo' wa' 'uy'moHmeH ghommey ja'chuq je QIn pegh Suqlu'laH; QIn lajbe'bogh mI' 'ang. wa'DIch ghom qoDDaq So'lu'pu'.

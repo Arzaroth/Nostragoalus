@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [4.8.0] - 2026-09-07
+
 ### Added
 
 - Android app: a Chat tab. Your league chats and your direct messages are now one tap from anywhere in the app, with a badge for unread messages, instead of being buried inside a league.
