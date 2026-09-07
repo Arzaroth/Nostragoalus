@@ -7,25 +7,36 @@ import '../state/providers.dart';
 import '../theme/app_theme.dart';
 import 'cabinet_screen.dart';
 import 'competition_switcher.dart';
+import 'league_switcher.dart';
 import 'widgets/async_value_view.dart';
 import 'widgets/empty_state.dart';
 import 'widgets/leaderboard_row_card.dart';
 
 /// The standings of players by points, one panel of [LeaderboardRowCard] rows
 /// (rank, movement, champion/best-scorer flags, live points); the signed-in
-/// row is tinted.
+/// row is tinted. The league lens narrows it to one league's members.
 class LeaderboardScreen extends ConsumerWidget {
   const LeaderboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // A lens pointed at a league the viewer can no longer read 404s, and the
+    // retry button would just 404 again. Drop it and fall back to everyone.
+    ref.listen(leaderboardProvider, (_, next) {
+      final error = next.error;
+      if (error is ApiException &&
+          error.status == 404 &&
+          ref.read(selectedLeagueIdProvider) != null) {
+        selectLeague(ref, null);
+      }
+    });
     final board = ref.watch(leaderboardProvider);
     final meId = ref.watch(authControllerProvider).valueOrNull?.id;
     final t = context.tokens;
     return Scaffold(
       appBar: AppBar(
         title: Text(context.tr('leaderboard.title')),
-        actions: const [CompetitionSwitcher()],
+        actions: const [LeagueSwitcher(), CompetitionSwitcher()],
       ),
       body: RefreshIndicator(
         onRefresh: () async => ref.refresh(leaderboardProvider.future),
@@ -36,6 +47,7 @@ class LeaderboardScreen extends ConsumerWidget {
             if (res.rows.isEmpty) {
               return EmptyState(icon: Icons.leaderboard_outlined, message: context.tr('leaderboard.empty'));
             }
+            final hidden = res.hiddenCount?.toInt() ?? 0;
             return CustomScrollView(
               slivers: [
                 SliverPadding(
@@ -69,6 +81,16 @@ class LeaderboardScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
+                if (hidden > 0)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                      child: Text(
+                        context.tr('leaderboard.hiddenNote', {'n': hidden}),
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(color: t.faint),
+                      ),
+                    ),
+                  ),
               ],
             );
           },

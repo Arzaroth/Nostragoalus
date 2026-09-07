@@ -13,10 +13,15 @@ class RouteAdapter implements HttpClientAdapter {
   final Map<String, Reply Function()> routes;
   final List<String> calls = [];
 
+  /// The query parameters of the last request to each path, for asserting how a
+  /// read was scoped without threading a whole [FakeAdapter] through.
+  final Map<String, Map<String, dynamic>> queries = {};
+
   @override
   Future<ResponseBody> fetch(
       RequestOptions options, Stream<Uint8List>? requestStream, Future<void>? cancelFuture) async {
     calls.add('${options.method} ${options.path}');
+    queries[options.path] = options.queryParameters;
     final r = routes[options.path]?.call() ?? Reply(404, {'error': 'no route ${options.path}'});
     return ResponseBody.fromString(jsonEncode(r.body), r.status, headers: {
       Headers.contentTypeHeader: [Headers.jsonContentType],

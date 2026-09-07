@@ -76,9 +76,11 @@ extension LeaguesApi on ApiClient {
   Future<ModeBoardResponse> leagueBoard(String leagueId) async =>
       ModeBoardResponse.fromJson(await getJson('/api/leagues/$leagueId/mode-board'));
 
-  Future<LeaderboardResponse> leaderboard({String? competition}) async =>
-      LeaderboardResponse.fromJson(
-          await getJson('/api/leaderboard', query: competitionQuery(competition)));
+  /// The points ranking. With [league], only that league's members are ranked
+  /// and the movement arrows are within-league deltas.
+  Future<LeaderboardResponse> leaderboard({String? competition, String? league}) async =>
+      LeaderboardResponse.fromJson(await getJson('/api/leaderboard',
+          query: leagueScopedQuery(competition, league)));
 
   /// Per-league pick completeness (which leagues still need picks/exact/stake).
   Future<List<LeagueCompletenessResponseLeague>> leagueCompleteness({String? competition}) async =>

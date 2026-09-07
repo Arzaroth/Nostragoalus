@@ -890,6 +890,7 @@
     "fergieLost": "เสีย"
   },
   "leaderboard": {
+    "hiddenNote": "ซ่อนไว้ {n}",
     "title": "อันดับ",
     "thisCompetition": "รายการนี้",
     "global": "รวมทุกรายการ",

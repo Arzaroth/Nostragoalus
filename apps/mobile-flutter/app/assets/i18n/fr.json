@@ -890,6 +890,7 @@
     "fergieLost": "perdus"
   },
   "leaderboard": {
+    "hiddenNote": "{n} masqué(s)",
     "title": "Classement",
     "thisCompetition": "Compétition",
     "global": "Global",

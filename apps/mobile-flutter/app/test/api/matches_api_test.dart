@@ -154,6 +154,22 @@ void main() {
           method: 'GET', path: '/api/predictions/crowd', query: {'competition': 'wc26'});
     });
 
+    test('crowdTotals under the league lens sends the league alone', () async {
+      final (api, adapter) = buildApi([
+        Reply(200, const {
+          'totals': {
+            'm1': {'home': 4, 'away': 2, 'count': 3},
+          },
+          'league': {'id': 'lg', 'name': 'Office'},
+        }),
+      ]);
+
+      final totals = await api.crowdTotals(competition: 'wc26', league: 'lg');
+      expect(totals['m1']?.count, 3);
+      expectRequest(adapter,
+          method: 'GET', path: '/api/predictions/crowd', query: {'league': 'lg'});
+    });
+
     test('crowdTotals throws on a non-2xx', () async {
       final (api, _) = buildFailing(500);
       await expectLater(api.crowdTotals(), throwsStatus(500));

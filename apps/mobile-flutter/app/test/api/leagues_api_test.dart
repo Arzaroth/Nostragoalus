@@ -376,6 +376,25 @@ void main() {
           method: 'GET', path: '/api/leaderboard', query: {'competition': 'wc26'});
     });
 
+    // A league fixes its own competition; sending a slug alongside it 400s when
+    // the two disagree, so the lens replaces the slug rather than joining it.
+    test('leaderboard under the league lens sends the league alone', () async {
+      final (api, adapter) = buildApi([
+        Reply(200, const {
+          'competition': null,
+          'league': {'id': 'lg', 'name': 'Office'},
+          'live': null,
+          'hiddenCount': 2,
+          'rows': [],
+        }),
+      ]);
+
+      final res = await api.leaderboard(competition: 'wc26', league: 'lg');
+      expect(res.league?.name, 'Office');
+      expect(res.hiddenCount, 2);
+      expectRequest(adapter, method: 'GET', path: '/api/leaderboard', query: {'league': 'lg'});
+    });
+
     test('leagueCompleteness scopes to the competition', () async {
       final (api, adapter) = buildApi([
         Reply(200, const {'leagues': []}),

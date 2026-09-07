@@ -8,6 +8,7 @@ import '../theme/app_theme.dart';
 import 'best_scorer_screen.dart';
 import 'champion_screen.dart';
 import 'competition_switcher.dart';
+import 'league_switcher.dart';
 import 'match_detail_screen.dart';
 import 'widgets/async_value_view.dart';
 import 'widgets/empty_state.dart';
@@ -31,7 +32,7 @@ class MatchesScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(context.tr('matches.title')),
-        actions: const [CompetitionSwitcher(), NotificationsBell()],
+        actions: const [LeagueSwitcher(), CompetitionSwitcher(), NotificationsBell()],
       ),
       body: RefreshIndicator(
         onRefresh: () async => ref.refresh(matchesProvider.future),

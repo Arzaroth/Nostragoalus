@@ -8,6 +8,12 @@ import 'token_store.dart';
 Map<String, dynamic>? competitionQuery(String? competition) =>
     competition == null ? null : {'competition': competition};
 
+/// The query for a read that can be narrowed to one league. A league fixes its
+/// own competition server-side, and sending a slug alongside it 400s when the
+/// two disagree - so the lens replaces the slug rather than joining it.
+Map<String, dynamic>? leagueScopedQuery(String? competition, String? league) =>
+    league == null ? competitionQuery(competition) : {'league': league};
+
 /// True when the request never reached the server - DNS, refused, timed out.
 /// `validateStatus` accepts every status, so anything the server answered is an
 /// [ApiException]; the UI needs that difference, because "we could not reach the

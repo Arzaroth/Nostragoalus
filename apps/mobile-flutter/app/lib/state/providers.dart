@@ -9,6 +9,7 @@ import '../api/auth_repository.dart';
 import '../api/models.gen.dart';
 import '../api/token_store.dart';
 import '../i18n/i18n.dart';
+import '../leagues/league_selection.dart';
 import '../live/live_service.dart';
 import '../voice/voice_service.dart';
 import 'app_prefs.dart';
@@ -17,6 +18,7 @@ import 'app_prefs.dart';
 // resolves where its library is imported - so every screen that reads
 // [apiProvider] would otherwise need its own api import.
 export '../api/api.dart' hide ApiClient;
+export '../leagues/league_selection.dart' show LeagueSelections;
 
 /// Persisted UI preferences. `main()` overrides this with an instance whose
 /// `load()` already ran, so the providers below can seed synchronously.
@@ -38,12 +40,56 @@ String resolveLocaleCode(String code) =>
 final selectedCompetitionProvider =
     StateProvider<String?>((ref) => ref.watch(appPrefsProvider).competition);
 
-/// Writes both UI preferences back to the store whenever they change. The root
+/// The selected tab of the signed-in shell. A provider rather than shell state
+/// so a screen can send the user to another tab (the chat tab's empty state
+/// points at the leagues tab) instead of pushing a second copy of it.
+final homeTabProvider = StateProvider<int>((ref) => 0);
+
+/// The persisted league lens, one selected league id per competition slug. The
+/// switcher writes it; [selectedLeagueIdProvider] narrows it to the competition
+/// on screen. Mirrors the web's `ng-league` cookie.
+final leagueSelectionsProvider = StateProvider<LeagueSelections>(
+    (ref) => decodeLeagueSelections(ref.watch(appPrefsProvider).leagueSelections));
+
+/// The league the scoped reads (leaderboard, crowd) are filtered by, or null for
+/// the everyone view.
+final selectedLeagueIdProvider = Provider<String?>((ref) => selectedLeagueFor(
+    ref.watch(leagueSelectionsProvider), ref.watch(selectedCompetitionProvider)));
+
+/// Points the lens at [id] (null clears it) for the competition on screen.
+void selectLeague(WidgetRef ref, String? id) {
+  final slug = ref.read(selectedCompetitionProvider);
+  final notifier = ref.read(leagueSelectionsProvider.notifier);
+  notifier.state = withLeagueSelection(notifier.state, slug, id);
+}
+
+/// Drops a lens pointed at a league the user is no longer in (left, kicked,
+/// deleted) once the leagues list has settled. Watched once by the root widget.
+///
+/// The list has to be settled AND not refetching: a league joined a moment ago
+/// is written to the lens while [leaguesProvider] is still serving the previous
+/// list, and pruning against that would erase the selection just made.
+final leagueSelectionPruneProvider = Provider<void>((ref) {
+  ref.listen(leaguesProvider, (_, next) {
+    if (next.isLoading || !next.hasValue) return;
+    final slug = ref.read(selectedCompetitionProvider);
+    final selections = ref.read(leagueSelectionsProvider);
+    final valid = [for (final l in next.requireValue.leagues) l.id];
+    final pruned = pruneLeagueSelection(selections, slug, valid);
+    if (!identical(pruned, selections)) {
+      ref.read(leagueSelectionsProvider.notifier).state = pruned;
+    }
+  });
+});
+
+/// Writes the UI preferences back to the store whenever they change. The root
 /// widget watches it once; it has no value of its own.
 final prefsPersistenceProvider = Provider<void>((ref) {
   final prefs = ref.watch(appPrefsProvider);
   ref.listen(localeProvider, (_, next) => prefs.setLocale(next.languageCode));
   ref.listen(selectedCompetitionProvider, (_, next) => prefs.setCompetition(next));
+  ref.listen(leagueSelectionsProvider,
+      (_, next) => prefs.setLeagueSelections(next.isEmpty ? null : encodeLeagueSelections(next)));
 });
 
 /// The loaded strings for the active locale (English fallback baked in).
@@ -178,6 +224,16 @@ final matchesProvider = FutureProvider<MatchesResponse>((ref) =>
 final crowdTotalsProvider = FutureProvider<Map<String, CrowdResponseTotal>>((ref) =>
     ref.watch(apiProvider).crowdTotals(competition: ref.watch(selectedCompetitionProvider)));
 
+/// The same totals over the selected league's members only - display-only, and
+/// empty with no lens. The scoring crowd bonus always uses everyone, which is
+/// why this rides NEXT TO [crowdTotalsProvider] instead of replacing it.
+final leagueCrowdTotalsProvider =
+    FutureProvider<Map<String, CrowdResponseTotal>>((ref) async {
+  final league = ref.watch(selectedLeagueIdProvider);
+  if (league == null) return const {};
+  return ref.watch(apiProvider).crowdTotals(league: league);
+});
+
 /// A shared card resolved by (kind, token) for the in-app viewer.
 final shareCardProvider =
     FutureProvider.autoDispose.family<Map<String, dynamic>, (String, String)>(
@@ -190,7 +246,9 @@ final headToHeadProvider =
             competition: ref.watch(selectedCompetitionProvider)));
 
 final leaderboardProvider = FutureProvider<LeaderboardResponse>((ref) =>
-    ref.watch(apiProvider).leaderboard(competition: ref.watch(selectedCompetitionProvider)));
+    ref.watch(apiProvider).leaderboard(
+        competition: ref.watch(selectedCompetitionProvider),
+        league: ref.watch(selectedLeagueIdProvider)));
 
 final leaguesProvider =
     FutureProvider<LeaguesResponse>((ref) => ref.watch(apiProvider).leagues(competition: ref.watch(selectedCompetitionProvider)));

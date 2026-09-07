@@ -890,6 +890,7 @@
     "fergieLost": "natlh"
   },
   "leaderboard": {
+    "hiddenNote": "{n} So'lu'",
     "title": "patlh",
     "thisCompetition": "'aqtu'",
     "global": "Hoch qo'",

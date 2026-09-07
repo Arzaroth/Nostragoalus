@@ -21,8 +21,18 @@ import 'widgets/app_nav_bar.dart';
 /// RING_TIMEOUT_MS).
 const _ringTimeout = Duration(seconds: 30);
 
-/// The signed-in shell: four tabs over the MVP loop. IndexedStack keeps each
-/// tab's scroll + query state alive when switching.
+/// The index of each shell tab. [homeTabProvider] holds one of these, so a
+/// screen can send the user to a sibling tab.
+abstract final class HomeTab {
+  static const matches = 0;
+  static const standings = 1;
+  static const leaderboard = 2;
+  static const leagues = 3;
+  static const account = 4;
+}
+
+/// The signed-in shell: one tab per top-level destination. IndexedStack keeps
+/// each tab's scroll + query state alive when switching.
 class HomeShell extends ConsumerStatefulWidget {
   const HomeShell({super.key});
 
@@ -31,7 +41,6 @@ class HomeShell extends ConsumerStatefulWidget {
 }
 
 class _HomeShellState extends ConsumerState<HomeShell> {
-  int _tab = 0;
   StreamSubscription<LiveFrame>? _liveSub;
   AppLifecycleListener? _lifecycle;
   bool _tourChecked = false;
@@ -43,6 +52,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   // and the socket still has to be closed from dispose().
   LiveService? _live;
 
+  // Index-aligned with [HomeTab].
   static const _screens = [
     MatchesScreen(),
     StandingsScreen(),
@@ -54,6 +64,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   @override
   void initState() {
     super.initState();
+    ref.read(leagueSelectionPruneProvider);
     final live = ref.read(liveServiceProvider)..connect();
     _live = live;
     // One hub socket for the whole app: the voice signaling multiplexes over it.
@@ -261,11 +272,12 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     // Keep the hub subscribed to the in-play matches, and told which one is open.
     ref.listen(matchesProvider, (_, __) => _resubscribe());
     ref.listen(viewedMatchProvider, (_, __) => _resubscribe());
+    final tab = ref.watch(homeTabProvider);
     return Scaffold(
-      body: IndexedStack(index: _tab, children: _screens),
+      body: IndexedStack(index: tab, children: _screens),
       bottomNavigationBar: AppNavBar(
-        selectedIndex: _tab,
-        onSelected: (i) => setState(() => _tab = i),
+        selectedIndex: tab,
+        onSelected: (i) => ref.read(homeTabProvider.notifier).state = i,
         items: [
           NavItem(
               icon: Icons.sports_soccer_outlined,
@@ -279,8 +291,14 @@ class _HomeShellState extends ConsumerState<HomeShell> {
               icon: Icons.leaderboard_outlined,
               activeIcon: Icons.leaderboard,
               label: context.tr('nav.leaderboard')),
-          NavItem(icon: Icons.groups_outlined, activeIcon: Icons.groups, label: context.tr('nav.leagues')),
-          NavItem(icon: Icons.person_outline, activeIcon: Icons.person, label: context.tr('nav.account')),
+          NavItem(
+              icon: Icons.groups_outlined,
+              activeIcon: Icons.groups,
+              label: context.tr('nav.leagues')),
+          NavItem(
+              icon: Icons.person_outline,
+              activeIcon: Icons.person,
+              label: context.tr('nav.account')),
         ],
       ),
     );

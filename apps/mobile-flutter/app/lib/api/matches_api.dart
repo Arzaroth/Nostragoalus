@@ -36,10 +36,12 @@ extension MatchesApi on ApiClient {
   Future<PastPicksResponse> pastPicks(String matchId) async =>
       PastPicksResponse.fromJson(await getJson('/api/matches/$matchId/my-past-picks'));
 
-  /// Crowd totals keyed by matchId. Display-only.
-  Future<Map<String, CrowdResponseTotal>> crowdTotals({String? competition}) async =>
-      CrowdResponse.fromJson(
-              await getJson('/api/predictions/crowd', query: competitionQuery(competition)))
+  /// Crowd totals keyed by matchId. Display-only; with [league], summed over
+  /// that league's members only (the scoring bonus always uses everyone).
+  Future<Map<String, CrowdResponseTotal>> crowdTotals(
+          {String? competition, String? league}) async =>
+      CrowdResponse.fromJson(await getJson('/api/predictions/crowd',
+              query: leagueScopedQuery(competition, league)))
           .totals;
 
   Future<BotPredictionsResponse> botPredictions({String? competition}) async =>

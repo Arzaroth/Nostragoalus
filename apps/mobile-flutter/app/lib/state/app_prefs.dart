@@ -2,8 +2,9 @@ import 'dart:async';
 
 import '../api/token_store.dart';
 
-/// Non-secret UI preferences (chosen locale, selected competition), persisted so
-/// a Thai or Arabic user does not re-pick their language on every cold start.
+/// Non-secret UI preferences (chosen locale, selected competition, the per-
+/// competition league lens), persisted so a Thai or Arabic user does not re-pick
+/// their language on every cold start.
 /// They live in the same platform keystore as the bearer token because that is
 /// the only key/value store the app already depends on.
 class AppPrefs {
@@ -12,9 +13,11 @@ class AppPrefs {
   final SecureKv _kv;
   static const localeKey = 'ng_locale';
   static const competitionKey = 'ng_competition';
+  static const leaguesKey = 'ng_leagues';
 
   String? locale;
   String? competition;
+  String? leagueSelections;
 
   /// Reads both values into memory so the synchronous preference providers can
   /// seed from them. Called once from `main()` before the app boots; a missing
@@ -23,10 +26,12 @@ class AppPrefs {
     try {
       locale = await _kv.read(localeKey);
       competition = await _kv.read(competitionKey);
+      leagueSelections = await _kv.read(leaguesKey);
     } catch (_) {
       // No keystore available: run with the defaults rather than failing boot.
       locale = null;
       competition = null;
+      leagueSelections = null;
     }
   }
 
@@ -38,6 +43,11 @@ class AppPrefs {
   void setCompetition(String? slug) {
     competition = slug;
     unawaited(slug == null ? _delete(competitionKey) : _write(competitionKey, slug));
+  }
+
+  void setLeagueSelections(String? json) {
+    leagueSelections = json;
+    unawaited(json == null ? _delete(leaguesKey) : _write(leaguesKey, json));
   }
 
   Future<void> _write(String key, String value) async {

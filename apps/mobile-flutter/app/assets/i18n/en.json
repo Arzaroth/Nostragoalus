@@ -895,6 +895,7 @@
     "fergieLost": "lost"
   },
   "leaderboard": {
+    "hiddenNote": "{n} hidden",
     "title": "Ranking",
     "thisCompetition": "Competition",
     "global": "Global",
