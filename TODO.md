@@ -2922,6 +2922,21 @@ blocking):
       room sits on "waiting to be let in", so the bubbles have not been seen on
       a device. Seed a second identity in `tool/seed_e2e.sh` for that.
 
+## Release flakes
+
+- [ ] `pnpm test:components` can fail a release with every test green.
+      PrimeVue's tooltip removal is a `setTimeout` (`src/tooltip/Tooltip.js:271`)
+      that calls `getTooltipElement` -> `document`; when it fires after vitest
+      has torn the JSDOM environment down it surfaces as an uncaught
+      `ReferenceError: document is not defined` attributed to
+      `app/components/ChatPanel.nuxt.test.ts`, and vitest exits 1 on the
+      unhandled error even though all 59 files / 317 tests passed. It is
+      load-dependent - it hit the v4.8.0 release, and the same suite run
+      standalone on a quiet machine is exit 0. Fix at the source: unmount the
+      tooltip-bearing components (or `vi.useFakeTimers()` and flush) so no
+      removal timer outlives the environment. Retrying the release is the
+      current workaround.
+
 ## Mobile app (apps/mobile-flutter) - tech debt from the gaps review
 
 The big one, and the reason everything below is possible:
