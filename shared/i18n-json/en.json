@@ -431,6 +431,7 @@
     "streamCapReached": "Only {count} stream at a time"
   },
   "nav": {
+    "chat": "Chat",
     "teams": "Teams",
     "competition": "Competition",
     "scorers": "Scorers",

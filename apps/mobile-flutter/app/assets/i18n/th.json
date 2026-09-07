@@ -426,6 +426,7 @@
     "streamCapReached": "สตรีมได้ครั้งละ {count} รายการ"
   },
   "nav": {
+    "chat": "แชท",
     "teams": "ทีม",
     "competition": "การแข่งขัน",
     "scorers": "ผู้ทำประตู",

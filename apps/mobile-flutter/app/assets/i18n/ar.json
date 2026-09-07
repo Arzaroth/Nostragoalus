@@ -544,6 +544,7 @@
     "streamCapReached": "{count} بث في كل مرة"
   },
   "nav": {
+    "chat": "الدردشة",
     "teams": "الفرق",
     "competition": "المسابقة",
     "scorers": "الهدافون",

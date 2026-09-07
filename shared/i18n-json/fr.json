@@ -426,6 +426,7 @@
     "streamCapReached": "{count} direct à la fois"
   },
   "nav": {
+    "chat": "Discussion",
     "teams": "Équipes",
     "competition": "Compétition",
     "scorers": "Buteurs",

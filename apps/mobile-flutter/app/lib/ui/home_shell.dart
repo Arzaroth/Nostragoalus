@@ -10,6 +10,7 @@ import '../live/live_service.dart';
 import '../state/providers.dart';
 import '../voice/voice_service.dart';
 import 'account_screen.dart';
+import 'chat_rooms_screen.dart';
 import 'leaderboard_screen.dart';
 import 'leagues_screen.dart';
 import 'matches_screen.dart';
@@ -28,7 +29,8 @@ abstract final class HomeTab {
   static const standings = 1;
   static const leaderboard = 2;
   static const leagues = 3;
-  static const account = 4;
+  static const chat = 4;
+  static const account = 5;
 }
 
 /// The signed-in shell: one tab per top-level destination. IndexedStack keeps
@@ -58,6 +60,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     StandingsScreen(),
     LeaderboardScreen(),
     LeaguesScreen(),
+    ChatRoomsScreen(),
     AccountScreen(),
   ];
 
@@ -295,6 +298,10 @@ class _HomeShellState extends ConsumerState<HomeShell> {
               icon: Icons.groups_outlined,
               activeIcon: Icons.groups,
               label: context.tr('nav.leagues')),
+          NavItem(
+              icon: Icons.chat_bubble_outline,
+              activeIcon: Icons.chat_bubble,
+              label: context.tr('nav.chat')),
           NavItem(
               icon: Icons.person_outline,
               activeIcon: Icons.person,
