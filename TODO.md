@@ -2896,9 +2896,26 @@ blocking):
       fixed filename, so it needs the route (and the sidecar) to carry a per-ABI
       set plus a sensible default for an unknown user agent.
 
-- [ ] `/download/nostragoalus.apk` sets an ETag but does not handle
-      `If-None-Match`, so a revalidating client re-downloads the whole ~60 MB
-      instead of taking a 304.
+- [x] ~~`/download/nostragoalus.apk` sets an ETag but does not handle
+      `If-None-Match`~~ - answers 304 now, alongside the versioned-URL caching.
+- [ ] The APK download is cacheable but the origin is still reachable per
+      request. Two pieces are outstanding, and neither is code in this repo:
+      a Cloudflare cache rule that IGNORES the query string (the server-side
+      redirect makes a busted request cheap, but only a cache rule makes it not
+      arrive), and the bigger question of moving the object off the origin -
+      yaek does exactly that with rclone to an R2 bucket behind
+      `r2.yaek.arzaroth.com`, after an adversary-shaped review of the same
+      `?x=1` hole. See `~/repos/yaek/tools/deploy_site.sh`, which also has the
+      publish discipline worth copying: upload to a dot-prefixed name, verify
+      the size, move into place, then read the digest back over HTTPS through
+      the cache as a stranger would. Note R2 is not free of consequences -
+      egress is free, operations are billed past 10M Class B reads/month, and
+      there is no spend cap.
+      A move needs one client change first: `ClientRefusal.path` and
+      `UpdateCheck.path` are joined to `AppConfig.webBase`, so the app follows a
+      PATH, not an absolute URL. Every install up to 4.9.0 resolves the download
+      against goal.arzaroth.com regardless, so the origin route has to keep
+      answering either way - a move is a redirect, not a relocation.
 - [ ] The Android build's response shape is declared three times: the service
       interface, the route's zod schema, and a hand-typed copy in
       `AndroidAppCard.vue`. The client copy is structural only, so a renamed
