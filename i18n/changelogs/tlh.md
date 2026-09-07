@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [4.9.0] - 2026-09-08
+
 ### chelpu'
 
 - Android De'wI'Hom: qach 'ay' "chenmoHlu'bogh vam" tu'lu'. mI' 'ang, 'ej Do'Ha'wI' DaqIpDI' Sar yu': chu' ngeHlu''a'? not mob nej.

@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [4.9.0] - 2026-09-08
+
 ### Added
 
 - Android app: a "This build" section in Settings that shows which version you are running and, when you press the button, asks the site whether a newer one is published. It never checks on its own.
