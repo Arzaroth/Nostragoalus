@@ -5,6 +5,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Modifié
+
+- Le telechargement de l'application Android se fait desormais depuis une adresse versionnee, ce qui permet de le mettre en cache correctement : le retelecharger, ou le recuperer depuis un endroit ou quelqu'un d'autre l'a deja fait, est bien plus rapide et ne renvoie plus le fichier entier. L'ancienne adresse fonctionne toujours et renvoie vers la version actuelle.
+
 ## [4.9.0] - 2026-09-08
 
 ### Ajouté

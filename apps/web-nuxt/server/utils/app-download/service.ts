@@ -117,11 +117,26 @@ export async function readAndroidBuild(dir: string): Promise<AndroidBuild> {
   }
 }
 
-/// What the browser saves the file as. Version-stamped when known, so two
-/// downloads of different releases don't collide in the download folder.
+/// What the browser saves the file as, and the last segment of the versioned
+/// URL. Version-stamped when known, so two downloads of different releases
+/// don't collide in the download folder - and so the bytes behind a URL never
+/// change, which is what lets the response be cached forever.
 export function downloadFilename(version: string | null): string {
   // Defend the header against a sidecar version with quotes or a path separator
-  // in it: the file is operator-supplied, but the value lands in a response header.
+  // in it: the file is operator-supplied, but the value lands in a response
+  // header AND in a URL.
   const safe = version?.replace(/[^A-Za-z0-9._-]/g, '')
   return safe ? `nostragoalus-${safe}.apk` : APK_FILENAME
+}
+
+/// The URL to hand a client for this build.
+///
+/// Versioned when the build names a version, so the response can be immutable:
+/// a cache hit is the whole point, and it is only safe because a new build gets
+/// a new URL rather than new bytes behind the old one. An unversioned build (a
+/// hand-copied APK with no sidecar) has no such URL and keeps the stable path,
+/// which is served uncached.
+export function androidDownloadUrl(version: string | null): string {
+  const name = downloadFilename(version)
+  return name === APK_FILENAME ? ANDROID_DOWNLOAD_PATH : `/download/${name}`
 }

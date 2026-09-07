@@ -8,7 +8,8 @@ const PUBLISHED = {
   sizeBytes: 62_914_560,
   sha256: 'abcdef0123456789'.repeat(4),
   builtAt: '2026-09-06T09:30:00.000Z',
-  downloadUrl: '/download/nostragoalus.apk',
+  // Versioned, the way the endpoint sends it for a build that names a version.
+  downloadUrl: '/download/nostragoalus-4.7.0.apk',
 }
 const NOTHING = {
   available: false,
@@ -46,7 +47,7 @@ describe('AndroidAppCard', () => {
     const c = await mount(PUBLISHED)
     const link = c.find('a[download]')
     expect(link.exists()).toBe(true)
-    expect(link.attributes('href')).toBe('/download/nostragoalus.apk')
+    expect(link.attributes('href')).toBe('/download/nostragoalus-4.7.0.apk')
     expect(c.text()).toContain('4.7.0')
     expect(c.text()).toContain('60.0 MB')
     // The publish date renders as its ISO day: a locale-formatted one would not

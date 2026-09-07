@@ -46,12 +46,43 @@ Two routes:
   ([server/api/app/android.get.ts](../../apps/web-nuxt/server/api/app/android.get.ts)):
   `available`, `version`, `sizeBytes`, `sha256`, `builtAt`, `downloadUrl`. The page
   never hardcodes the download path, it follows this.
-- `GET /download/nostragoalus.apk` - the file itself
-  ([server/routes/download/nostragoalus.apk.get.ts](../../apps/web-nuxt/server/routes/download/nostragoalus.apk.get.ts)),
+- `GET /download/nostragoalus-<version>.apk` - the file itself
+  ([server/routes/download/[apk].get.ts](../../apps/web-nuxt/server/routes/download/%5Bapk%5D.get.ts)),
   streamed with the Android package content type, a version-stamped
   `content-disposition` filename and the digest as the ETag. No user input reaches
-  the filesystem: the path is fixed, and the version is stripped to
-  `[A-Za-z0-9._-]` before it goes anywhere near a header.
+  the filesystem: the served path is always the one fixed file, the requested name
+  only selects an answer, and the version is stripped to `[A-Za-z0-9._-]` before it
+  goes anywhere near a header or a URL.
+- `GET /download/nostragoalus.apk` - the stable alias, which every install up to
+  4.9.0 has compiled in. It 302s to the versioned URL, so it keeps answering
+  without being the thing that serves ~90 MB.
+
+## Why the URL carries the version
+
+The APK was served `no-cache` under one fixed name, so every download streamed the
+whole file out of the Node process and the CDN in front absorbed none of it. A
+response can only be cached if its bytes never change, so the bytes get a URL of
+their own: a new build is a new URL rather than new bytes behind the old one, and
+the versioned response is `public, max-age=31536000, immutable`. `androidDownloadUrl`
+is the one place that decides it, and `/api/app/android` hands it out so the page
+and a current app never take the redirect.
+
+An **unversioned** build - a hand-copied APK with no sidecar - has no versioned URL
+to point at, so the alias serves it directly and uncached. That is also why the
+alias cannot simply always redirect: it would redirect to itself.
+
+A cache in front is not by itself a shield, which is the part worth remembering.
+Cloudflare's cache key includes the query string, so `?x=1`, `?x=2`, ... are all
+misses and each miss drags the full file off the origin, with no rate limit behind
+it. A query string has no legitimate use on this URL, so it is answered with a
+redirect to the canonical one: such a request costs a few hundred bytes instead of
+~90 MB. That is a mitigation and not the fix - the fix is a cache rule that ignores
+the query string, or moving the object off the origin entirely, both of which are
+open in [TODO.md](../../TODO.md).
+
+`If-None-Match` is honoured, so a client revalidating the alias (which is
+`no-cache`, meaning revalidate, not do-not-store) gets a 304 rather than the file
+again.
 
 `app/components/AndroidAppCard.vue` renders the section. It reads the endpoint per
 request rather than at build time, because whether a build exists is deploy state;
@@ -63,6 +94,7 @@ The publish date renders as its ISO day so the server and the browser agree.
 - [apps/web-nuxt/server/utils/app-download/service.ts](../../apps/web-nuxt/server/utils/app-download/service.ts)
 - [apps/web-nuxt/server/utils/app-download/index.ts](../../apps/web-nuxt/server/utils/app-download/index.ts)
 - [apps/web-nuxt/server/api/app/android.get.ts](../../apps/web-nuxt/server/api/app/android.get.ts)
-- [apps/web-nuxt/server/routes/download/nostragoalus.apk.get.ts](../../apps/web-nuxt/server/routes/download/nostragoalus.apk.get.ts)
+- [apps/web-nuxt/server/utils/app-download/serve.ts](../../apps/web-nuxt/server/utils/app-download/serve.ts)
+- [apps/web-nuxt/server/routes/download/[apk].get.ts](../../apps/web-nuxt/server/routes/download/%5Bapk%5D.get.ts)
 - [apps/web-nuxt/app/components/AndroidAppCard.vue](../../apps/web-nuxt/app/components/AndroidAppCard.vue)
 - [apps/web-nuxt/tests/e2e/android-download.e2e.ts](../../apps/web-nuxt/tests/e2e/android-download.e2e.ts)

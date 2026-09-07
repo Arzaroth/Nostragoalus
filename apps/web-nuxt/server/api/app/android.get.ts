@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { ANDROID_DOWNLOAD_PATH, currentAndroidBuild } from '../../utils/app-download'
+import { androidDownloadUrl, currentAndroidBuild } from '../../utils/app-download'
 import { defineReadHandler } from '../../utils/read-handler'
 
 export const responseSchema = z.object({
@@ -13,7 +13,10 @@ export const responseSchema = z.object({
 
 export default defineReadHandler({ response: responseSchema }, async () => {
   const build = await currentAndroidBuild()
-  return { ...build, downloadUrl: ANDROID_DOWNLOAD_PATH }
+  // The versioned URL, so the site and a current app skip the alias redirect and
+  // land on the cacheable response. An unversioned build has no versioned URL and
+  // gets the stable path back.
+  return { ...build, downloadUrl: androidDownloadUrl(build.version) }
 })
 
 defineRouteMeta({

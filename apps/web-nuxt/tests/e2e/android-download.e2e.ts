@@ -17,6 +17,13 @@ async function unpublish() {
   await rm(SIDECAR, { force: true })
 }
 
+/// Publish a build the way `mise -C apps/mobile-flutter run apk-publish` does.
+async function publish() {
+  await mkdir(DIR, { recursive: true })
+  await writeFile(APK, BYTES)
+  await writeFile(SIDECAR, JSON.stringify({ version: '9.9.9', builtAt: '2026-09-06T09:30:00.000Z' }))
+}
+
 test.beforeAll(unpublish)
 test.afterAll(unpublish)
 
@@ -26,10 +33,7 @@ test('the about page offers the Android app once a build is published', async ({
   await expect(card).toContainText('No build is published right now')
   await expect(card.locator('a[download]')).toHaveCount(0)
 
-  // Publish one, the way `mise -C apps/mobile-flutter run apk-publish` does.
-  await mkdir(DIR, { recursive: true })
-  await writeFile(APK, BYTES)
-  await writeFile(SIDECAR, JSON.stringify({ version: '9.9.9', builtAt: '2026-09-06T09:30:00.000Z' }))
+  await publish()
 
   await page.reload()
   await expect(card).toContainText('9.9.9')
@@ -37,16 +41,53 @@ test('the about page offers the Android app once a build is published', async ({
   // The fingerprint is shown grouped in eights so it can be compared by eye.
   await expect(card).toContainText(DIGEST.slice(0, 8))
 
+  // The versioned URL, so the response can be cached forever.
   const link = card.locator('a[download]')
-  await expect(link).toHaveAttribute('href', '/download/nostragoalus.apk')
+  await expect(link).toHaveAttribute('href', '/download/nostragoalus-9.9.9.apk')
 
   // Fetch the file itself rather than driving the browser's download UI: what
   // matters is that the bytes and the advertised digest agree.
-  const download = await page.request.get('/download/nostragoalus.apk')
+  const download = await page.request.get('/download/nostragoalus-9.9.9.apk')
   expect(download.status()).toBe(200)
   expect(download.headers()['content-type']).toBe('application/vnd.android.package-archive')
   expect(download.headers()['content-disposition']).toContain('nostragoalus-9.9.9.apk')
+  expect(download.headers()['cache-control']).toContain('immutable')
   expect(createHash('sha256').update(await download.body()).digest('hex')).toBe(DIGEST)
+
+  // A client that already holds these bytes gets 304, not ~90 MB again.
+  const revalidated = await page.request.get('/download/nostragoalus-9.9.9.apk', {
+    headers: { 'if-none-match': `"${DIGEST}"` },
+  })
+  expect(revalidated.status()).toBe(304)
+})
+
+test('the stable path every installed app pinned still resolves', async ({ page }) => {
+  await publish()
+
+  // Installed builds have /download/nostragoalus.apk compiled in, so it has to
+  // keep answering - as a redirect to the versioned URL rather than the file.
+  const redirect = await page.request.get('/download/nostragoalus.apk', {
+    maxRedirects: 0,
+  })
+  expect(redirect.status()).toBe(302)
+  expect(redirect.headers()['location']).toBe('/download/nostragoalus-9.9.9.apk')
+
+  // Followed, it is the real file.
+  const followed = await page.request.get('/download/nostragoalus.apk')
+  expect(followed.status()).toBe(200)
+  expect(createHash('sha256').update(await followed.body()).digest('hex')).toBe(DIGEST)
+})
+
+// A cache in front keys on the query string, so `?x=1`, `?x=2`, ... would each
+// be a miss dragging the whole file off the origin. They get a redirect instead.
+test('a query string costs a redirect, not the file', async ({ page }) => {
+  await publish()
+
+  const busted = await page.request.get('/download/nostragoalus-9.9.9.apk?x=1', {
+    maxRedirects: 0,
+  })
+  expect(busted.status()).toBe(302)
+  expect(busted.headers()['location']).toBe('/download/nostragoalus-9.9.9.apk')
 })
 
 test('the download 404s while no build is published', async ({ page }) => {
