@@ -2922,6 +2922,31 @@ blocking):
       room sits on "waiting to be let in", so the bubbles have not been seen on
       a device. Seed a second identity in `tool/seed_e2e.sh` for that.
 
+## Client-version floor - deferred from the max review (feat/client-version-floor)
+
+- [ ] `AppRelease` in `apps/mobile-flutter/app/lib/update/app_update.dart` is a
+      hand-written model for `/api/app/android`, which the OpenAPI snapshot
+      already describes. The convention is a target in `app/tool/gen_models.dart`
+      and a regenerate, and the gate's stale-check then protects it; a
+      hand-rolled parser gets no such protection when the response shape moves.
+      It is the first hand-written model for a covered endpoint (the other two,
+      `AuthUser` and `VoiceScope`, are for shapes the generator cannot see).
+- [ ] The middleware's HTTP wiring has no test. `clientRefusal` covers the whole
+      decision and is exhaustively tested, but nothing asserts that the handler
+      reads `CLIENT_HEADER`, that the throw really surfaces as 426 with a JSON
+      body, or that `Vary` is set - `server/middleware/` is outside the coverage
+      gate's include list. An e2e spec driving one 426 would close it.
+- [ ] `UpdateCheckCard` hand-rolls the AsyncValue three-state render that
+      `AsyncValueView` centralizes, because that widget's error arm is a padded
+      full-width block that looks wrong inline in a `SectionCard`. Same shape as
+      the `EmptyState`/`EmptyStateBody` split: an inline variant would let the
+      card reuse it. `UpdateRequiredScreen` likewise re-does `EmptyStateBody`'s
+      icon/message/action column with a title and a tag on top.
+- [ ] Three i18n namespaces now describe one concept: `update.*` (web PWA
+      banner), `androidApp.*` (the website's APK card) and the new `appUpdate.*`
+      (the mobile app). A translator opening fr.json cannot tell which surface a
+      `download` key belongs to.
+
 ## Release flakes
 
 - [ ] `pnpm test:components` can fail a release with every test green.
