@@ -29,13 +29,64 @@ Inside `app/lib/`:
 |---|---|
 | `api/` | `dio` client (`api_client.dart`) + `models.gen.dart`, generated from `shared/contracts-openapi/` by `tool/gen_models.dart` and never hand-edited. The endpoints are one `extension` on `ApiClient` per feature (`leagues_api.dart`, `chat_api.dart`, `dm_api.dart`, ...), re-exported by the `api.dart` barrel. |
 | `state/` | Riverpod providers, the app's answer to the web's vue-query composables. |
-| `ui/` | 61 screen/widget files. |
+| `ui/` | Every screen and widget. |
+| `leagues/` | League-shaped pure logic: role permissions, and `league_selection.dart`, the per-competition league lens (the Dart side of the web's `ng-league` cookie). |
 | `chat/`, `e2ee/`, `kt/` | E2EE chat + DMs: group keys, sealed boxes, key transparency. Dart ports of `apps/web-nuxt/app/utils/e2ee.ts` and the KT chain. |
 | `voice/` | WebRTC mesh over the same signaling the web app uses ([../architecture/webrtc.md](../architecture/webrtc.md)). |
 | `live/` | The WS hub client ([../architecture/realtime.md](../architecture/realtime.md)). |
 | `i18n/` | Reads `assets/i18n/*.json`, mirrored from `shared/i18n-json/`. Same five locales, same keys, RTL included. |
 | `deeplink/` | Inbound `goal.arzaroth.com/...` App Links. |
 | `auth/` | Identifier-first SSO: the browser round trip and the code exchange ([../architecture/auth.md](../architecture/auth.md)). |
+
+## Getting around
+
+`ui/home_shell.dart` is the signed-in shell: an `IndexedStack` over six tabs -
+matches, standings, leaderboard, leagues, chat, account - so each keeps its
+scroll and query state when you switch. The selected index lives in
+`homeTabProvider`, not in the shell's own state, so a screen can send the user
+to a sibling tab (the chat tab's no-leagues state points at the leagues tab)
+instead of pushing a second copy of it. `HomeTab` names the indices.
+
+Chat is a tab because mobile has no dock. The web keeps `ChatDock.vue` on every
+page; here `ui/chat_rooms_screen.dart` is the way in - direct messages, badged
+with the unread total across threads, then one row per league in the selected
+competition, each opening `LeagueChatScreen`. The old routes into chat (a
+league's own screen, its board) still work; they are no longer the only ones.
+
+Two app-bar switchers scope what a screen reads:
+
+- `ui/competition_switcher.dart` sets `selectedCompetitionProvider`, the slug
+  every scoped read filters by.
+- `ui/league_switcher.dart` sets the **league lens**: Everyone, or one of the
+  user's leagues. It is the mobile `LeaguePill.vue`, and it narrows the
+  leaderboard and the crowd consensus to that league's members. It rides in the
+  matches and leaderboard app bars and hides itself when the user is in no
+  league here.
+
+The lens is per competition and persisted, the same map shape as the web's
+`ng-league` cookie: `leagues/league_selection.dart` holds the pure helpers,
+`leagueSelectionsProvider` the persisted map (in the keystore via `AppPrefs`,
+alongside the locale and competition), `selectedLeagueIdProvider` the value for
+the competition on screen. `leagueSelectionPruneProvider`, read once by the
+shell, drops a lens pointed at a league the user has left, kicked out of, or
+that was deleted - but only once the leagues list has *settled*, because a
+just-joined league is written to the lens while the list is still serving the
+previous one.
+
+Server-side the lens is `?league=` on `/api/leaderboard` and
+`/api/predictions/crowd`. A league fixes its own competition, and sending a slug
+alongside it 400s when the two disagree, so `leagueScopedQuery` in
+`api_client.dart` sends the league *instead of* the slug, never both. The
+leaderboard under the lens also returns `hiddenCount` (league mates with private
+profiles) and 404s when the lens points somewhere the viewer can no longer read
+- which the leaderboard screen treats as "clear the lens", since retrying would
+only 404 again.
+
+The crowd card (`ui/match/crowd_consensus.dart`) shows the league's members
+under the lens with the everyone line beneath it, and says why: the scoring
+crowd bonus is always computed from everyone, never from one league. A league
+too small to clear the server's anonymity floor falls back to the everyone card
+rather than rendering nothing.
 
 ## Look and feel
 
@@ -131,15 +182,18 @@ gate's SSR build - it is what catches manifest-merger conflicts, minSdk/NDK bump
 pulled in by `flutter_webrtc`, plugin registration and Gradle failures. Debug
 needs no keystore.
 
-`app/tool/coverage_check.sh` sums `LF`/`LH` from the lcov and fails under **60%**
+`app/tool/coverage_check.sh` sums `LF`/`LH` from the lcov and fails under **98%**
 line coverage over `lib/` minus `lib/api/models.gen.dart` (generated),
 `lib/ui/**` (screens/widgets, the analogue of `app/pages`, which the web gate
-also leaves out) and `lib/main.dart`. 60 is what the suite measured (~63.5%) the
-day the floor went in, not an aspiration; ratchet it up, never down.
+also leaves out) and `lib/main.dart`. The floor launched at 60, what the suite
+honestly measured then, and was ratcheted to the web's 98 as the suite grew;
+ratchet it up, never down.
 
-It is **weaker than the web gate** and should not be described as matching it:
+It is still **weaker than the web gate** and should not be described as matching
+it:
 
-- 60% over the logic layers, against the web side's 98%
+- the same 98% bar, but over a smaller scope: `lib/ui/**` is outside it, and the
+  web gate's SSR build has no analogue beyond the debug APK
 - `app/integration_test/` is device-gated and runs only via `mise run integration`
   (a release ritual - the specs left there need a device, and all but the native
   libsodium KAT replay also need a live server with a probe account)

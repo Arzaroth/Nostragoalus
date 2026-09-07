@@ -5,6 +5,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+
+- Android app: a Chat tab. Your league chats and your direct messages are now one tap from anywhere in the app, with a badge for unread messages, instead of being buried inside a league.
+- Android app: a league picker beside the competition switcher. Pick one of your leagues to see the ranking and the crowd consensus for just that league; the choice is remembered per competition. Crowd bonus points still come from everyone's predictions, and the card says so.
+
 ## [4.7.4] - 2026-09-07
 
 ### Fixed

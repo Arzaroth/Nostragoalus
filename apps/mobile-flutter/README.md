@@ -60,7 +60,7 @@ through.
 ### The coverage floor
 
 `app/tool/coverage_check.sh` sums `LF`/`LH` out of the lcov `flutter test
---coverage` writes and fails under **60%** line coverage. It is scoped the way
+--coverage` writes and fails under **98%** line coverage. It is scoped the way
 the web gate scopes its 98%: logic layers only.
 
 | Excluded | Why |
@@ -69,11 +69,11 @@ the web gate scopes its 98%: logic layers only.
 | `lib/ui/**` | Screens and widgets - the mobile analogue of `apps/web-nuxt/app/pages`, which the web gate leaves out of its scope too. Widget tests still run, they just do not count toward the floor. |
 | `lib/main.dart` | `runApp` + platform bootstrap. |
 
-60% is not 98%. It is what the suite honestly measured (~63.5%) when the floor
-went in, set just under so an unrelated file addition does not turn the gate red
-for nothing. Ratchet it up as the suite grows; never lower it to make a red gate
-green. `mise run coverage` runs the same thing standalone, and `bash
-tool/coverage_check.sh 70` tries a candidate floor without editing anything.
+The floor launched at 60% - what the suite honestly measured then - and has been
+ratcheted to the web gate's 98% as the suite grew. Ratchet it up as the suite
+grows; never lower it to make a red gate green. `mise run coverage` runs the same
+thing standalone, and `bash tool/coverage_check.sh 70` tries a candidate floor
+without editing anything.
 
 ### What the gate does NOT cover
 

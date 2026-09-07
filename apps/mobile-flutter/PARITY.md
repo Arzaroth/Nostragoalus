@@ -41,11 +41,16 @@ with the data caveat noted per area.
 
 ## Competition
 - [x] Competition browse + switcher (all scoped reads honor it)
+- [x] League lens (the web's `LeaguePill`) - app-bar switcher on matches +
+  leaderboard, Everyone or one of your leagues, persisted per competition and
+  pruned when you leave the league; scopes the leaderboard and crowd consensus.
+  `[ ]` reactions are not yet lensed (the web lenses those too)
 - [x] Fixtures list - grouped by round, concluded rounds collapsed on load (final
   never folds) [master 4.3.3/4.4.0 parity]
 - [x] Standings (group tables)
 - [x] Scorers + assists table (competition)
-- [x] Leaderboard (+ movement arrow)
+- [x] Leaderboard (+ movement arrow) - league-scoped through the app-bar
+  league lens (`?league=`, within-league movement, hidden-member note)
 - [x] Multiview grid (live matches)
 - [x] Champion pick (FIFA-tiered)
 - [x] Best-scorer - interactive Golden Boot pick (team -> squad from
@@ -84,7 +89,9 @@ with the data caveat noted per area.
 - [x] Make / edit prediction + joker
 - [x] My predictions
 - [x] Past-pick counterfactual
-- [x] Crowd predictions view - consensus card under the prediction input (show-crowd pref)
+- [x] Crowd predictions view - consensus card under the prediction input (show-crowd
+  pref); under the league lens it shows that league's members with the everyone
+  line + bonus caveat beneath, falling back to everyone below the anonymity floor
 
 ## Leagues
 - [x] My leagues list
@@ -113,6 +120,9 @@ with the data caveat noted per area.
 - [~] League chat - send / receive / history + message reactions; `[!]` live message
   round-trip needs a provisioned multi-member league (a keyholder to seal keys)
 - [~] DMs (1:1) - inbox / room / create; `[!]` live round-trip needs a 2nd user
+- [x] Chat rooms tab - top-level nav destination listing direct messages (badged
+  with the unread total) + one row per league. The web's dock has no mobile
+  equivalent; before this, league chat was only reachable through a league
 - [x] Chat rich: reactions + report + edit + moderator dashboard + @-mentions +
   E2EE image attachments + threads + presence dots + typing indicator + optimistic
   send (Sending/Not sent + Retry, master 4.4.2 parity); `[!]` delete (no own-message
@@ -205,8 +215,9 @@ with the data caveat noted per area.
   (app/test only), `dart test` (parity vectors), `flutter build apk --debug`.
   Repo has no hosted CI, so this is the by-hand gate. It is NOT equivalent to the
   web's `pnpm` gate:
-  - it enforces a **60%** line floor over `lib/` minus `lib/ui/**`, generated
-    models and `main.dart` (the web gate enforces 98% over its logic layers)
+  - it enforces a **98%** line floor (ratcheted up from the 60% it launched with)
+    over `lib/` minus `lib/ui/**`, generated models and `main.dart` - the same bar
+    as the web gate, but over a smaller scope
   - `app/integration_test/` never runs (see above)
   - the end-to-end spec is one main-path spec, and device+server gated (see above)
   - it needs a system libsodium (the parity e2ee interop KATs `dlopen` it) and an
