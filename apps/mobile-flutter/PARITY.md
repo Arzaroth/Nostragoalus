@@ -15,14 +15,15 @@ with the data caveat noted per area.
 ## Auth & account
 - [x] Email/password sign in (bearer session, secure-storage token)
 - [x] Sign out
-- [~] SSO sign in - email-domain detection, then a server authorize route opened
+- [x] SSO sign in - email-domain detection, then a server authorize route opened
   IN the browser (better-auth sets its CSRF state cookie on the sign-in response,
   so the browser has to be what makes that request), on to the IdP, back through
   a server park route that mints a single-use code, redeemed over a verified App
   Link (no custom scheme, no trusted-origin config: the callbackURL is relative).
-  Runs against a real IdP. `[!]` the last step needs NUXT_ANDROID_CERT_FINGERPRINTS
-  set on the server so /.well-known/assetlinks.json verifies the App Link; iOS
-  additionally needs a Team ID
+  **Verified end to end on a real device against a real IdP (4.7.4)**: signed in,
+  session minted, app returned to. Needed NUXT_ANDROID_CERT_FINGERPRINTS on the
+  server so /.well-known/assetlinks.json verifies the App Link. iOS still needs a
+  Team ID
 - [x] Sign up (native form)
 - [x] Forgot / reset password (request-reset form)
 - [x] Two-factor (2FA enrol: password -> secret + backup codes -> verify; disable
@@ -218,6 +219,6 @@ with the data caveat noted per area.
 
 ## Genuinely external-blocked (not effort)
 - Push (mobile FCM) = server FCM work + Firebase project
-- SSO completion = the server's assetlinks fingerprint (App Link verification)
+
 - Live chat/DM/voice round-trips = provisioned data / a 2nd participant
 - Anything iOS / CallKit / APNs = no Apple hardware
