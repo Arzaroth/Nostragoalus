@@ -5,6 +5,11 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### chelpu'
+
+- Android De'wI'Hom: ja'chuq 'ay'. DaH Hoch HaStavo' wa' 'uy'moHmeH ghommey ja'chuq je QIn pegh Suqlu'laH; QIn lajbe'bogh mI' 'ang. wa'DIch ghom qoDDaq So'lu'pu'.
+- Android De'wI'Hom: Qoj wIvwI' retlhDaq ghom wIvwI' chu'. wa' ghomlIj yIwIv, vaj ghom patlh ghom Hoch pIH je yIlegh; Qoj Hoch wIv qawlu'. 'ach Hoch pIH bonus Hoch nughmey pIH lo'taH, 'ej HaSta 'oH 'ang.
+
 ## [4.7.4] - 2026-09-07
 
 ### tI'pu'

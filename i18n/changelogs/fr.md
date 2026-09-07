@@ -5,6 +5,11 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Ajouté
+
+- Application Android : un onglet Discussion. Les discussions de vos ligues et vos messages privés sont maintenant à un geste depuis n'importe quel écran, avec une pastille pour les messages non lus, au lieu d'être enfouis dans une ligue.
+- Application Android : un sélecteur de ligue à côté du sélecteur de compétition. Choisissez une de vos ligues pour voir le classement et le pronostic collectif de cette seule ligue ; le choix est mémorisé par compétition. Les points bonus du collectif restent calculés sur les pronostics de tout le monde, et la carte le précise.
+
 ## [4.7.4] - 2026-09-07
 
 ### Corrigé
