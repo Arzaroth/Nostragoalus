@@ -200,8 +200,8 @@ self-hosting - note the App Link host in `AndroidManifest.xml` is
 `goal.arzaroth.com`, so another origin also needs that manifest edit or deep
 links and SSO will not come back to the app.
   Anything shared with anyone is a debug build until a real keystore exists.
-- Coverage is gated at 60%, not the web side's 98%, and `lib/ui/**` is outside
-  the scope entirely (see above).
+- Coverage holds the web's 98% bar but over a smaller scope: `lib/ui/**` is
+  outside it entirely (see above).
 - CallKit / background call UI / ring push is not wired. The
   `flutter_callkit_incoming` dependency was removed: nothing but dead spike code
   imported it, while it merged `MANAGE_OWN_CALLS`, `USE_FULL_SCREEN_INTENT`,

@@ -431,6 +431,10 @@
     "streamCapReached": "Only {count} stream at a time"
   },
   "nav": {
+    "tab": {
+      "standings": "Groups",
+      "leaderboard": "Ranking"
+    },
     "chat": "Chat",
     "teams": "Teams",
     "competition": "Competition",
@@ -896,6 +900,7 @@
     "fergieLost": "lost"
   },
   "leaderboard": {
+    "hiddenTip": "Members an admin has hidden from the board. Their picks still count.",
     "hiddenNote": "{n} hidden",
     "title": "Ranking",
     "thisCompetition": "Competition",

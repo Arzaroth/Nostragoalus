@@ -426,6 +426,10 @@
     "streamCapReached": "{count} direct à la fois"
   },
   "nav": {
+    "tab": {
+      "standings": "Groupes",
+      "leaderboard": "Joueurs"
+    },
     "chat": "Discussion",
     "teams": "Équipes",
     "competition": "Compétition",
@@ -891,6 +895,7 @@
     "fergieLost": "perdus"
   },
   "leaderboard": {
+    "hiddenTip": "Membres masqués du classement par un admin. Leurs pronostics comptent toujours.",
     "hiddenNote": "{n} masqué(s)",
     "title": "Classement",
     "thisCompetition": "Compétition",

@@ -9,6 +9,7 @@ import '../live/live_frame_router.dart';
 import '../live/live_service.dart';
 import '../state/providers.dart';
 import '../voice/voice_service.dart';
+import '../chat/dm_providers.dart';
 import 'account_screen.dart';
 import 'chat_rooms_screen.dart';
 import 'leaderboard_screen.dart';
@@ -21,17 +22,6 @@ import 'widgets/app_nav_bar.dart';
 /// How long an unanswered incoming ring stays on screen (matches the web's
 /// RING_TIMEOUT_MS).
 const _ringTimeout = Duration(seconds: 30);
-
-/// The index of each shell tab. [homeTabProvider] holds one of these, so a
-/// screen can send the user to a sibling tab.
-abstract final class HomeTab {
-  static const matches = 0;
-  static const standings = 1;
-  static const leaderboard = 2;
-  static const leagues = 3;
-  static const chat = 4;
-  static const account = 5;
-}
 
 /// The signed-in shell: one tab per top-level destination. IndexedStack keeps
 /// each tab's scroll + query state alive when switching.
@@ -54,7 +44,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   // and the socket still has to be closed from dispose().
   LiveService? _live;
 
-  // Index-aligned with [HomeTab].
+  // Ordered by [HomeTab]; indexed by its `.index`.
   static const _screens = [
     MatchesScreen(),
     StandingsScreen(),
@@ -67,7 +57,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   @override
   void initState() {
     super.initState();
-    ref.read(leagueSelectionPruneProvider);
+    ref.read(leagueLensGuardProvider);
     final live = ref.read(liveServiceProvider)..connect();
     _live = live;
     // One hub socket for the whole app: the voice signaling multiplexes over it.
@@ -106,7 +96,13 @@ class _HomeShellState extends ConsumerState<HomeShell> {
   late final LiveFrameRouter _router = LiveFrameRouter(
     onMatches: () => ref.invalidate(matchesProvider),
     onMatch: (id) => ref.invalidate(matchProvider(id)),
-    onNotifications: () => ref.invalidate(notificationsProvider),
+    onNotifications: () {
+      ref.invalidate(notificationsProvider);
+      // A DM raises a DM_MESSAGE notification, and this is the only frame that
+      // announces one - without it the chat tab's unread badge would be a
+      // snapshot taken when the shell mounted.
+      ref.invalidate(dmThreadsProvider);
+    },
     onReactions: (id) => ref.invalidate(reactionsProvider(id)),
     onViewers: (id, count) => ref.read(viewersProvider.notifier).state = {
       ...ref.read(viewersProvider),
@@ -277,10 +273,13 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     ref.listen(viewedMatchProvider, (_, __) => _resubscribe());
     final tab = ref.watch(homeTabProvider);
     return Scaffold(
-      body: IndexedStack(index: tab, children: _screens),
+      body: IndexedStack(index: tab.index, children: _screens),
+      // nav.tab.* rather than nav.*: six equal-width tabs leave ~60dp each, and
+      // the header wording collides there (fr "Classement" for standings vs
+      // "Classement joueurs" for the leaderboard, side by side).
       bottomNavigationBar: AppNavBar(
-        selectedIndex: tab,
-        onSelected: (i) => ref.read(homeTabProvider.notifier).state = i,
+        selectedIndex: tab.index,
+        onSelected: (i) => ref.read(homeTabProvider.notifier).state = HomeTab.values[i],
         items: [
           NavItem(
               icon: Icons.sports_soccer_outlined,
@@ -289,11 +288,11 @@ class _HomeShellState extends ConsumerState<HomeShell> {
           NavItem(
               icon: Icons.table_chart_outlined,
               activeIcon: Icons.table_chart,
-              label: context.tr('nav.standings')),
+              label: context.tr('nav.tab.standings')),
           NavItem(
               icon: Icons.leaderboard_outlined,
               activeIcon: Icons.leaderboard,
-              label: context.tr('nav.leaderboard')),
+              label: context.tr('nav.tab.leaderboard')),
           NavItem(
               icon: Icons.groups_outlined,
               activeIcon: Icons.groups,

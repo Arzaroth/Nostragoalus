@@ -426,6 +426,10 @@
     "streamCapReached": "สตรีมได้ครั้งละ {count} รายการ"
   },
   "nav": {
+    "tab": {
+      "standings": "กลุ่ม",
+      "leaderboard": "อันดับ"
+    },
     "chat": "แชท",
     "teams": "ทีม",
     "competition": "การแข่งขัน",
@@ -891,6 +895,7 @@
     "fergieLost": "เสีย"
   },
   "leaderboard": {
+    "hiddenTip": "สมาชิกที่แอดมินซ่อนจากกระดาน คำทายของพวกเขายังนับอยู่",
     "hiddenNote": "ซ่อนไว้ {n}",
     "title": "อันดับ",
     "thisCompetition": "รายการนี้",

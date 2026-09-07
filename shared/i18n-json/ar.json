@@ -544,6 +544,10 @@
     "streamCapReached": "{count} بث في كل مرة"
   },
   "nav": {
+    "tab": {
+      "standings": "المجموعات",
+      "leaderboard": "الصدارة"
+    },
     "chat": "الدردشة",
     "teams": "الفرق",
     "competition": "المسابقة",
@@ -1021,6 +1025,7 @@
     "fergieLost": "خسارة"
   },
   "leaderboard": {
+    "hiddenTip": "أعضاء أخفاهم مشرف من اللوحة. توقّعاتهم ما زالت تُحتسب.",
     "hiddenNote": "{n} مخفي",
     "title": "الترتيب",
     "thisCompetition": "البطولة",

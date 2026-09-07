@@ -77,13 +77,13 @@ void main() {
     expect(find.text('Bonus points always use everyone.'), findsOneWidget);
   });
 
-  // count <= 0 is the server's anonymity-floor sentinel: a league too small to
-  // report is not a 0-0 consensus.
+  // A league below the server's anonymity floor is ABSENT from the map, not a
+  // zero-count row: getCrowdTotals filters those out before answering.
   testWidgets('a league below the anonymity floor falls back to everyone',
       (tester) async {
     await tester.pumpWidget(_host(
       global: {'m1': _total(4, 2, 9)},
-      league: {'m1': _total(0, 0, 0)},
+      league: const {},
       lens: 'l1',
     ));
     await tester.pumpAndSettle();
@@ -93,7 +93,16 @@ void main() {
     expect(find.text('Bonus points always use everyone.'), findsNothing);
   });
 
-  testWidgets('stays silent when nothing has a usable total', (tester) async {
+  testWidgets('stays silent when the match has no crowd data at all', (tester) async {
+    await tester.pumpWidget(_host(global: const {}));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Crowd consensus'), findsNothing);
+  });
+
+  // Defensive, not reachable over REST today: the web sees this shape on a live
+  // crowd:update push below the floor, and it must not read as a real 0-0.
+  testWidgets('a zero-count total is not rendered as a 0-0 consensus', (tester) async {
     await tester.pumpWidget(_host(global: {'m1': _total(0, 0, 0)}));
     await tester.pumpAndSettle();
 

@@ -7,9 +7,13 @@ import '../../state/providers.dart';
 import '../../theme/app_theme.dart';
 import '../widgets/panel.dart';
 
-/// A crowd total is only renderable above the server's anonymity floor; a
-/// non-positive count is the below-minimum sentinel (CrowdLine.vue).
-bool usableCrowdTotal(Object? t) => t is CrowdResponseTotal && t.count > 0;
+/// A crowd total is only renderable above the server's anonymity floor. The
+/// server drops a below-floor match from the map entirely, so the usual shape of
+/// "too few picks" is an ABSENT matchId. The count check additionally rejects
+/// the zero-count sentinel the web sees on a live `crowd:update` push, which
+/// this REST-only card would otherwise render as a real 0-0 consensus the day it
+/// starts consuming those frames.
+bool _usable(CrowdResponseTotal? t) => t != null && t.count > 0;
 
 /// Crowd consensus for one match, shown under the prediction input when the
 /// show-crowd preference is on. Silent when off, loading, or below the
@@ -36,13 +40,15 @@ class CrowdConsensus extends ConsumerWidget {
     final showCrowd = ref.watch(authControllerProvider).valueOrNull?.showCrowd ?? false;
     if (!showCrowd) return const SizedBox.shrink();
     final global = ref.watch(crowdTotalsProvider).valueOrNull?[matchId];
-    final leagueId = ref.watch(selectedLeagueIdProvider);
-    final leagueTotal = leagueId == null
-        ? null
-        : ref.watch(leagueCrowdTotalsProvider).valueOrNull?[matchId];
-    final lensed = usableCrowdTotal(leagueTotal);
-    final t = lensed ? leagueTotal! : global;
-    if (!usableCrowdTotal(t)) return const SizedBox.shrink();
+    // While the lens is switching, riverpod still serves the PREVIOUS league's
+    // totals next to the loading state. Rendering those under the new league's
+    // tag would attribute one league's consensus to another, so a lensed read
+    // only counts once it has settled.
+    final leagueAsync = ref.watch(leagueCrowdTotalsProvider);
+    final leagueTotal = leagueAsync.isLoading ? null : leagueAsync.valueOrNull?[matchId];
+    final lensed = _usable(leagueTotal);
+    final t = lensed ? leagueTotal : global;
+    if (!_usable(t)) return const SizedBox.shrink();
     final total = t!.home + t.away;
     final theme = Theme.of(context);
     final tokens = context.tokens;
@@ -94,7 +100,7 @@ class CrowdConsensus extends ConsumerWidget {
                   child: LinearProgressIndicator(value: t.home / total, minHeight: 6),
                 ),
               ],
-              if (lensed && usableCrowdTotal(global)) ...[
+              if (lensed && _usable(global)) ...[
                 const SizedBox(height: 12),
                 Row(
                   children: [

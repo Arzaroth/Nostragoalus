@@ -20,16 +20,6 @@ class LeaderboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // A lens pointed at a league the viewer can no longer read 404s, and the
-    // retry button would just 404 again. Drop it and fall back to everyone.
-    ref.listen(leaderboardProvider, (_, next) {
-      final error = next.error;
-      if (error is ApiException &&
-          error.status == 404 &&
-          ref.read(selectedLeagueIdProvider) != null) {
-        selectLeague(ref, null);
-      }
-    });
     final board = ref.watch(leaderboardProvider);
     final meId = ref.watch(authControllerProvider).valueOrNull?.id;
     final t = context.tokens;
@@ -86,7 +76,8 @@ class LeaderboardScreen extends ConsumerWidget {
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                       child: Text(
-                        context.tr('leaderboard.hiddenNote', {'n': hidden}),
+                        '${context.tr('leaderboard.hiddenNote', {'n': hidden})}\n'
+                        '${context.tr('leaderboard.hiddenTip')}',
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(color: t.faint),
                       ),
                     ),

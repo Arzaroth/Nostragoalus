@@ -40,10 +40,15 @@ String resolveLocaleCode(String code) =>
 final selectedCompetitionProvider =
     StateProvider<String?>((ref) => ref.watch(appPrefsProvider).competition);
 
-/// The selected tab of the signed-in shell. A provider rather than shell state
-/// so a screen can send the user to another tab (the chat tab's empty state
-/// points at the leagues tab) instead of pushing a second copy of it.
-final homeTabProvider = StateProvider<int>((ref) => 0);
+/// The signed-in shell's destinations, in bar order. `HomeShell` indexes its
+/// screen list by `.index`, so the two cannot drift the way parallel int
+/// constants could.
+enum HomeTab { matches, standings, leaderboard, leagues, chat, account }
+
+/// The selected tab. A provider rather than shell state so a screen can send
+/// the user to another tab (the chat tab's no-leagues state points at the
+/// leagues tab) instead of pushing a second copy of it.
+final homeTabProvider = StateProvider<HomeTab>((ref) => HomeTab.matches);
 
 /// The persisted league lens, one selected league id per competition slug. The
 /// switcher writes it; [selectedLeagueIdProvider] narrows it to the competition
@@ -56,22 +61,54 @@ final leagueSelectionsProvider = StateProvider<LeagueSelections>(
 final selectedLeagueIdProvider = Provider<String?>((ref) => selectedLeagueFor(
     ref.watch(leagueSelectionsProvider), ref.watch(selectedCompetitionProvider)));
 
-/// Points the lens at [id] (null clears it) for the competition on screen.
-void selectLeague(WidgetRef ref, String? id) {
+/// Points the lens at [id] (null clears it). [competition] is the picked
+/// league's own competition slug.
+///
+/// The lens is filed under the LEAGUE's competition, and the app moves to it,
+/// rather than under whatever slug happened to be selected at the instant of the
+/// tap. Two states need that. Until the user opens the competition switcher
+/// there is no slug at all, and `/api/leagues` then answers with their leagues
+/// across EVERY competition. And during a competition switch the menu still
+/// lists the previous competition's leagues while the new list is in flight.
+/// Either way, filing by the current slug would point the board at a tournament
+/// the rest of the app is not showing.
+void selectLeague(WidgetRef ref, String? id, {String? competition}) {
   final slug = ref.read(selectedCompetitionProvider);
   final notifier = ref.read(leagueSelectionsProvider.notifier);
-  notifier.state = withLeagueSelection(notifier.state, slug, id);
+  if (id == null) {
+    notifier.state = withLeagueSelection(notifier.state, slug, null);
+    return;
+  }
+  final target = competition ?? slug;
+  if (target != slug) ref.read(selectedCompetitionProvider.notifier).state = target;
+  notifier.state = withLeagueSelection(notifier.state, target, id);
 }
 
-/// Drops a lens pointed at a league the user is no longer in (left, kicked,
-/// deleted) once the leagues list has settled. Watched once by the root widget.
+/// Clears the lens everywhere, including the keystore. Sign-out only: the lens
+/// names a league membership, which is per account, and the next account on the
+/// device must not inherit it (the same reason `AuthRepository.signOut` clears
+/// the chat private key).
+void clearLeagueLens(Ref ref) => ref.read(leagueSelectionsProvider.notifier).state = const {};
+
+/// Keeps the lens pointing somewhere real. Read once by the signed-in shell
+/// (not by the root widget: every read it listens to needs a session).
 ///
-/// The list has to be settled AND not refetching: a league joined a moment ago
-/// is written to the lens while [leaguesProvider] is still serving the previous
-/// list, and pruning against that would erase the selection just made.
-final leagueSelectionPruneProvider = Provider<void>((ref) {
+/// Two ways a lens goes dead, so two recoveries:
+///
+/// - The leagues list no longer contains it (left, kicked, deleted) - prune it.
+///   The list has to be SETTLED first. Not still loading, because a league
+///   joined a moment ago is written to the lens while [leaguesProvider] is
+///   serving the previous list. And not errored either: riverpod keeps the
+///   previous value alongside an error, so a failed refetch after a competition
+///   switch would otherwise prune the new competition's lens against the old
+///   competition's list and erase a perfectly good selection.
+/// - A lensed read 404s, because the league was deleted or the viewer lost
+///   access mid-session. Retrying cannot fix that, so drop the lens. Both
+///   lensed reads are watched, not just the leaderboard: a user sitting on a
+///   match detail would otherwise keep a dead lens until they opened the board.
+final leagueLensGuardProvider = Provider<void>((ref) {
   ref.listen(leaguesProvider, (_, next) {
-    if (next.isLoading || !next.hasValue) return;
+    if (next.isLoading || next.hasError || !next.hasValue) return;
     final slug = ref.read(selectedCompetitionProvider);
     final selections = ref.read(leagueSelectionsProvider);
     final valid = [for (final l in next.requireValue.leagues) l.id];
@@ -80,6 +117,17 @@ final leagueSelectionPruneProvider = Provider<void>((ref) {
       ref.read(leagueSelectionsProvider.notifier).state = pruned;
     }
   });
+  void clearOn404(Object? error) {
+    if (error is! ApiException || error.status != 404) return;
+    if (ref.read(selectedLeagueIdProvider) == null) return;
+    final slug = ref.read(selectedCompetitionProvider);
+    final selections = ref.read(leagueSelectionsProvider);
+    ref.read(leagueSelectionsProvider.notifier).state =
+        withLeagueSelection(selections, slug, null);
+  }
+
+  ref.listen(leaderboardProvider, (_, next) => clearOn404(next.error));
+  ref.listen(leagueCrowdTotalsProvider, (_, next) => clearOn404(next.error));
 });
 
 /// Writes the UI preferences back to the store whenever they change. The root
@@ -138,6 +186,9 @@ final dioProvider = Provider<Dio>((ref) => Dio());
 /// presence and are reset here because nothing refetches them.
 void flushAccountCaches(Ref ref) {
   ref.invalidate(apiProvider);
+  // The tab index used to die with the shell widget; as a provider it outlives
+  // it, and the next account would land on the tab the last one left open.
+  ref.invalidate(homeTabProvider);
   ref.invalidate(viewersProvider);
   ref.invalidate(presenceProvider);
   ref.invalidate(typingProvider);
@@ -190,6 +241,7 @@ class AuthController extends AsyncNotifier<AuthUser?> {
   Future<void> signOut() async {
     await ref.read(authRepositoryProvider).signOut();
     state = const AsyncData(null);
+    clearLeagueLens(ref);
     _invalidateData();
   }
 

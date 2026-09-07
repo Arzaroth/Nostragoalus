@@ -42,8 +42,9 @@ with the data caveat noted per area.
 ## Competition
 - [x] Competition browse + switcher (all scoped reads honor it)
 - [x] League lens (the web's `LeaguePill`) - app-bar switcher on matches +
-  leaderboard, Everyone or one of your leagues, persisted per competition and
-  pruned when you leave the league; scopes the leaderboard and crowd consensus.
+  leaderboard, Everyone or one of your leagues, persisted per competition,
+  cleared at sign-out, pruned when you leave the league and dropped when a
+  lensed read 404s; scopes the leaderboard and crowd consensus.
   `[ ]` reactions are not yet lensed (the web lenses those too)
 - [x] Fixtures list - grouped by round, concluded rounds collapsed on load (final
   never folds) [master 4.3.3/4.4.0 parity]
@@ -121,8 +122,10 @@ with the data caveat noted per area.
   round-trip needs a provisioned multi-member league (a keyholder to seal keys)
 - [~] DMs (1:1) - inbox / room / create; `[!]` live round-trip needs a 2nd user
 - [x] Chat rooms tab - top-level nav destination listing direct messages (badged
-  with the unread total) + one row per league. The web's dock has no mobile
-  equivalent; before this, league chat was only reachable through a league
+  with the unread total, kept live off the notifications frame) + one row per
+  chat-enabled league, with the competition switcher since the rooms are
+  competition-scoped. The web's dock has no mobile equivalent; before this,
+  league chat was only reachable through a league
 - [x] Chat rich: reactions + report + edit + moderator dashboard + @-mentions +
   E2EE image attachments + threads + presence dots + typing indicator + optimistic
   send (Sending/Not sent + Retry, master 4.4.2 parity); `[!]` delete (no own-message

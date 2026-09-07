@@ -42,16 +42,32 @@ Inside `app/lib/`:
 
 `ui/home_shell.dart` is the signed-in shell: an `IndexedStack` over six tabs -
 matches, standings, leaderboard, leagues, chat, account - so each keeps its
-scroll and query state when you switch. The selected index lives in
-`homeTabProvider`, not in the shell's own state, so a screen can send the user
-to a sibling tab (the chat tab's no-leagues state points at the leagues tab)
-instead of pushing a second copy of it. `HomeTab` names the indices.
+scroll and query state when you switch. The selected tab lives in
+`homeTabProvider` (a `HomeTab` enum, whose `.index` orders the screen list) rather
+than in the shell's own state, so a screen can send the user to a sibling tab -
+the chat tab's no-leagues state points at the leagues tab instead of pushing a
+second copy of it. Because it now outlives the shell widget, it is reset with the
+account caches; otherwise the next account would land on the tab the last one
+left open.
+
+Six equal-width tabs leave about 60dp each, which the web header's wording does
+not survive: in French `nav.standings` ("Classement") and `nav.leaderboard`
+("Classement joueurs") would sit side by side and ellipsize to the same
+"Classem...". The bar reads `nav.tab.*` instead, a short label per destination.
+
+Both app-bar pickers are one widget, `ui/widgets/app_bar_picker.dart` - they sit
+in the same app bar, and writing the second by copying the first is how their
+tooltips drifted apart the first time.
 
 Chat is a tab because mobile has no dock. The web keeps `ChatDock.vue` on every
 page; here `ui/chat_rooms_screen.dart` is the way in - direct messages, badged
 with the unread total across threads, then one row per league in the selected
-competition, each opening `LeagueChatScreen`. The old routes into chat (a
-league's own screen, its board) still work; they are no longer the only ones.
+competition **that has chat on**, each opening `LeagueChatScreen`. A chat-less
+league is not a room (it would open a disabled panel), which is how the web dock
+filters too. The badge stays live off the notifications frame, since a DM raises
+a `DM_MESSAGE` notification and nothing else announces one. The rooms are
+competition-scoped, so this tab carries the competition switcher; the old routes
+into chat (a league's own screen, its board) still work.
 
 Two app-bar switchers scope what a screen reads:
 
@@ -67,20 +83,33 @@ The lens is per competition and persisted, the same map shape as the web's
 `ng-league` cookie: `leagues/league_selection.dart` holds the pure helpers,
 `leagueSelectionsProvider` the persisted map (in the keystore via `AppPrefs`,
 alongside the locale and competition), `selectedLeagueIdProvider` the value for
-the competition on screen. `leagueSelectionPruneProvider`, read once by the
-shell, drops a lens pointed at a league the user has left, kicked out of, or
-that was deleted - but only once the leagues list has *settled*, because a
-just-joined league is written to the lens while the list is still serving the
-previous one.
+the competition on screen. `selectLeague` files a pick under the LEAGUE's own
+competition and moves the app there, rather than under whatever slug is selected
+at the instant of the tap: before the user has ever opened the competition
+switcher there is no slug and `/api/leagues` answers across every competition,
+and during a switch the menu still lists the previous competition's leagues.
+Sign-out clears the lens outright - it names a league membership, so the next
+account on the device must not inherit it, the same reason `AuthRepository`
+clears the chat private key there.
+
+`leagueLensGuardProvider`, read once by the signed-in shell (not by the root
+widget - every read it listens to needs a session), keeps the lens pointing
+somewhere real. It prunes a lens the leagues list no longer contains, but only
+once that list has *settled*: not while loading, because a just-joined league is
+written to the lens while the list is still serving the previous one, and not on
+an error either, because riverpod keeps the previous value alongside one and a
+failed refetch after a competition switch would otherwise prune the new
+competition's lens against the old competition's list. It also clears a lens that
+any lensed read answers 404 to - both reads, not just the leaderboard, or a user
+sitting on a match detail would keep a dead lens until they opened the board.
 
 Server-side the lens is `?league=` on `/api/leaderboard` and
 `/api/predictions/crowd`. A league fixes its own competition, and sending a slug
 alongside it 400s when the two disagree, so `leagueScopedQuery` in
 `api_client.dart` sends the league *instead of* the slug, never both. The
-leaderboard under the lens also returns `hiddenCount` (league mates with private
-profiles) and 404s when the lens points somewhere the viewer can no longer read
-- which the leaderboard screen treats as "clear the lens", since retrying would
-only 404 again.
+leaderboard under the lens also returns `hiddenCount`: members an admin has
+hidden from the board, whose picks still count - not private profiles, which
+only enter the outsider view the lens never uses.
 
 The crowd card (`ui/match/crowd_consensus.dart`) shows the league's members
 under the lens with the everyone line beneath it, and says why: the scoring

@@ -426,6 +426,10 @@
     "streamCapReached": "{count} HaSta neH"
   },
   "nav": {
+    "tab": {
+      "standings": "ghommey",
+      "leaderboard": "patlh"
+    },
     "chat": "ja'chuq",
     "teams": "ghommey",
     "competition": "Qoj",
@@ -891,6 +895,7 @@
     "fergieLost": "natlh"
   },
   "leaderboard": {
+    "hiddenTip": "ghom DevwI' So'ta' chamwI'pu'. pIHmeychaj toblu'taH.",
     "hiddenNote": "{n} So'lu'",
     "title": "patlh",
     "thisCompetition": "'aqtu'",

@@ -7,7 +7,6 @@ import 'package:nostragoalus/i18n/i18n.dart';
 import 'package:nostragoalus/i18n/i18n_scope.dart';
 import 'package:nostragoalus/state/providers.dart';
 import 'package:nostragoalus/ui/chat_rooms_screen.dart';
-import 'package:nostragoalus/ui/home_shell.dart' show HomeTab;
 
 import 'league_fixtures.dart';
 
@@ -25,6 +24,8 @@ void main() {
     final c = ProviderContainer(overrides: [
       leaguesOverride(leagues),
       dmThreadsProvider.overrideWith((ref) async => DmThreadsResponse(threads: threads)),
+      competitionsProvider
+          .overrideWith((ref) async => const CompetitionsResponse(competitions: [])),
     ]);
     addTearDown(c.dispose);
     return c;
@@ -50,6 +51,29 @@ void main() {
     expect(find.text('Messages'), findsOneWidget);
     expect(find.text('Office'), findsOneWidget);
     expect(find.text('Family'), findsOneWidget);
+  });
+
+  // A chat-less league would open a disabled panel, so it is not a room. The
+  // web dock filters the same way.
+  testWidgets('leaves out a league whose chat is off', (tester) async {
+    await tester.pumpWidget(host(containerWith(
+      [leagueFixture('l1', 'Office'), leagueFixture('l2', 'Quiet', chatEnabled: false)],
+      const [],
+    )));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Office'), findsOneWidget);
+    expect(find.text('Quiet'), findsNothing);
+  });
+
+  testWidgets('a league list that is all chat-less reads as no rooms', (tester) async {
+    await tester.pumpWidget(host(containerWith(
+      [leagueFixture('l2', 'Quiet', chatEnabled: false)],
+      const [],
+    )));
+    await tester.pumpAndSettle();
+
+    expect(find.text('No leagues yet'), findsOneWidget);
   });
 
   testWidgets('points at the leagues tab when there is nothing to talk in', (tester) async {
@@ -79,5 +103,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('0'), findsNothing);
+    // Not a vacuous assertion: the row it would hang off is on screen.
+    expect(find.text('Messages'), findsOneWidget);
   });
 }
