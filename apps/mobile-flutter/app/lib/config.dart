@@ -18,4 +18,14 @@ class AppConfig {
     'WEB_BASE',
     defaultValue: 'https://goal.arzaroth.com',
   );
+
+  /// This build's release version, stamped by `mise run apk-publish` from the
+  /// same package.json the site is versioned from. A build made any other way
+  /// says so: `dev` never matches a release floor, and the server treats a
+  /// version it cannot parse as an unidentified client rather than refusing it.
+  static const appVersion = String.fromEnvironment('APP_VERSION', defaultValue: 'dev');
+
+  /// What the app tells the server it is. Read by the server's client-version
+  /// middleware; see `server/utils/clients/service.ts`.
+  static String get clientId => 'android/$appVersion';
 }

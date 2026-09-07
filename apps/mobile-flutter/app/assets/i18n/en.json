@@ -2041,5 +2041,21 @@
         "top": "Top {pct}% of all players",
         "tagline": "Predict. Score. Brag."
       }
+  },
+  "appUpdate": {
+    "section": "This build",
+    "thisBuild": "Version",
+    "devBuild": "unreleased",
+    "explainer": "Nostragoalus never checks for a new version on its own. This asks the site which Android build it currently publishes.",
+    "check": "Check for a newer version",
+    "checking": "Asking...",
+    "current": "{version} is the current build. Nothing to do.",
+    "newer": "{version} is out, {size}.",
+    "sideloadNote": "The app cannot install it for you: it was sideloaded, so the new one comes from the site the same way this one did. The download page prints a digest to check it against.",
+    "unpublished": "The site publishes no Android build right now.",
+    "failed": "Could not tell. Nothing is wrong with this build, the answer just did not arrive.",
+    "download": "Get the new version",
+    "requiredTitle": "Time to update",
+    "requiredBody": "The server no longer supports this build, so nothing in the app can load. Install the current one and sign in again."
   }
 }

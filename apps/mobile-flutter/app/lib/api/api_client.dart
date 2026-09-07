@@ -47,17 +47,25 @@ class ApiException implements Exception {
 /// issues it on sign-in and refresh). A 401 clears the stored token so the app
 /// falls back to signed-out.
 class ApiClient {
-  ApiClient(this._tokens, {Dio? dio, void Function()? onUnauthorized})
-      : _dio = dio ?? Dio() {
+  ApiClient(
+    this._tokens, {
+    Dio? dio,
+    void Function()? onUnauthorized,
+    void Function()? onUpgradeRequired,
+  }) : _dio = dio ?? Dio() {
     _dio.options
       ..baseUrl = AppConfig.apiBase
       ..connectTimeout = const Duration(seconds: 10)
       ..receiveTimeout = const Duration(seconds: 20)
       ..headers['content-type'] = 'application/json'
+      // Says which build this is, so the server can refuse one it has outgrown
+      // instead of failing it in some shape the user cannot act on.
+      ..headers['x-ng-client'] = AppConfig.clientId
       // Inspect every response ourselves (throwing ApiException) rather than
       // letting Dio throw on non-2xx - one error type for all callers.
       ..validateStatus = (_) => true;
     _onUnauthorized = onUnauthorized;
+    _onUpgradeRequired = onUpgradeRequired;
     // A client can be rebuilt over a Dio that is shared for the process life
     // (the account flush makes a fresh one); without this the auth interceptor
     // would stack a copy per rebuild and run the 401 path once per copy.
@@ -79,6 +87,9 @@ class ApiClient {
           await _tokens.clear();
           _onUnauthorized?.call();
         }
+        // 426 is the server saying this build is below its floor. Every route
+        // answers it, so it is handled here rather than at each call site.
+        if (response.statusCode == 426) _onUpgradeRequired?.call();
         handler.next(response);
       },
     ));
@@ -87,6 +98,7 @@ class ApiClient {
   final Dio _dio;
   final TokenStore _tokens;
   void Function()? _onUnauthorized;
+  void Function()? _onUpgradeRequired;
 
   Future<void> _captureToken(Headers? headers) async {
     final t = headers?.value('set-auth-token');

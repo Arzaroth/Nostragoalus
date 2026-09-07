@@ -8,6 +8,7 @@ import 'state/providers.dart';
 import 'theme/app_theme.dart';
 import 'ui/home_shell.dart';
 import 'ui/sign_in_screen.dart';
+import 'ui/update_required_screen.dart';
 
 /// Root widget. Loads the active locale, then gates the tree on the session:
 /// signed out -> sign in, signed in -> the tabbed home shell.
@@ -47,11 +48,23 @@ class NostragoalusApp extends ConsumerWidget {
                   child: DeepLinkController(child: child!),
                 ),
               ),
-              home: const _AuthGate(),
+              home: const _VersionGate(),
             ),
           ),
         );
   }
+}
+
+/// Swaps the whole app for the update screen once any route has answered 426.
+/// Above [_AuthGate] on purpose: a build the server refuses cannot sign in
+/// either, so presenting a login form first would be a dead end.
+class _VersionGate extends ConsumerWidget {
+  const _VersionGate();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => ref.watch(clientOutdatedProvider)
+      ? const UpdateRequiredScreen()
+      : const _AuthGate();
 }
 
 /// Paints the floodlit ground behind the whole app: the night (or paper) base

@@ -166,6 +166,17 @@ with the data caveat noted per area.
 - [x] My stats screen (`/api/me/stats`)
 - [x] My rewards screen (`/api/me/rewards`)
 
+## Versions & updates
+- [x] The build identifies itself (`x-ng-client: android/<version>`, stamped by
+  `apk-publish`), and the server answers 426 for a build below
+  `MIN_ANDROID_CLIENT`; the app swaps the whole tree for an update screen
+- [x] Manual update check in preferences - "This build" + a button that asks
+  `/api/app/android`. Never checks on its own (a sideloaded app cannot install
+  its own update, so an unrequested check is only a nag)
+- [ ] One version line shared with the web (`apps/web-nuxt/package.json`). Fine
+  while the two ship together; splitting it would buy honest per-artifact
+  changelogs and cost a second monotonic `versionCode` scheme
+
 ## Long-tail & native
 - [x] i18n (5 locales incl. RTL Arabic, tlh)
 - [x] Konami skins (theme follows `user.skin`)

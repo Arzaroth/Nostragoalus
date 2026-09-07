@@ -8,9 +8,11 @@ import '../api/api.dart';
 import '../api/auth_repository.dart';
 import '../api/models.gen.dart';
 import '../api/token_store.dart';
+import '../config.dart';
 import '../i18n/i18n.dart';
 import '../leagues/league_selection.dart';
 import '../live/live_service.dart';
+import '../update/app_update.dart';
 import '../voice/voice_service.dart';
 import 'app_prefs.dart';
 
@@ -19,6 +21,7 @@ import 'app_prefs.dart';
 // [apiProvider] would otherwise need its own api import.
 export '../api/api.dart' hide ApiClient;
 export '../leagues/league_selection.dart' show LeagueSelections;
+export '../update/app_update.dart';
 
 /// Persisted UI preferences. `main()` overrides this with an instance whose
 /// `load()` already ran, so the providers below can seed synchronously.
@@ -157,12 +160,29 @@ final apiClientProvider = Provider<ApiClient>((ref) {
     // of this provider, and riverpod (rightly) refuses to let a provider
     // invalidate something that depends on it.
     onUnauthorized: () => ref.read(sessionRevokedProvider.notifier).state++,
+    onUpgradeRequired: () => ref.read(clientOutdatedProvider.notifier).state = true,
   );
 });
 
 /// Bumped whenever a 401 proves the stored session is dead. [AuthController]
 /// watches it, so the app re-reads the session and drops to signed-out.
 final sessionRevokedProvider = StateProvider<int>((ref) => 0);
+
+/// Set once any route answers 426: this build is below the server's floor. The
+/// root widget swaps the whole app for the update screen, because there is
+/// nothing else the app can usefully do - every other route answers 426 too.
+///
+/// One-way on purpose. It is not cleared on sign-out or an account switch: the
+/// build is too old regardless of who is holding the phone.
+final clientOutdatedProvider = StateProvider<bool>((ref) => false);
+
+/// The published Android build, read on demand for the manual update check in
+/// preferences. autoDispose so leaving the screen drops the answer rather than
+/// showing a stale one on the next visit.
+final appReleaseProvider = FutureProvider.autoDispose<UpdateCheck>((ref) async {
+  final json = await ref.watch(apiProvider).androidRelease();
+  return compareRelease(AppRelease.fromJson(json), AppConfig.appVersion);
+});
 
 /// Flushes every cached read whenever the signed-in identity changes - sign-in,
 /// sign-out, or a 401 that killed the session - so no personal data outlives
@@ -207,6 +227,7 @@ final apiProvider = Provider<ApiClient>((ref) => ApiClient(
       ref.watch(tokenStoreProvider),
       dio: ref.watch(dioProvider),
       onUnauthorized: () => ref.read(sessionRevokedProvider.notifier).state++,
+      onUpgradeRequired: () => ref.read(clientOutdatedProvider.notifier).state = true,
     ));
 
 /// Signed-in user (null when signed out). `build` restores a persisted session

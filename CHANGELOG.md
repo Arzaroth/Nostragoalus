@@ -5,6 +5,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+
+- Android app: a "This build" section in Settings that shows which version you are running and, when you press the button, asks the site whether a newer one is published. It never checks on its own.
+- Android app: if the server has stopped supporting the version you have installed, the app now says so plainly and links you to the current build, instead of failing screen by screen with confusing errors.
+
 ## [4.8.0] - 2026-09-07
 
 ### Added

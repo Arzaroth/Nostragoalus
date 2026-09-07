@@ -38,6 +38,60 @@ Inside `app/lib/`:
 | `deeplink/` | Inbound `goal.arzaroth.com/...` App Links. |
 | `auth/` | Identifier-first SSO: the browser round trip and the code exchange ([../architecture/auth.md](../architecture/auth.md)). |
 
+## Versions, and the floor under them
+
+There is ONE version line. `apps/web-nuxt/package.json` is it: the release task
+bumps it, `apk-publish` reads it for the APK's `versionName`, derives
+`versionCode` as `major*10000 + minor*100 + patch`, and stamps it into the build
+as `--dart-define=APP_VERSION`. `pubspec.yaml`'s own `version:` is vestigial and
+ignored. So the app on the site and the site serving it carry the same number by
+construction.
+
+A sideloaded APK never auto-updates, which is the whole problem: an install from
+any past release can still be talking to today's server. Two things address that,
+and neither is a compatibility matrix - there is one server, and the APK is
+downloaded from it, so a matrix would have one meaningful row and would rot.
+
+**The app says which build it is.** `AppConfig.clientId` is `android/<version>`,
+sent as `x-ng-client` on every request by the dio interceptor in
+`api/api_client.dart`. A build made outside `apk-publish` carries `dev`, which
+matches no floor.
+
+**The server can refuse a build it has outgrown.**
+`server/utils/clients/service.ts` holds `MIN_ANDROID_CLIENT` and the pure
+predicates; `server/middleware/client-version.ts` answers **426 Upgrade
+Required** with `{error, minimum, current, downloadUrl}`. Raising the floor locks
+out installs that cannot update themselves, so it is a deliberate act, never
+release bookkeeping.
+
+Two exemptions, both so a refused user has a way forward: page documents are
+never gated (the website is how you get a newer app), and neither is
+`/api/app/android` (it is the route that says which build to install, so gating
+it behind the check that rejected you would leave the app unable to say what to
+do). `isVersionGatedPath` holds that decision.
+
+The floor only sees clients that identify themselves. Older APKs send no header
+and are indistinguishable from a browser, so there is no way to catch them
+retroactively - which is the reason to start now rather than later. It ships set
+to the release BEFORE the header existed, so it is inert on day one: the
+mechanism is proven by tests, not by turning anyone away. And it must never be
+ahead of the version being released, since `apk-publish` stamps an APK from the
+same package.json and a floor above it would refuse the build cut from that very
+release; `clients/floor.test.ts` fails the gate if it ever is.
+
+On the app side, any 426 sets `clientOutdatedProvider` and `_VersionGate` in
+`app.dart` swaps the whole tree for `ui/update_required_screen.dart`. It sits
+ABOVE the auth gate, because a build the server refuses cannot sign in either,
+and it is one-way: the build is too old regardless of who is holding the phone.
+
+Separately, preferences carries `ui/widgets/update_check_card.dart` - "This
+build", and a button that asks `/api/app/android` whether a newer one is
+published. Nothing checks on launch, on a timer, or in the background: the app
+cannot install its own update, so an unrequested check could only be a nag. The
+comparison is `isNewerVersion` in `update/app_update.dart`, numeric per segment
+because a string compare puts "4.10.0" before "4.9.0" and tells everyone on the
+newest build they are up to date.
+
 ## Getting around
 
 `ui/home_shell.dart` is the signed-in shell: an `IndexedStack` over six tabs -

@@ -2036,5 +2036,21 @@
         "top": "Hoch chuq {pct}%",
         "tagline": "yI'aq. yIQap. yImIy."
       }
+  },
+  "appUpdate": {
+    "section": "chenmoHlu'bogh",
+    "thisBuild": "mI",
+    "devBuild": "ngeHbe'lu'",
+    "explainer": "Nostragoalus chu' nejbe'taH. Sar yu' vam: nuqDaq Android chu' ngeHlu'?",
+    "check": "chu' yInej",
+    "checking": "yu'taH...",
+    "current": "{version} 'oH chu'qu'. qaSbe'.",
+    "newer": "{version} tu'lu', {size}.",
+    "sideloadNote": "lan De'wI'Hom laHbe'. SoH yIlan: Sarvo' chu' Suq, wa'DIch rur. Sar ngoq 'ang, yIqIm.",
+    "unpublished": "DaH Android chenmoHlu'bogh ngeHbe' Sar.",
+    "failed": "Sovlu'be'. vam QaghHa'; jang neH pawbe'.",
+    "download": "chu' yISuq",
+    "requiredTitle": "chu' poH",
+    "requiredBody": "vam qImHa' QIn'a', vaj pagh Sam. chu' yIlan, 'ej yI'el je."
   }
 }

@@ -5,6 +5,11 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Ajouté
+
+- Application Android : une section « Cette version » dans les réglages, qui indique la version installée et, quand vous appuyez sur le bouton, demande au site s'il en publie une plus récente. Elle ne vérifie jamais toute seule.
+- Application Android : si le serveur ne prend plus en charge la version installée, l'application le dit clairement et renvoie vers la version actuelle, au lieu d'échouer écran par écran avec des erreurs incompréhensibles.
+
 ## [4.8.0] - 2026-09-07
 
 ### Ajouté

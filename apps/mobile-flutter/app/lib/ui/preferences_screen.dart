@@ -6,6 +6,7 @@ import '../state/providers.dart';
 import 'feedback.dart';
 import 'widgets/panel.dart';
 import 'widgets/section_card.dart';
+import 'widgets/update_check_card.dart';
 
 /// User preferences (persisted server-side via better-auth update-user): show the
 /// crowd/odds hints and the light/dark theme.
@@ -56,6 +57,7 @@ class PreferencesScreen extends ConsumerWidget {
               ],
             ),
           ),
+          const UpdateCheckCard(),
         ],
       ),
     );

@@ -43,6 +43,10 @@ extension MeApi on ApiClient {
       postJson('/api/notifications/read', body: all ? {'all': true} : {'ids': ids ?? []});
 
   /// Save a user preference (theme/locale/showCrowd/showOdds/skin) via better-auth.
+  /// The Android build the site publishes, for the manual update check.
+  /// Public: it answers signed out too.
+  Future<Map<String, dynamic>> androidRelease() async => getJson('/api/app/android');
+
   Future<void> updatePrefs(Map<String, dynamic> prefs) async =>
       postJson('/api/auth/update-user', body: prefs);
 

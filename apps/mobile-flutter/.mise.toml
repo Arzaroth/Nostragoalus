@@ -170,7 +170,7 @@ code=$(echo "$version" | awk -F. 'NF != 3 || $2 > 99 || $3 > 99 { exit 1 } { pri
   echo "apk-publish: '$version' does not fit the versionCode scheme (x.y.z, minor/patch < 100)" >&2
   exit 1
 }
-flutter build apk --release --dart-define=API_BASE="$api_base" --dart-define=WEB_BASE="$web_base" --build-name="$version" --build-number="$code"
+flutter build apk --release --dart-define=API_BASE="$api_base" --dart-define=WEB_BASE="$web_base" --dart-define=APP_VERSION="$version" --build-name="$version" --build-number="$code"
 printf '{"version":"%s","builtAt":"%s"}\\n' "$version" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$out/nostragoalus.apk.json"
 # Stage then rename: the server stats and hashes the APK before streaming it, so
 # copying over the live file in place would serve one build's bytes under another

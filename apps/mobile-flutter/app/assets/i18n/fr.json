@@ -2036,5 +2036,21 @@
         "top": "Top {pct}% des joueurs",
         "tagline": "Pronostique. Marque. Frime."
       }
+  },
+  "appUpdate": {
+    "section": "Cette version",
+    "thisBuild": "Version",
+    "devBuild": "non publiee",
+    "explainer": "Nostragoalus ne cherche jamais de nouvelle version tout seul. Ceci demande au site quelle version Android il publie actuellement.",
+    "check": "Chercher une version plus recente",
+    "checking": "Recherche...",
+    "current": "{version} est la version actuelle. Rien a faire.",
+    "newer": "{version} est disponible, {size}.",
+    "sideloadNote": "L'application ne peut pas l'installer a votre place : elle a ete installee manuellement, donc la nouvelle vient du site comme celle-ci. La page de telechargement affiche une empreinte a verifier.",
+    "unpublished": "Le site ne publie aucune version Android pour le moment.",
+    "failed": "Impossible de savoir. Cette version n'a rien d'anormal, la reponse n'est simplement pas arrivee.",
+    "download": "Telecharger la nouvelle version",
+    "requiredTitle": "Mise a jour necessaire",
+    "requiredBody": "Le serveur ne prend plus en charge cette version, donc rien ne peut se charger. Installez la version actuelle et reconnectez-vous."
   }
 }
