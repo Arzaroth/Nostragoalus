@@ -767,6 +767,12 @@ effort buckets; order within a bucket is not priority.
     the published build with its version, size and SHA-256, and every public page
     links to it. The APK is a bind-mounted deploy artifact, not part of the web
     image, so publishing a new build is a file copy with no redeploy.
+  - [x] **Chat has its own tab, and the leaderboard/crowd have a league lens.**
+    The web's always-present chat dock and `LeaguePill` had no mobile
+    counterpart: league chat sat three taps inside a league, and no screen could
+    be narrowed to one league. Chat is now a top-level destination listing DMs
+    (unread-badged) and every league room, and an app-bar league switcher scopes
+    the ranking and the crowd consensus, remembered per competition.
   - [ ] Remaining: mobile push (needs new server FCM endpoints - the server
     speaks only web-push/VAPID), a Play account, and anything
     iOS/CallKit/passkeys (no Apple hardware, no maintained plugin). The release

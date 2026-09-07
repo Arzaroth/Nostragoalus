@@ -3046,6 +3046,39 @@ The big one, and the reason everything below is possible:
       regardless of `state`/`challenge`, and never plays the `error=sso_failed`
       redirect. A server-side tightening of `parkMobileSsoToken` would not be
       caught by any Dart test.
+- [ ] The bottom bar went from five tabs to six (chat) and nobody has looked at
+      it on a narrow phone. Review caught the worst of it - in French
+      `nav.standings` ("Classement") and `nav.leaderboard` ("Classement joueurs")
+      sat side by side and both ellipsized to "Classem..." - so the bar now reads
+      a short `nav.tab.*` label set instead of the web header's wording. That is
+      reasoned, not measured: a headless widget test cannot judge it, because
+      `flutter test` renders the fallback box font rather than Barlow, so any
+      width it reports is meaningless. Still worth eyeballing on a device in all
+      five locales at a large system font scale.
+- [ ] `leagueLensGuardProvider` registers its leagues listener without
+      `fireImmediately`, so it prunes only on a TRANSITION. It works today
+      because `HomeShell.initState` reads it before anything watches
+      `leaguesProvider`, but a deep link or a prefetch that touches that provider
+      earlier would silently skip pruning for that launch. Adding
+      `fireImmediately: true` means writing provider state during a build, which
+      riverpod rejects, so it needs a deferred initial check rather than a flag.
+- [ ] The league lens is not applied to reactions. The web lenses match and
+      competition reactions through the same `useSelectedLeague()`
+      (`useMatchReactions.ts`, `useCompetitionReactions.ts`, the "N globally"
+      line under a league total in `ReactionBar.vue`); mobile's
+      `reactionsProvider` still reads the global totals only. Same shape as the
+      leaderboard/crowd work - pass the lens into the reactions read and render
+      the second line.
+- [ ] The mobile crowd consensus is REST-only under the league lens as well as
+      globally: `crowd:update` WS frames patch neither `crowdTotalsProvider` nor
+      `leagueCrowdTotalsProvider`, so a lensed card is as stale as an unlensed
+      one until the next refetch. The web applies the patch to the right bucket
+      via `crowdPatchScope`.
+- [ ] No end-to-end coverage for the league lens or the chat tab.
+      `integration_test/main_path_test.dart` is the mobile answer to Playwright,
+      but it is one main-path spec and needs an emulator plus a seeded server, so
+      neither was exercised there. Extending the seed with a second league member
+      would make a lensed leaderboard assertable.
 - [ ] `lib/ui/**` is outside the mobile coverage floor
       (`app/tool/coverage_check.sh`), which is the web gate's own convention for
       pages - but the sign-in screen now carries real branching (offline vs
