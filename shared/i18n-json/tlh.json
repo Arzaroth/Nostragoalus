@@ -2038,6 +2038,9 @@
       }
   },
   "appUpdate": {
+    "unversioned": "ngeH mI' Hutlhbe' vam, vaj pagh nuq'e' rurmoHlu'.",
+    "buildLine": "mI' {version}",
+    "requiredBodyMin": "vam qImHa' QIn'a', vaj pagh Sam. {version} joq chu'law' poQ. chu' yIlan, 'ej yI'el je.",
     "section": "chenmoHlu'bogh",
     "thisBuild": "mI",
     "devBuild": "ngeHbe'lu'",

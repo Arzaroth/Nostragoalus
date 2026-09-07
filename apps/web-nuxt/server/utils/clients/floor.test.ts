@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { MIN_ANDROID_CLIENT, compareVersions } from './service'
+import { compareVersions } from '#shared/version'
+import { MIN_ANDROID_CLIENT } from './service'
 
 // The floor is checked against the version an APK stamps itself with, and
 // `apk-publish` stamps it from this same package.json. So a floor ABOVE the

@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../config.dart';
+import '../update/app_update.dart';
 import 'token_store.dart';
 
 /// The `?competition=` query for a competition-scoped read; null uses the
@@ -51,7 +52,7 @@ class ApiClient {
     this._tokens, {
     Dio? dio,
     void Function()? onUnauthorized,
-    void Function()? onUpgradeRequired,
+    void Function(ClientRefusal)? onUpgradeRequired,
   }) : _dio = dio ?? Dio() {
     _dio.options
       ..baseUrl = AppConfig.apiBase
@@ -88,8 +89,14 @@ class ApiClient {
           _onUnauthorized?.call();
         }
         // 426 is the server saying this build is below its floor. Every route
-        // answers it, so it is handled here rather than at each call site.
-        if (response.statusCode == 426) _onUpgradeRequired?.call();
+        // answers it, so it is handled here rather than at each call site - but
+        // only for OUR 426: a captive portal, proxy or CDN edge can answer 426
+        // too, and blanking a perfectly good app over one of those would be a
+        // worse failure than the one this prevents.
+        if (response.statusCode == 426) {
+          final refusal = ClientRefusal.fromBody(response.data);
+          if (refusal != null) _onUpgradeRequired?.call(refusal);
+        }
         handler.next(response);
       },
     ));
@@ -98,7 +105,7 @@ class ApiClient {
   final Dio _dio;
   final TokenStore _tokens;
   void Function()? _onUnauthorized;
-  void Function()? _onUpgradeRequired;
+  void Function(ClientRefusal)? _onUpgradeRequired;
 
   Future<void> _captureToken(Headers? headers) async {
     final t = headers?.value('set-auth-token');

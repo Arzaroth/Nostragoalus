@@ -213,7 +213,7 @@ export default defineNuxtConfig({
       production: 'runtime',
       meta: {
         title: 'Nostragoalus API',
-        description: 'The HTTP API behind the prediction game: fixtures, predictions, leaderboards, teams, live match data. Session-cookie authenticated (better-auth); admin routes need an admin session.',
+        description: 'The HTTP API behind the prediction game: fixtures, predictions, leaderboards, teams, live match data. Session-cookie authenticated (better-auth); admin routes need an admin session. Any endpoint may answer 426 Upgrade Required with {error:"client_too_old", minimum, current, downloadUrl} when the caller identifies itself via x-ng-client as a mobile build older than the server supports; /api/app/android is exempt so a refused client can still find the current build.',
         version: '1.0',
       },
       route: '/_docs/openapi.json',
@@ -229,6 +229,11 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     databaseUrl: '',
+    // The oldest Android build served, overriding the constant in
+    // server/utils/clients/service.ts. Present so a floor set too high is undone
+    // by restarting with NUXT_MIN_ANDROID_CLIENT, not by a rebuild and redeploy
+    // while every mobile user is locked out. Empty means "use the constant".
+    minAndroidClient: '',
     betterAuthSecret: '',
     footballDataToken: '',
     apiFootballKey: '',

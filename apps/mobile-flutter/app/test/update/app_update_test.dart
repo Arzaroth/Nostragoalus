@@ -1,12 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:nostragoalus/update/app_update.dart';
 
-AppRelease _release(String? version, {bool available = true, int? size}) =>
+AppRelease _release(String? version, {bool available = true, int? size, String? url}) =>
     AppRelease.fromJson({
       'available': available,
       'version': version,
       'sizeBytes': size,
       'sha256': version == null ? null : 'deadbeef',
+      'downloadUrl': url,
     });
 
 void main() {
@@ -36,12 +37,28 @@ void main() {
   });
 
   group('compareRelease', () {
-    test('a newer published build carries its size and digest', () {
-      final r = compareRelease(_release('4.10.0', size: 94000000), '4.9.0');
+    test('a newer published build carries its size, digest and download route', () {
+      final r = compareRelease(
+          _release('4.10.0', size: 94000000, url: '/download/x.apk'), '4.9.0');
       expect(r.state, UpdateState.newer);
       expect(r.version, '4.10.0');
       expect(r.sizeBytes, 94000000);
       expect(r.sha256, 'deadbeef');
+      expect(r.path, '/download/x.apk');
+    });
+
+    // The server owns the download route; this is only a floor under a response
+    // that did not carry one.
+    test('falls back to the known path when the server sent no url', () {
+      expect(compareRelease(_release('4.10.0'), '4.9.0').path, fallbackDownloadPath);
+    });
+
+    // `dev` parses as 0, so comparing it would tell every developer build - which
+    // is usually AHEAD of the published one - that it is behind.
+    test('an unstamped build is not compared at all', () {
+      expect(compareRelease(_release('4.10.0'), 'dev').state, UpdateState.unversioned);
+      expect(compareRelease(_release(null, available: false), 'dev').state,
+          UpdateState.unversioned);
     });
 
     test('the same build is current', () {
@@ -65,9 +82,12 @@ void main() {
   });
 
   group('formatBytes', () {
-    test('rounds to megabytes', () {
-      expect(formatBytes(94013880), '94 MB');
-      expect(formatBytes(1500000), '2 MB');
+    // Mebibytes to one decimal, matching AndroidAppCard.vue on the website: a
+    // user told to go there and verify the digest must not find a different
+    // size for the same file.
+    test('matches the website for the same byte count', () {
+      expect(formatBytes(94013880), '89.7 MB');
+      expect(formatBytes(62914560), '60.0 MB');
     });
 
     test('says so when there is no size', () {
@@ -78,9 +98,11 @@ void main() {
   });
 
   group('isVersionedBuild', () {
-    // The test binary carries no --dart-define, so it is the unversioned case:
-    // there is no release version to compare and the card says so rather than
-    // guessing "up to date".
+    // Weak by construction: appVersion is a compile-time const and `flutter
+    // test` passes no --dart-define, so this can only ever observe the
+    // unstamped case. The behaviour that matters is pinned on compareRelease
+    // above, which takes the version as a parameter and so IS testable both
+    // ways.
     test('an unstamped build is not a release build', () {
       expect(isVersionedBuild, isFalse);
     });

@@ -45,26 +45,48 @@ class NostragoalusApp extends ConsumerWidget {
               builder: (context, child) => Directionality(
                 textDirection: i18n.textDirection,
                 child: _GradientBackground(
-                  child: DeepLinkController(child: child!),
+                  // Above the Navigator, not at `home:`. As a route it would
+                  // render UNDER whatever the user had pushed, and they would go
+                  // on tapping through screens whose every request 426s. Here
+                  // the pushed stack goes away with the Navigator.
+                  child: _VersionGate(child: DeepLinkController(child: child!)),
                 ),
               ),
-              home: const _VersionGate(),
+              home: const _AuthGate(),
             ),
           ),
         );
   }
 }
 
-/// Swaps the whole app for the update screen once any route has answered 426.
-/// Above [_AuthGate] on purpose: a build the server refuses cannot sign in
-/// either, so presenting a login form first would be a dead end.
+/// Replaces the whole app with the update screen once any route has answered
+/// 426. It wraps the Navigator rather than sitting inside it, so a pushed stack
+/// cannot survive on top, and it is above the auth gate because a build the
+/// server refuses cannot sign in either.
 class _VersionGate extends ConsumerWidget {
-  const _VersionGate();
+  const _VersionGate({required this.child});
+  final Widget child;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => ref.watch(clientOutdatedProvider)
-      ? const UpdateRequiredScreen()
-      : const _AuthGate();
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (!ref.watch(clientOutdatedProvider)) return child;
+    // The auth gate normally drops the splash, and it is gone from the tree
+    // here. Without this the update screen is built and never composited: the
+    // first frame stays deferred and the user sits on the native splash - worse
+    // than the failure this whole feature exists to replace.
+    dropSplash();
+    return const UpdateRequiredScreen();
+  }
+}
+
+/// Hands the first frame to the engine, once. `main()` holds the native splash
+/// until a real screen is on the glass, so EVERY branch that renders one has to
+/// call this; a branch that forgets leaves the app frozen on the splash.
+bool _splashDropped = false;
+void dropSplash() {
+  if (_splashDropped) return;
+  _splashDropped = true;
+  WidgetsBinding.instance.addPostFrameCallback((_) => FlutterNativeSplash.remove());
 }
 
 /// Paints the floodlit ground behind the whole app: the night (or paper) base
@@ -122,26 +144,17 @@ class _AuthGate extends ConsumerStatefulWidget {
 }
 
 class _AuthGateState extends ConsumerState<_AuthGate> {
-  bool _splashRemoved = false;
-
-  /// Drop the native splash once, after the first real screen has laid out.
-  void _removeSplashOnce() {
-    if (_splashRemoved) return;
-    _splashRemoved = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) => FlutterNativeSplash.remove());
-  }
-
   @override
   Widget build(BuildContext context) {
     return ref.watch(authControllerProvider).when(
           loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
           // An auth error means no usable session; fall back to sign in.
           error: (_, __) {
-            _removeSplashOnce();
+            dropSplash();
             return const SignInScreen();
           },
           data: (user) {
-            _removeSplashOnce();
+            dropSplash();
             return user == null ? const SignInScreen() : const HomeShell();
           },
         );

@@ -2038,6 +2038,9 @@
       }
   },
   "appUpdate": {
+    "unversioned": "Cette version n'a pas de numero de publication, il n'y a donc rien a comparer.",
+    "buildLine": "Version {version}",
+    "requiredBodyMin": "Le serveur ne prend plus en charge cette version, donc rien ne peut se charger. Il faut la {version} ou plus recente. Installez la version actuelle et reconnectez-vous.",
     "section": "Cette version",
     "thisBuild": "Version",
     "devBuild": "non publiee",

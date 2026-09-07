@@ -1,3 +1,5 @@
+import { compareVersions } from '#shared/version'
+
 // Which client is talking to us, and whether it is too old to be served.
 //
 // A sideloaded APK never auto-updates, so an install from any past release can
@@ -11,14 +13,17 @@
 // indistinguishable from a browser, so they keep being served - there is no way
 // to retroactively catch them, which is the reason to start now.
 
-/// The oldest Android build this server will serve.
+/// The oldest Android build this server will serve, unless
+/// `NUXT_MIN_ANDROID_CLIENT` overrides it at runtime.
 ///
 /// Raise it ONLY when the server has actually stopped supporting something an
 /// older client depends on. Every raise locks out installs that cannot update
-/// themselves, so it is a deliberate act, not routine release bookkeeping.
+/// themselves, so it is a deliberate act, not routine release bookkeeping - and
+/// setting it TO the version being released refuses every install except the one
+/// cut from that release, which is a force-upgrade, not a floor.
 ///
-/// It must never be ahead of the version being released - `apk-publish` stamps
-/// an APK from the same package.json, so a floor above it refuses the build cut
+/// It must never be ahead of the version being released: `apk-publish` stamps an
+/// APK from the same package.json, so a floor above it refuses the build cut
 /// from that very release. `floor.test.ts` fails the gate if that happens.
 ///
 /// Starting at the release BEFORE the header existed is deliberate: no build
@@ -29,30 +34,24 @@ export const MIN_ANDROID_CLIENT = '4.8.0'
 
 export const CLIENT_HEADER = 'x-ng-client'
 
+/// The one API route the floor never applies to: it is the route that says which
+/// build to install, so gating it behind the check that rejected you would leave
+/// the app unable to tell the user what to do about it.
+export const CLIENT_GATE_EXEMPT = '/api/app/android'
+
 export type ClientId = { platform: string; version: string }
 
+export type ClientRefusal = { error: 'client_too_old'; minimum: string; current: string }
+
 /// `android/4.9.0`. Anything else is treated as an unidentified client (a
-/// browser, curl, a bot) rather than a malformed one: the header is advisory,
-/// and refusing traffic over a header nobody is required to send would take the
-/// web app down the first time it got the shape wrong.
+/// browser, curl, a bot, or a duplicated header Node has joined with a comma)
+/// rather than a malformed one: the header is advisory, and refusing traffic
+/// over a header nobody is required to send would take the web app down the
+/// first time it got the shape wrong.
 export function parseClientHeader(raw: unknown): ClientId | null {
   if (typeof raw !== 'string') return null
   const m = /^([a-z]{1,16})\/(\d{1,6}(?:\.\d{1,6}){0,3})$/.exec(raw.trim().toLowerCase())
   return m ? { platform: m[1]!, version: m[2]! } : null
-}
-
-/// Numeric, segment by segment. A string compare puts "4.10.0" before "4.9.0",
-/// which is the kind of bug that ships once and then quietly refuses to serve
-/// everybody on the newest build.
-export function compareVersions(a: string, b: string): number {
-  const parts = (v: string) => v.split('.').map((n) => Number.parseInt(n, 10) || 0)
-  const left = parts(a)
-  const right = parts(b)
-  for (let i = 0; i < Math.max(left.length, right.length); i++) {
-    const diff = (left[i] ?? 0) - (right[i] ?? 0)
-    if (diff !== 0) return diff < 0 ? -1 : 1
-  }
-  return 0
 }
 
 /// True when this client is below the floor for its platform. An unidentified
@@ -65,13 +64,39 @@ export function isClientTooOld(client: ClientId | null, minAndroid = MIN_ANDROID
 /// Whether the floor applies to this path at all.
 ///
 /// API routes only: a page document has to keep rendering, because the website
-/// is how somebody with a too-old app gets a newer one. `/api/app/android` is
-/// exempt for the same reason at the API level - it is the route that says
-/// which build to install, so gating it behind the check that rejected you
-/// would leave the app unable to tell the user what to do about it.
+/// is how somebody with a too-old app gets a newer one. A trailing slash is
+/// stripped before the exemption is matched, because the router resolves
+/// `/api/app/android/` to the same handler - gating it there would break the
+/// escape hatch for anything that normalizes a URL by appending one.
 export function isVersionGatedPath(path: string): boolean {
   const query = path.indexOf('?')
   const route = query === -1 ? path : path.slice(0, query)
   if (!route.startsWith('/api/')) return false
-  return route !== '/api/app/android'
+  const bare = route.length > 1 && route.endsWith('/') ? route.slice(0, -1) : route
+  return bare !== CLIENT_GATE_EXEMPT
+}
+
+/// The whole decision, so the middleware is a shell around something testable
+/// and the COMPOSITION is covered rather than only its three parts. Null serves
+/// the request.
+export function clientRefusal(
+  path: string,
+  header: unknown,
+  minAndroid = MIN_ANDROID_CLIENT,
+): ClientRefusal | null {
+  if (!isVersionGatedPath(path)) return null
+  const client = parseClientHeader(header)
+  if (!isClientTooOld(client, minAndroid)) return null
+  return { error: 'client_too_old', minimum: minAndroid, current: client!.version }
+}
+
+/// The floor actually in force. The override exists so a floor set too high is
+/// recoverable by restarting the container with an env var, instead of by
+/// editing code, rebuilding the image and redeploying while every mobile user is
+/// locked out. A value that is not a plain dotted version is ignored rather than
+/// obeyed: a typo in an env var must not become an outage.
+export function resolveMinAndroidClient(override: unknown): string {
+  if (typeof override !== 'string') return MIN_ANDROID_CLIENT
+  const trimmed = override.trim()
+  return /^\d{1,6}(\.\d{1,6}){0,3}$/.test(trimmed) ? trimmed : MIN_ANDROID_CLIENT
 }

@@ -24,6 +24,9 @@ scan=(
   TODO.md
   README.md
   CHANGELOG.md
+  # The about page renders these, so an em-dash reaches users the same way one
+  # in CHANGELOG.md does.
+  i18n/changelogs
 )
 
 hits=$(git ls-files -z --cached --others --exclude-standard "${scan[@]}" |

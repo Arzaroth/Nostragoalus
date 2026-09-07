@@ -18,6 +18,7 @@ const _strings = {
     'newer': '{version} is out, {size}.',
     'sideloadNote': 'Cannot install it for you.',
     'unpublished': 'No build published.',
+    'unversioned': 'Nothing to compare against.',
     'failed': 'Could not tell.',
     'download': 'Get the new version',
   },
@@ -76,7 +77,7 @@ void main() {
     await tester.tap(find.text('Check for a newer version'));
     await tester.pumpAndSettle();
 
-    expect(find.text('4.10.0 is out, 94 MB.'), findsOneWidget);
+    expect(find.text('4.10.0 is out, 89.6 MB.'), findsOneWidget);
     expect(find.text('Cannot install it for you.'), findsOneWidget);
     expect(find.text('Get the new version'), findsOneWidget);
   });
@@ -89,6 +90,19 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Could not tell.'), findsOneWidget);
+  });
+
+  // A build made outside apk-publish has no release version, so "you are up to
+  // date" would be a guess - and usually a wrong one, since a dev build is
+  // normally ahead of the published one.
+  testWidgets('an unstamped build is not compared', (tester) async {
+    await tester.pumpWidget(_host([_answer(const UpdateCheck(UpdateState.unversioned))]));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Check for a newer version'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Nothing to compare against.'), findsOneWidget);
+    expect(find.text('Get the new version'), findsNothing);
   });
 
   testWidgets('no published build is its own answer', (tester) async {

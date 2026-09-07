@@ -53,16 +53,30 @@ and neither is a compatibility matrix - there is one server, and the APK is
 downloaded from it, so a matrix would have one meaningful row and would rot.
 
 **The app says which build it is.** `AppConfig.clientId` is `android/<version>`,
-sent as `x-ng-client` on every request by the dio interceptor in
-`api/api_client.dart`. A build made outside `apk-publish` carries `dev`, which
-matches no floor.
+set once on the shared dio's default headers in `api/api_client.dart` and sent
+as `x-ng-client` on every request. A build made outside `apk-publish` carries
+`dev`, which the server's version pattern rejects - so a dev build is
+unidentified, never refused. `test/tool/apk_publish_test.dart` guards the define
+itself: drop it and every published APK would silently report `dev`, leaving the
+floor inert forever.
 
 **The server can refuse a build it has outgrown.**
-`server/utils/clients/service.ts` holds `MIN_ANDROID_CLIENT` and the pure
-predicates; `server/middleware/client-version.ts` answers **426 Upgrade
-Required** with `{error, minimum, current, downloadUrl}`. Raising the floor locks
-out installs that cannot update themselves, so it is a deliberate act, never
-release bookkeeping.
+`server/utils/clients/service.ts` holds `MIN_ANDROID_CLIENT` and the decision
+(`clientRefusal`, so the composition is testable and not just its three parts);
+`server/middleware/client-version.ts` is the shell that answers **426 Upgrade
+Required** with `{error, minimum, current, downloadUrl}`. It reads the path
+through `routedPath`, not `event.path`, for the reason `utils/auth/routed-path.ts`
+exists, and sets `Vary: x-ng-client` on the gated paths so a future `swr`/`cache`
+route rule cannot serve one client class's answer to another.
+
+Raising the floor locks out installs that cannot update themselves, so it is a
+deliberate act, never release bookkeeping - and setting it TO the version being
+released is a force-upgrade, not a floor, since it refuses everything except the
+build cut from that release. `NUXT_MIN_ANDROID_CLIENT` overrides the constant at
+runtime, so a floor set too high is undone by restarting the container rather
+than by editing code, rebuilding the image and redeploying while every mobile
+user is locked out; a value that is not a plain dotted version is ignored rather
+than obeyed.
 
 Two exemptions, both so a refused user has a way forward: page documents are
 never gated (the website is how you get a newer app), and neither is
@@ -79,10 +93,25 @@ ahead of the version being released, since `apk-publish` stamps an APK from the
 same package.json and a floor above it would refuse the build cut from that very
 release; `clients/floor.test.ts` fails the gate if it ever is.
 
-On the app side, any 426 sets `clientOutdatedProvider` and `_VersionGate` in
-`app.dart` swaps the whole tree for `ui/update_required_screen.dart`. It sits
-ABOVE the auth gate, because a build the server refuses cannot sign in either,
-and it is one-way: the build is too old regardless of who is holding the phone.
+On the app side a 426 carrying the server's own `client_too_old` body - not any
+426, since a captive portal or CDN edge can answer one too - parses into
+`clientRefusalProvider`, and `_VersionGate` in `app.dart` replaces the tree with
+`ui/update_required_screen.dart`. The screen names the version the server asked
+for and follows the `downloadUrl` it sent, so moving that route does not strand
+installed apps.
+
+Two things about where the gate sits. It wraps the **Navigator**, inside
+`MaterialApp.builder`, rather than living at `home:` - as a route it would render
+under whatever the user had pushed, and they would go on tapping through screens
+whose every request 426s. And it is above the auth gate, because a build the
+server refuses cannot sign in either. That placement is why it has to call
+`dropSplash()` itself: `main()` holds the native splash until a real screen is on
+the glass, the auth gate normally drops it, and a branch that renders without
+dropping it leaves the app frozen on the splash - which is how this shipped in
+review, and what `test/update/version_gate_test.dart` now mounts.
+
+The flag is one-way: the build is too old regardless of who is holding the
+phone.
 
 Separately, preferences carries `ui/widgets/update_check_card.dart` - "This
 build", and a button that asks `/api/app/android` whether a newer one is
@@ -90,7 +119,13 @@ published. Nothing checks on launch, on a timer, or in the background: the app
 cannot install its own update, so an unrequested check could only be a nag. The
 comparison is `isNewerVersion` in `update/app_update.dart`, numeric per segment
 because a string compare puts "4.10.0" before "4.9.0" and tells everyone on the
-newest build they are up to date.
+newest build they are up to date - the server side needs the same ordering, and
+`shared/version.ts` is the one implementation both the changelog badge and the
+floor use. An unstamped build is not compared at all: `dev` parses as 0, so
+comparing it would announce an update to every developer build, which is usually
+AHEAD of the published one. Sizes are formatted in the same mebibytes to one
+decimal the website's download card uses, because the card tells the user to go
+there and verify the digest.
 
 ## Getting around
 

@@ -160,7 +160,7 @@ final apiClientProvider = Provider<ApiClient>((ref) {
     // of this provider, and riverpod (rightly) refuses to let a provider
     // invalidate something that depends on it.
     onUnauthorized: () => ref.read(sessionRevokedProvider.notifier).state++,
-    onUpgradeRequired: () => ref.read(clientOutdatedProvider.notifier).state = true,
+    onUpgradeRequired: (r) => ref.read(clientRefusalProvider.notifier).state = r,
   );
 });
 
@@ -168,13 +168,17 @@ final apiClientProvider = Provider<ApiClient>((ref) {
 /// watches it, so the app re-reads the session and drops to signed-out.
 final sessionRevokedProvider = StateProvider<int>((ref) => 0);
 
-/// Set once any route answers 426: this build is below the server's floor. The
-/// root widget swaps the whole app for the update screen, because there is
-/// nothing else the app can usefully do - every other route answers 426 too.
+/// The server's 426, once any route has answered one: this build is below the
+/// floor. The root widget replaces the whole app with the update screen, because
+/// there is nothing else it can usefully do - every other route answers 426 too.
 ///
 /// One-way on purpose. It is not cleared on sign-out or an account switch: the
 /// build is too old regardless of who is holding the phone.
-final clientOutdatedProvider = StateProvider<bool>((ref) => false);
+final clientRefusalProvider = StateProvider<ClientRefusal?>((ref) => null);
+
+/// Whether to show the update screen. Derived, so a test can override either
+/// this or the refusal it comes from.
+final clientOutdatedProvider = Provider<bool>((ref) => ref.watch(clientRefusalProvider) != null);
 
 /// The published Android build, read on demand for the manual update check in
 /// preferences. autoDispose so leaving the screen drops the answer rather than
@@ -227,7 +231,7 @@ final apiProvider = Provider<ApiClient>((ref) => ApiClient(
       ref.watch(tokenStoreProvider),
       dio: ref.watch(dioProvider),
       onUnauthorized: () => ref.read(sessionRevokedProvider.notifier).state++,
-      onUpgradeRequired: () => ref.read(clientOutdatedProvider.notifier).state = true,
+      onUpgradeRequired: (r) => ref.read(clientRefusalProvider.notifier).state = r,
     ));
 
 /// Signed-in user (null when signed out). `build` restores a persisted session

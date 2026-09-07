@@ -2043,6 +2043,9 @@
       }
   },
   "appUpdate": {
+    "unversioned": "This build carries no release version, so there is nothing to compare it against.",
+    "buildLine": "Version {version}",
+    "requiredBodyMin": "The server no longer supports this build, so nothing in the app can load. It needs {version} or newer. Install the current one and sign in again.",
     "section": "This build",
     "thisBuild": "Version",
     "devBuild": "unreleased",

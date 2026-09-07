@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../config.dart';
 import '../i18n/i18n_scope.dart';
+import '../state/providers.dart';
 import '../theme/app_theme.dart';
 import 'widgets/panel.dart';
 
@@ -21,6 +22,7 @@ class UpdateRequiredScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final t = context.tokens;
+    final refusal = ref.watch(clientRefusalProvider);
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -34,20 +36,29 @@ class UpdateRequiredScreen extends ConsumerWidget {
                 Text(context.tr('appUpdate.requiredTitle'),
                     textAlign: TextAlign.center, style: theme.textTheme.titleLarge),
                 const SizedBox(height: 12),
-                Text(context.tr('appUpdate.requiredBody'),
+                Text(
+                    refusal?.minimum == null
+                        ? context.tr('appUpdate.requiredBody')
+                        : context.tr('appUpdate.requiredBodyMin', {'version': refusal!.minimum!}),
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium?.copyWith(color: t.muted)),
                 const SizedBox(height: 24),
                 FilledButton.icon(
                   icon: const Icon(Icons.download_outlined),
                   label: Text(context.tr('appUpdate.download')),
+                  // The server sent its own download route with the refusal,
+                  // so moving that route does not strand installed apps.
                   onPressed: () => launchUrl(
-                    Uri.parse('${AppConfig.webBase}/download/nostragoalus.apk'),
+                    Uri.parse('${AppConfig.webBase}${refusal?.path ?? fallbackDownloadPath}'),
                     mode: LaunchMode.externalApplication,
                   ),
                 ),
                 const SizedBox(height: 20),
-                Tag('${context.tr('appUpdate.thisBuild')} ${AppConfig.appVersion}'),
+                Tag(context.tr('appUpdate.buildLine', {
+                  'version': isVersionedBuild
+                      ? AppConfig.appVersion
+                      : context.tr('appUpdate.devBuild'),
+                })),
               ],
             ),
           ),

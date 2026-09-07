@@ -4,6 +4,11 @@ import 'models.gen.dart';
 /// The signed-in account's own view: profile and preferences, stats, trophies,
 /// rewards, notifications, analytics, and the public roadmap it can vote on.
 extension MeApi on ApiClient {
+  /// The Android build the site publishes, for the manual update check. Public:
+  /// it answers signed out, and it is the one route the server's client-version
+  /// floor never refuses.
+  Future<Map<String, dynamic>> androidRelease() async => getJson('/api/app/android');
+
   Future<MeStatsResponse> meStats({String? competition}) async => MeStatsResponse.fromJson(
       await getJson('/api/me/stats', query: competitionQuery(competition)));
 
@@ -43,10 +48,6 @@ extension MeApi on ApiClient {
       postJson('/api/notifications/read', body: all ? {'all': true} : {'ids': ids ?? []});
 
   /// Save a user preference (theme/locale/showCrowd/showOdds/skin) via better-auth.
-  /// The Android build the site publishes, for the manual update check.
-  /// Public: it answers signed out too.
-  Future<Map<String, dynamic>> androidRelease() async => getJson('/api/app/android');
-
   Future<void> updatePrefs(Map<String, dynamic> prefs) async =>
       postJson('/api/auth/update-user', body: prefs);
 

@@ -99,8 +99,8 @@ class _Result extends StatelessWidget {
         return Text(context.tr('appUpdate.current', {'version': result.version ?? ''}), style: body);
       case UpdateState.unpublished:
         return Text(context.tr('appUpdate.unpublished'), style: body);
-      case UpdateState.failed:
-        return Text(context.tr('appUpdate.failed'), style: body);
+      case UpdateState.unversioned:
+        return Text(context.tr('appUpdate.unversioned'), style: body);
       case UpdateState.newer:
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -119,8 +119,10 @@ class _Result extends StatelessWidget {
             FilledButton.icon(
               icon: const Icon(Icons.download_outlined),
               label: Text(context.tr('appUpdate.download')),
+              // The server owns the download route and sends it with the
+              // release, so moving that route does not strand installed apps.
               onPressed: () => launchUrl(
-                Uri.parse('${AppConfig.webBase}/download/nostragoalus.apk'),
+                Uri.parse('${AppConfig.webBase}${result.path}'),
                 mode: LaunchMode.externalApplication,
               ),
             ),

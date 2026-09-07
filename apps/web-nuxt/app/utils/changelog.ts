@@ -1,3 +1,10 @@
+import { compareVersions } from '#shared/version'
+
+// Re-exported because the about page and the header badge already import it
+// from here; the implementation moved to shared/ when the client-version floor
+// needed the same comparison server-side.
+export { compareVersions }
+
 // Changelog parsing + "since last seen" comparison. Pure functions so the
 // about page, the header badge and the highlight all share one source of truth
 // (and sit under the coverage gate). The raw CHANGELOG.md is imported with
@@ -52,28 +59,6 @@ export function selectLocaleChangelog(
   if (!localized?.length) return base
   const byVersion = new Map(localized.map((v) => [v.version, v]))
   return base.map((v) => byVersion.get(v.version) ?? v)
-}
-
-// Compare dotted numeric versions ("1.9.0" < "1.10.0"). A non-numeric segment
-// (never expected from our changelog) falls back to a lexical compare of that
-// segment - not of the whole string - so earlier numeric segments still order
-// first and the function totally orders rather than throwing.
-export function compareVersions(a: string, b: string): number {
-  const pa = a.split('.')
-  const pb = b.split('.')
-  const len = Math.max(pa.length, pb.length)
-  for (let i = 0; i < len; i++) {
-    const sa = pa[i] ?? '0'
-    const sb = pb[i] ?? '0'
-    const x = Number(sa)
-    const y = Number(sb)
-    if (Number.isNaN(x) || Number.isNaN(y)) {
-      if (sa === sb) continue
-      return sa < sb ? -1 : 1
-    }
-    if (x !== y) return x < y ? -1 : 1
-  }
-  return 0
 }
 
 // The newest version present, or null for an empty changelog. Independent of
