@@ -39,6 +39,15 @@ export function apkResponse(build: AndroidBuild, name: string, query = ''): ApkR
   if (query !== '') return { kind: 'redirect', to: canonical }
   if (!build.available) return { kind: 'notFound' }
 
+  // The bytes live in the bucket. Every URL for them points there, so the ~90 MB
+  // never leaves this process - the whole reason for publishing them off-origin.
+  if (build.remoteUrl) {
+    const versionedName = downloadFilename(build.version)
+    return name === versionedName || name === APK_FILENAME
+      ? { kind: 'redirect', to: build.remoteUrl }
+      : { kind: 'notFound' }
+  }
+
   const versioned = downloadFilename(build.version)
   // The versioned name of the build actually published: cacheable forever,
   // because these bytes are the only bytes this URL will ever have.

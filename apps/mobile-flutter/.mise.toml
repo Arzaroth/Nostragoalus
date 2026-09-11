@@ -117,7 +117,7 @@ flutter test integration_test/main_path_test.dart \
 """
 
 [tasks.apk-publish]
-description = "Build the release APK and publish it for the website to serve (apps/web-nuxt/downloads -> /download/nostragoalus.apk)"
+description = "Build the release APK, publish it to the R2 bucket, and write the sidecar the website reads (apps/web-nuxt/downloads)"
 dir = "{{ config_root }}/app"
 run = """
 set -euo pipefail
@@ -127,6 +127,11 @@ set -euo pipefail
 # shipped once (v4.7.0); the guards below are why it cannot ship again.
 api_base="${NG_APP_API_BASE:-https://goal.arzaroth.com}"
 web_base="${NG_APP_WEB_BASE:-$api_base}"
+# rclone remote and the public custom domain in front of it. `rclone config`
+# holds the credentials; nothing here reads them and nothing here prints them.
+R2="${NG_R2_REMOTE:-r2-nostragoalus:nostragoalus}"
+R2_BASE="${NG_R2_BASE:-https://r2.goal.arzaroth.com}"
+command -v rclone >/dev/null || { echo "apk-publish: no rclone. It publishes the APK." >&2; exit 1; }
 # Both bases ride in the APK, so both get checked. A published build has to be
 # reachable from a stranger's phone: https, and a routable host - not a loopback
 # and not a private LAN address, which is the shape a dev override leaves behind.
@@ -171,12 +176,51 @@ code=$(echo "$version" | awk -F. 'NF != 3 || $2 > 99 || $3 > 99 { exit 1 } { pri
   exit 1
 }
 flutter build apk --release --dart-define=API_BASE="$api_base" --dart-define=WEB_BASE="$web_base" --dart-define=APP_VERSION="$version" --build-name="$version" --build-number="$code"
-printf '{"version":"%s","builtAt":"%s"}\\n' "$version" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$out/nostragoalus.apk.json"
-# Stage then rename: the server stats and hashes the APK before streaming it, so
-# copying over the live file in place would serve one build's bytes under another
-# build's length and digest. A rename within the directory is atomic, and a
-# download already in flight keeps reading the old inode.
-cp build/app/outputs/flutter-apk/app-release.apk "$out/.nostragoalus.apk.new"
-mv -f "$out/.nostragoalus.apk.new" "$out/nostragoalus.apk"
-sha256sum "$out/nostragoalus.apk"
+apk=build/app/outputs/flutter-apk/app-release.apk
+name="nostragoalus-$version.apk"
+sum=$(sha256sum "$apk" | cut -d' ' -f1)
+size=$(stat -c%s "$apk")
+built=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+# The bytes go to the bucket, not to the web host. Serving ~90 MB per download
+# out of the app process was the whole problem; R2 has no origin to exhaust and
+# charges nothing for egress. The host only ever gets the sidecar below, a few
+# hundred bytes, which is what tells it the build exists and where it lives.
+#
+# Uploaded to a dot-prefixed name and moved into place, so a half-copied file is
+# never reachable at the real URL. Nothing is published without the digest being
+# read back over HTTPS from the URL people will actually use - through the cache,
+# as a stranger would - because that is the promise the download page makes.
+echo "== $apk -> $R2/apk/$name"
+echo "   sha256 $sum  ($size bytes)"
+rclone copyto "$apk" "$R2/apk/.$name.part" \
+  --header-upload "Content-Type: application/vnd.android.package-archive" \
+  --header-upload "Cache-Control: public, max-age=31536000, immutable" </dev/null
+remote_size=$(rclone lsf --format s "$R2/apk/.$name.part" </dev/null | head -1)
+if [ "$size" != "$remote_size" ]; then
+  rclone deletefile "$R2/apk/.$name.part" </dev/null || true
+  echo "apk-publish: upload is $remote_size bytes, expected $size. Nothing published." >&2
+  exit 1
+fi
+rclone moveto "$R2/apk/.$name.part" "$R2/apk/$name" </dev/null
+
+# A query string, because a 404 probed before the upload would otherwise be the
+# cached answer at the plain URL for as long as it lives.
+served=$(curl -sSL --max-time 900 "$R2_BASE/apk/$name?v=$RANDOM$RANDOM" </dev/null | sha256sum | cut -d' ' -f1)
+if [ "$served" != "$sum" ]; then
+  echo "apk-publish: $R2_BASE/apk/$name serves ${served:-nothing}, not $sum" >&2
+  exit 1
+fi
+echo "   published and verified $R2_BASE/apk/$name"
+
+# Written last, and it is what publishes the build: the site reports no build
+# until this file names one, so it must not name an object that is not there yet.
+printf '{"version":"%s","builtAt":"%s","sizeBytes":%s,"sha256":"%s","url":"%s"}\\n' \
+  "$version" "$built" "$size" "$sum" "$R2_BASE/apk/$name" > "$out/nostragoalus.apk.json"
+# The APK itself no longer goes next to it. An older deploy may still have one on
+# disk, and the server prefers that file when it is there, so a stale copy would
+# keep being served from the host after this moved to the bucket.
+rm -f "$out/nostragoalus.apk"
+echo "== sidecar -> $out/nostragoalus.apk.json"
+cat "$out/nostragoalus.apk.json"
 """

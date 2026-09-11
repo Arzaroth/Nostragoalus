@@ -2,13 +2,15 @@ import { describe, expect, it } from 'vitest'
 import { NO_ANDROID_BUILD, androidDownloadUrl, type AndroidBuild } from './service'
 import { apkResponse, etagSatisfied } from './serve'
 
-const build = (version: string | null): AndroidBuild => ({
+const build = (version: string | null, remoteUrl: string | null = null): AndroidBuild => ({
   available: true,
   version,
   sizeBytes: 94098184,
   sha256: 'deadbeef',
   builtAt: '2026-09-07T23:00:03Z',
+  remoteUrl,
 })
+const REMOTE = 'https://r2.goal.arzaroth.com/apk/nostragoalus-4.9.0.apk'
 
 describe('androidDownloadUrl', () => {
   it('is versioned when the build names a version', () => {
@@ -125,5 +127,31 @@ describe('etagSatisfied', () => {
     // Unquoted is not a valid entity-tag and must not match, or a client could
     // be told it holds bytes it does not.
     expect(etagSatisfied('deadbeef', sha)).toBe(false)
+  })
+})
+
+// Once the bytes are in the bucket, every URL for them points there and the
+// ~90 MB never leaves this process.
+describe('a build published off the origin', () => {
+  it('sends both the versioned URL and the alias to the bucket', () => {
+    expect(apkResponse(build('4.9.0', REMOTE), 'nostragoalus-4.9.0.apk')).toEqual({
+      kind: 'redirect',
+      to: REMOTE,
+    })
+    expect(apkResponse(build('4.9.0', REMOTE), 'nostragoalus.apk')).toEqual({
+      kind: 'redirect',
+      to: REMOTE,
+    })
+  })
+
+  it('still refuses a name that is not this build', () => {
+    expect(apkResponse(build('4.9.0', REMOTE), 'nostragoalus-4.8.0.apk').kind).toBe('notFound')
+  })
+
+  it('answers a query string without reaching the bucket either', () => {
+    expect(apkResponse(build('4.9.0', REMOTE), 'nostragoalus-4.9.0.apk', 'x=1')).toEqual({
+      kind: 'redirect',
+      to: '/download/nostragoalus-4.9.0.apk',
+    })
   })
 })

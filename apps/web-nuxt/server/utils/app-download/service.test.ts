@@ -152,3 +152,67 @@ describe('paths', () => {
     expect(ANDROID_DOWNLOAD_PATH).toBe('/download/nostragoalus.apk')
   })
 })
+
+// Once the APK is published to the bucket the host only holds the sidecar, so
+// the sidecar has to carry the facts the file used to supply.
+describe('a build published off the origin', () => {
+  const REMOTE = 'https://r2.goal.arzaroth.com/apk/nostragoalus-9.9.9.apk'
+  const full = {
+    version: '9.9.9',
+    builtAt: '2026-09-07T23:00:03Z',
+    sizeBytes: 94098184,
+    sha256: 'a'.repeat(64),
+    url: REMOTE,
+  }
+
+  it('is available from the sidecar alone, with no file on disk', async () => {
+    await sidecar(JSON.stringify(full))
+    const build = await readAndroidBuild(dir)
+    expect(build).toMatchObject({
+      available: true,
+      version: '9.9.9',
+      sizeBytes: 94098184,
+      sha256: 'a'.repeat(64),
+      remoteUrl: REMOTE,
+    })
+  })
+
+  // The page states a size and a digest and asks people to check the digest, so
+  // a sidecar that cannot state them describes nothing worth publishing.
+  it('is not published when the sidecar is missing a fact', async () => {
+    for (const missing of ['sizeBytes', 'sha256', 'url'] as const) {
+      const partial: Record<string, unknown> = { ...full }
+      delete partial[missing]
+      await sidecar(JSON.stringify(partial))
+      clearAndroidBuildCache()
+      expect((await readAndroidBuild(dir)).available).toBe(false)
+    }
+  })
+
+  it('rejects a digest or size that is not one', async () => {
+    await sidecar(JSON.stringify({ ...full, sha256: 'not-a-digest' }))
+    expect((await readAndroidBuild(dir)).available).toBe(false)
+    await sidecar(JSON.stringify({ ...full, sizeBytes: -1 }))
+    expect((await readAndroidBuild(dir)).available).toBe(false)
+  })
+
+  // The sidecar is operator-written but its url becomes a redirect the browser
+  // follows, so anything that is not https is not a download location.
+  it('refuses a url that is not https', async () => {
+    for (const url of ['http://r2.goal.arzaroth.com/x.apk', 'javascript:alert(1)', '//evil.example/x', 'x.apk']) {
+      await sidecar(JSON.stringify({ ...full, url }))
+      clearAndroidBuildCache()
+      expect((await readAndroidBuild(dir)).available).toBe(false)
+    }
+  })
+
+  // The dev path, and the fallback if a bucket publish is ever undone: a file
+  // that is actually here is served from here.
+  it('prefers a file on disk over the sidecar url', async () => {
+    await write('local bytes')
+    await sidecar(JSON.stringify(full))
+    const build = await readAndroidBuild(dir)
+    expect(build.remoteUrl).toBeNull()
+    expect(build.sizeBytes).toBe('local bytes'.length)
+  })
+})

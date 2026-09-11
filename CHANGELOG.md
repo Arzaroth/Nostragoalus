@@ -7,7 +7,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ### Changed
 
-- The Android app download is now served from a versioned address, so it can be cached properly: downloading it a second time, or from a place someone else already fetched it, is much faster and no longer re-sends the whole file. The old address still works and points at the current build.
+- The Android app download now comes from a CDN-backed storage bucket at a versioned address, so it downloads faster and can be cached properly: fetching it a second time, or from somewhere someone else already fetched it, no longer re-sends the whole file. The old address still works and points at the current build.
 
 ## [4.9.0] - 2026-09-08
 

@@ -54,8 +54,40 @@ Two routes:
   only selects an answer, and the version is stripped to `[A-Za-z0-9._-]` before it
   goes anywhere near a header or a URL.
 - `GET /download/nostragoalus.apk` - the stable alias, which every install up to
-  4.9.0 has compiled in. It 302s to the versioned URL, so it keeps answering
-  without being the thing that serves ~90 MB.
+  4.9.0 has compiled in. It 302s to the versioned URL (or straight to the bucket
+  when the build is published there), so it keeps answering without being the
+  thing that serves ~90 MB.
+
+## Where the bytes live
+
+In an R2 bucket, not on the web host. `mise -C apps/mobile-flutter run apk-publish`
+uploads to `r2-nostragoalus:nostragoalus` under `apk/nostragoalus-<version>.apk`,
+behind the custom domain `r2.goal.arzaroth.com`, and the deploy copies only the
+sidecar - a few hundred bytes naming the build. Serving ~90 MB per download out of
+the app process was the problem; a bucket has no origin to exhaust and R2 charges
+nothing for egress.
+
+The publish is deliberate about ordering, the same shape as yaek's
+`tools/deploy_site.sh`: upload to a dot-prefixed name, check the uploaded size,
+move it into place, then read the digest back over HTTPS from the URL people will
+actually use - through the cache, as a stranger would - and only then write the
+sidecar. The sidecar is what publishes the build, so it must not name an object
+that is not there yet. `Cache-Control: public, max-age=31536000, immutable` and the
+Android content type are set as object metadata at upload, so the object describes
+its own cacheability rather than depending on a rule.
+
+The sidecar therefore carries the facts the file used to supply - `sizeBytes`,
+`sha256`, `url` - and a sidecar missing any of them describes no build. Its `url`
+must be `https:`: it is operator-written but becomes a redirect a browser follows.
+
+A file actually present on disk still wins, which is the dev path and the fallback
+if a bucket publish is ever undone.
+
+**The origin route stays.** Every install up to 4.9.0 joins the endpoint's
+`downloadUrl` to its own `webBase`, so it follows a PATH, not an absolute URL -
+`/download/...` has to keep answering forever, and it 302s to the bucket. A move
+off the origin is a redirect, not a relocation. Handing out an absolute URL needs a
+client that accepts one, shipped first; see [TODO.md](../../TODO.md).
 
 ## Why the URL carries the version
 

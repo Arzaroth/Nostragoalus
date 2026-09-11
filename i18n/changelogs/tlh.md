@@ -7,7 +7,7 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ### choHpu'
 
-- DaH Android De'wI'Hom Suqmeh Daq mI' ngaSbogh lo'lu', vaj QaQ ghitlh polmeH. cha'logh Suqlu'chugh, pagh latlh Suqpu'bogh Daqvo' Suqlu'chugh, nom law' 'ej De' naQ ngeHqa'be'lu'. Daq ngo' Qap taH, 'ej DaH chenmoHlu'bogh 'ang.
+- DaH Android De'wI'Hom Suqmeh Daq mI' ngaSbogh lo'lu', 'ej CDN pol Daq. nom law', 'ej QaQ ghitlh polmeH: cha'logh Suqlu'chugh, pagh latlh Suqpu'bogh Daqvo' Suqlu'chugh, De' naQ ngeHqa'be'lu'. Daq ngo' Qap taH, 'ej DaH chenmoHlu'bogh 'ang.
 
 ## [4.9.0] - 2026-09-08
 

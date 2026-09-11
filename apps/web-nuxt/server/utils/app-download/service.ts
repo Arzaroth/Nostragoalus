@@ -23,6 +23,9 @@ export interface AndroidBuild {
   sha256: string | null
   /// ISO timestamp: the sidecar's build time, else the file's mtime.
   builtAt: string | null
+  /// Absolute URL when the bytes live off the origin (the R2 bucket), null when
+  /// the file itself is on disk here.
+  remoteUrl: string | null
 }
 
 export const NO_ANDROID_BUILD: AndroidBuild = {
@@ -31,6 +34,7 @@ export const NO_ANDROID_BUILD: AndroidBuild = {
   sizeBytes: null,
   sha256: null,
   builtAt: null,
+  remoteUrl: null,
 }
 
 export function apkPath(dir: string): string {
@@ -61,20 +65,59 @@ export async function sha256File(path: string): Promise<string> {
 interface Sidecar {
   version?: unknown
   builtAt?: unknown
+  sizeBytes?: unknown
+  sha256?: unknown
+  url?: unknown
 }
 
-// A malformed or unreadable sidecar must not take the download offline - it only
-// carries display metadata, so fall back to "unknown version" instead of failing.
-async function readSidecar(dir: string): Promise<{ version: string | null; builtAt: string | null }> {
+interface SidecarFacts {
+  version: string | null
+  builtAt: string | null
+  sizeBytes: number | null
+  sha256: string | null
+  url: string | null
+}
+
+const NO_SIDECAR: SidecarFacts = {
+  version: null,
+  builtAt: null,
+  sizeBytes: null,
+  sha256: null,
+  url: null,
+}
+
+/// Only an https URL is accepted. The sidecar is operator-written, but it ends
+/// up in a redirect the browser follows, so a `javascript:` or `//evil.example`
+/// value must not become one.
+function readUrl(value: unknown): string | null {
+  if (typeof value !== 'string' || !value) return null
+  try {
+    return new URL(value).protocol === 'https:' ? value : null
+  } catch {
+    return null
+  }
+}
+
+// A malformed or unreadable sidecar must not take an on-disk download offline -
+// it carries display metadata for that case, so fall back to "unknown version"
+// instead of failing. When the bytes are NOT on disk it carries the facts about
+// them too, and a sidecar missing any of those simply has no build to describe.
+async function readSidecar(dir: string): Promise<SidecarFacts> {
   try {
     const raw = await readFile(join(dir, APK_SIDECAR_FILENAME), 'utf8')
     const parsed = JSON.parse(raw) as Sidecar
     return {
       version: typeof parsed.version === 'string' && parsed.version ? parsed.version : null,
       builtAt: typeof parsed.builtAt === 'string' && parsed.builtAt ? parsed.builtAt : null,
+      sizeBytes:
+        typeof parsed.sizeBytes === 'number' && Number.isFinite(parsed.sizeBytes) && parsed.sizeBytes > 0
+          ? parsed.sizeBytes
+          : null,
+      sha256: /^[0-9a-f]{64}$/.test(String(parsed.sha256)) ? (parsed.sha256 as string) : null,
+      url: readUrl(parsed.url),
     }
   } catch {
-    return { version: null, builtAt: null }
+    return NO_SIDECAR
   }
 }
 
@@ -86,7 +129,22 @@ export async function readAndroidBuild(dir: string): Promise<AndroidBuild> {
   try {
     info = await lstat(path)
   } catch {
-    return NO_ANDROID_BUILD
+    // No file here. The bytes may still be published, off the origin, with the
+    // sidecar describing them - which is the point of putting them in a bucket:
+    // the deploy copies a few hundred bytes instead of ~90 MB, and no download
+    // ever touches this process.
+    const remote = await readSidecar(dir)
+    if (!remote.url || remote.sizeBytes === null || remote.sha256 === null) {
+      return NO_ANDROID_BUILD
+    }
+    return {
+      available: true,
+      version: remote.version,
+      sizeBytes: remote.sizeBytes,
+      sha256: remote.sha256,
+      builtAt: remote.builtAt,
+      remoteUrl: remote.url,
+    }
   }
   // lstat, not stat: a directory is obviously not a download, and a symlink is
   // refused rather than followed, so whoever can write to the directory cannot
@@ -114,6 +172,9 @@ export async function readAndroidBuild(dir: string): Promise<AndroidBuild> {
     sizeBytes: info.size,
     sha256,
     builtAt: sidecar.builtAt ?? new Date(info.mtimeMs).toISOString(),
+    // The file is right here, so serve it rather than sending anyone elsewhere.
+    // This is the dev path, and the fallback if a bucket publish is ever undone.
+    remoteUrl: null,
   }
 }
 
