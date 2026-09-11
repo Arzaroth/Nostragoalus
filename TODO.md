@@ -2902,17 +2902,13 @@ blocking):
       request.~~ The bytes now live in R2 (`r2-nostragoalus:nostragoalus`, behind
       `r2.goal.arzaroth.com`) and `/download/...` 302s there; the host only gets
       the sidecar.
-- [ ] **Needs a Cloudflare cache rule, in the dashboard.** On
-      `r2.goal.arzaroth.com`: Caching -> Cache Rules, expression
-      `(http.host eq "r2.goal.arzaroth.com")`, Eligible for cache, Cache key ->
-      Query string -> **Ignore query string**, Edge TTL from the origin header
-      (the object carries `public, max-age=31536000, immutable`). Without it
-      `?x=1`, `?x=2`, ... each miss the edge and become a billed R2 Class B read;
-      egress is free but operations are not, past 10M/month, and there is no
-      spend cap. The server-side redirect makes a busted request cheap at the
-      ORIGIN, but only the rule stops one reaching the bucket. Verify the
-      "Ignore query string" control is not plan-gated - if it is, the old Page
-      Rule equivalent was "Cache Level: Ignore Query String".
+- [x] ~~Needs a Cloudflare cache rule, in the dashboard.~~ Live on
+      `r2.goal.arzaroth.com` and verified behaviourally, not from config: a
+      brand-new random query string on the APK returns `cf-cache-status: HIT`,
+      while an unknown path returns MISS and the origin returns DYNAMIC, so the
+      probe discriminates. Note the wrangler OAuth token has `zone (read)` but
+      not the rulesets scope, so the ruleset itself cannot be read from the CLI -
+      the behavioural probe is the check that works, and is better evidence anyway.
 - [ ] The app follows a PATH, not an absolute URL: `ClientRefusal.path` and
       `UpdateCheck.path` are joined to `AppConfig.webBase`, so every install up
       to 4.9.0 resolves the download against goal.arzaroth.com and the origin
