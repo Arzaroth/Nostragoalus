@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [4.10.0] - 2026-09-11
+
 ### Changed
 
 - The Android app download now comes from a CDN-backed storage bucket at a versioned address, so it downloads faster and can be cached properly: fetching it a second time, or from somewhere someone else already fetched it, no longer re-sends the whole file. The old address still works and points at the current build.
