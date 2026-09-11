@@ -583,15 +583,41 @@ See [features/mobile-app.md](features/mobile-app.md).
   the condensed numerals are the identity. Light mode is kept coherent, not
   dropped, because the preference already exists on the account.
   See [features/mobile-app.md](features/mobile-app.md).
-- **The Android APK is a deploy artifact the site serves, not part of the web
-  image.** The web build has no Flutter toolchain, so baking the APK in would
-  couple every site release to an app build and put a ~60 MB binary in every
-  layer. Instead the app reads it off a bind-mounted directory at request time:
-  publishing a new build is a file copy, with no image rebuild, no redeploy and
-  no restart. The publish task stages and renames rather than copying in place,
-  because the server stats and hashes the file before streaming it and an
-  in-place overwrite would serve one build's bytes under another's length and
-  digest. See [features/app-downloads.md](features/app-downloads.md).
+- **The Android APK is a deploy artifact, not part of the web image.** The web
+  build has no Flutter toolchain, so baking the APK in would couple every site
+  release to an app build and put a ~90 MB binary in every layer. Publishing a
+  build touches no image, needs no redeploy and no restart.
+  See [features/app-downloads.md](features/app-downloads.md).
+- **The APK bytes live in an R2 bucket; the origin only points at them.** Served
+  from the host it was `no-cache` under one fixed name, so every download streamed
+  ~90 MB out of the Node process and the CDN in front absorbed none of it. Two
+  things had to change together. The URL carries the version, because a response
+  is only cacheable if its bytes never change - a new build gets a new URL rather
+  than new bytes behind the old one. And the bytes moved off the origin, because
+  **a cache in front is not a shield**: Cloudflare's cache key includes the query
+  string, so `?x=1`, `?x=2`, ... are all misses and each miss drags the whole file
+  off the origin, with no rate limit. A bucket has no origin to exhaust. The same
+  reasoning, and the publish discipline copied here (stage, size-check, move,
+  then verify the digest at the real URL), came from yaek's `deploy_site.sh`.
+  The deploy now copies only the sidecar.
+- **A sidecar naming a bucket object beats any file on disk.** The sidecar is the
+  deliberate statement of what is published; a local file is whatever the last
+  deploy left behind. Reading the file first let a stale APK pair its own size and
+  digest with the new sidecar's version, so the site advertised a build that never
+  existed and served the old bytes under the new version's `immutable` URL - wrong
+  for a year, in every cache, and undetectable by the fingerprint check the page
+  asks users to perform, because both numbers came from the same stale file.
+- **Only a character-for-character canonical request streams the file.** Anything
+  else - a query string, a percent-encoded spelling of the same name, a bare `?` -
+  is answered with a redirect to the canonical URL. Each of those is an unlimited
+  supply of distinct cache keys for the same ~90 MB, and enumerating spellings is
+  not a defence. It is a mitigation rather than the fix; the fix is the bucket plus
+  a cache rule that ignores the query string.
+- **The sidecar's `url` is pinned to the bucket host.** It is operator-written and
+  becomes a redirect for the path every shipped build has compiled in, so an
+  unpinned host would let whoever can write that file hand out any APK - and the
+  digest shown on `/about` comes from the same sidecar, so the integrity check
+  would pass. Same threat model as the `lstat` that refuses a symlink there.
 - **A dependency whose feature is not built does not ship.**
   `flutter_callkit_incoming` was reachable only from dead Phase-0 spike code, yet
   merged `MANAGE_OWN_CALLS`, `USE_FULL_SCREEN_INTENT`, `DISABLE_KEYGUARD` and

@@ -11,6 +11,12 @@ export const APK_FILENAME = 'nostragoalus.apk'
 // Where the file route lives. The metadata endpoint hands this to the client so
 // the page never hardcodes it.
 export const ANDROID_DOWNLOAD_PATH = '/download/nostragoalus.apk'
+// The only host a sidecar may send a download to. The sidecar is operator-written
+// and its url becomes a redirect for the path every shipped build has compiled
+// in, so an unpinned host would let whoever can write that file hand out any APK
+// they like - and the digest the page asks the user to check comes from the same
+// sidecar, so the check would pass. Same threat model as the lstat below.
+export const ANDROID_BUCKET_HOST = 'r2.goal.arzaroth.com'
 // Written next to the APK by the publish task. Optional: a hand-copied APK with
 // no sidecar still downloads, it just has no version to show.
 export const APK_SIDECAR_FILENAME = `${APK_FILENAME}.json`
@@ -86,13 +92,15 @@ const NO_SIDECAR: SidecarFacts = {
   url: null,
 }
 
-/// Only an https URL is accepted. The sidecar is operator-written, but it ends
-/// up in a redirect the browser follows, so a `javascript:` or `//evil.example`
-/// value must not become one.
+/// https, and only the bucket. Returns the PARSED href rather than the raw
+/// string: the URL parser strips tabs and newlines before parsing, so a value
+/// carrying a CRLF would otherwise validate here and then be rejected by Node
+/// when it reached the Location header, 500ing the route instead of redirecting.
 function readUrl(value: unknown): string | null {
   if (typeof value !== 'string' || !value) return null
   try {
-    return new URL(value).protocol === 'https:' ? value : null
+    const url = new URL(value)
+    return url.protocol === 'https:' && url.host === ANDROID_BUCKET_HOST ? url.href : null
   } catch {
     return null
   }
@@ -109,11 +117,18 @@ async function readSidecar(dir: string): Promise<SidecarFacts> {
     return {
       version: typeof parsed.version === 'string' && parsed.version ? parsed.version : null,
       builtAt: typeof parsed.builtAt === 'string' && parsed.builtAt ? parsed.builtAt : null,
+      // Safe integers only, and a real string for the digest. `String(value)`
+      // would accept a one-element array of the right shape and hand the array
+      // on, which the response contract then rejects with a 500 - the opposite
+      // of the "a bad sidecar must not take the download offline" promise above.
       sizeBytes:
-        typeof parsed.sizeBytes === 'number' && Number.isFinite(parsed.sizeBytes) && parsed.sizeBytes > 0
+        typeof parsed.sizeBytes === 'number' && Number.isSafeInteger(parsed.sizeBytes) && parsed.sizeBytes > 0
           ? parsed.sizeBytes
           : null,
-      sha256: /^[0-9a-f]{64}$/.test(String(parsed.sha256)) ? (parsed.sha256 as string) : null,
+      sha256:
+        typeof parsed.sha256 === 'string' && /^[0-9a-f]{64}$/.test(parsed.sha256)
+          ? parsed.sha256
+          : null,
       url: readUrl(parsed.url),
     }
   } catch {
@@ -124,27 +139,30 @@ async function readSidecar(dir: string): Promise<SidecarFacts> {
 /// Describe the published APK, or [NO_ANDROID_BUILD] when the directory holds
 /// none (the default state: nothing is published until the deploy drops one in).
 export async function readAndroidBuild(dir: string): Promise<AndroidBuild> {
+  // The sidecar first, and it wins. A sidecar naming a bucket object is the
+  // deliberate statement of what is published; a file on disk is whatever the
+  // last deploy happened to leave there. Reading the file first let a stale APK
+  // pair its own size and digest with the NEW sidecar's version number, so the
+  // site advertised a build that never existed and served the old bytes under
+  // the new version's immutable URL - wrong for a year, in every cache.
+  const sidecar = await readSidecar(dir)
+  if (sidecar.url && sidecar.sizeBytes !== null && sidecar.sha256 !== null) {
+    return {
+      available: true,
+      version: sidecar.version,
+      sizeBytes: sidecar.sizeBytes,
+      sha256: sidecar.sha256,
+      builtAt: sidecar.builtAt,
+      remoteUrl: sidecar.url,
+    }
+  }
+
   const path = apkPath(dir)
   let info: Awaited<ReturnType<typeof lstat>>
   try {
     info = await lstat(path)
   } catch {
-    // No file here. The bytes may still be published, off the origin, with the
-    // sidecar describing them - which is the point of putting them in a bucket:
-    // the deploy copies a few hundred bytes instead of ~90 MB, and no download
-    // ever touches this process.
-    const remote = await readSidecar(dir)
-    if (!remote.url || remote.sizeBytes === null || remote.sha256 === null) {
-      return NO_ANDROID_BUILD
-    }
-    return {
-      available: true,
-      version: remote.version,
-      sizeBytes: remote.sizeBytes,
-      sha256: remote.sha256,
-      builtAt: remote.builtAt,
-      remoteUrl: remote.url,
-    }
+    return NO_ANDROID_BUILD
   }
   // lstat, not stat: a directory is obviously not a download, and a symlink is
   // refused rather than followed, so whoever can write to the directory cannot
@@ -165,7 +183,6 @@ export async function readAndroidBuild(dir: string): Promise<AndroidBuild> {
     digests.set(key, sha256)
   }
 
-  const sidecar = await readSidecar(dir)
   return {
     available: true,
     version: sidecar.version,

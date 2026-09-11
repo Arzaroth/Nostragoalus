@@ -11,23 +11,26 @@ instead, and the download itself 404s.
 
 The APK is a deploy artifact, not part of the web image. The web build has no
 Flutter toolchain, so baking it in would couple every site release to an app
-build. Instead the app reads it off disk at request time:
+build.
 
-- `mise run apk-publish` (in [apps/mobile-flutter/.mise.toml](../../apps/mobile-flutter/.mise.toml))
-  builds the release APK and copies it to `apps/web-nuxt/downloads/nostragoalus.apk`,
-  writing a `nostragoalus.apk.json` sidecar beside it with the release version and
-  the build time. The version stamped in is the web app's `package.json` version,
-  so the APK on `/about` reads as the same release as the site serving it.
-- `compose.yaml` bind-mounts that directory read-only at `/data/downloads`, which
+- `mise -C apps/mobile-flutter run apk-publish` (in
+  [apps/mobile-flutter/.mise.toml](../../apps/mobile-flutter/.mise.toml)) builds
+  the release APK, uploads it to the bucket (below), and writes a
+  `nostragoalus.apk.json` sidecar. The version stamped in is the web app's
+  `package.json` version, so the APK on `/about` reads as the same release as the
+  site serving it.
+- The deploy copies **only that sidecar** to `apps/web-nuxt/downloads/`.
+  `compose.yaml` bind-mounts that directory read-only at `/data/downloads`, which
   is the production default. A bare local run reads `./.data/downloads`.
   `NUXT_APP_DOWNLOAD_DIR` overrides both.
-- Publishing a new build is therefore a file copy plus nothing: no image rebuild,
-  no redeploy, no restart.
+- Publishing is therefore an upload plus a few hundred bytes copied: no image
+  rebuild, no redeploy, no restart.
 
 ## Serving it
 
 [server/utils/app-download/service.ts](../../apps/web-nuxt/server/utils/app-download/service.ts)
-holds the logic: stat the APK, read the optional sidecar, and hash the bytes.
+holds the logic: read the sidecar, and only if it names no bucket object, stat and
+hash a local file.
 Anything that is not a non-empty regular file reads as "no build published", and a
 missing or malformed sidecar only costs the version line - it never takes the
 download offline.

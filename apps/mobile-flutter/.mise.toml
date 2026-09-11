@@ -131,6 +131,15 @@ web_base="${NG_APP_WEB_BASE:-$api_base}"
 # holds the credentials; nothing here reads them and nothing here prints them.
 R2="${NG_R2_REMOTE:-r2-nostragoalus:nostragoalus}"
 R2_BASE="${NG_R2_BASE:-https://r2.goal.arzaroth.com}"
+# Checked like API_BASE/WEB_BASE above, and for the same reason: this value ends
+# up in the sidecar's url, which the server accepts only over https and only for
+# ANDROID_BUCKET_HOST. A wrong one here publishes successfully and then reads as
+# "no build published" on the site, with nothing logged anywhere.
+case "$R2_BASE" in
+  https://*) ;;
+  *) echo "apk-publish: NG_R2_BASE must be an https origin, got '$R2_BASE'" >&2; exit 1 ;;
+esac
+R2_BASE="${R2_BASE%/}"
 command -v rclone >/dev/null || { echo "apk-publish: no rclone. It publishes the APK." >&2; exit 1; }
 # Both bases ride in the APK, so both get checked. A published build has to be
 # reachable from a stranger's phone: https, and a routable host - not a loopback
@@ -204,23 +213,50 @@ if [ "$size" != "$remote_size" ]; then
 fi
 rclone moveto "$R2/apk/.$name.part" "$R2/apk/$name" </dev/null
 
-# A query string, because a 404 probed before the upload would otherwise be the
-# cached answer at the plain URL for as long as it lives.
-served=$(curl -sSL --max-time 900 "$R2_BASE/apk/$name?v=$RANDOM$RANDOM" </dev/null | sha256sum | cut -d' ' -f1)
-if [ "$served" != "$sum" ]; then
-  echo "apk-publish: $R2_BASE/apk/$name serves ${served:-nothing}, not $sum" >&2
+# Verified at the PLAIN url, the one people get - not a cache-busted variant.
+# A busted probe proves only that the bucket holds the right bytes, which is the
+# question nobody is asking: an edge that already holds an older object (a
+# re-publish at the same version overwrites an object sent `immutable`) would
+# keep serving it, and a probe that dodges the cache cannot see that. The headers
+# are checked too, because `moveto` is a server-side copy and whether it carries
+# the metadata set on the upload is a backend detail, not a promise.
+verify() {
+  local url="$1" hdr got
+  hdr=$(curl -fsSI --max-time 120 "$url" </dev/null) || return 1
+  printf '%s' "$hdr" | grep -qi 'cache-control:[[:space:]]*public, max-age=31536000, immutable' || {
+    echo "   no immutable cache-control on the published object" >&2; return 1; }
+  printf '%s' "$hdr" | grep -qi 'content-type:[[:space:]]*application/vnd.android.package-archive' || {
+    echo "   wrong content-type on the published object" >&2; return 1; }
+  got=$(curl -fsSL --max-time 900 "$url" </dev/null | sha256sum | cut -d' ' -f1) || return 1
+  [ "$got" = "$sum" ] || { echo "   serves $got, not $sum" >&2; return 1; }
+}
+
+ok=
+for attempt in 1 2 3; do
+  if verify "$R2_BASE/apk/$name"; then ok=1; break; fi
+  echo "   attempt $attempt did not check out, retrying" >&2
+  sleep 5
+done
+if [ -z "$ok" ]; then
+  echo "apk-publish: $R2_BASE/apk/$name is not serving this build. If it is a" >&2
+  echo "  re-publish of a version already released, an edge is still holding the" >&2
+  echo "  old object (it was sent immutable) and the cache key needs purging." >&2
+  rclone deletefile "$R2/apk/.$name.part" </dev/null 2>/dev/null || true
   exit 1
 fi
 echo "   published and verified $R2_BASE/apk/$name"
 
-# Written last, and it is what publishes the build: the site reports no build
-# until this file names one, so it must not name an object that is not there yet.
-printf '{"version":"%s","builtAt":"%s","sizeBytes":%s,"sha256":"%s","url":"%s"}\\n' \
-  "$version" "$built" "$size" "$sum" "$R2_BASE/apk/$name" > "$out/nostragoalus.apk.json"
-# The APK itself no longer goes next to it. An older deploy may still have one on
-# disk, and the server prefers that file when it is there, so a stale copy would
-# keep being served from the host after this moved to the bucket.
+# The host's own copy goes FIRST. The server prefers a sidecar naming a bucket
+# object, so a leftover here is no longer served - but leaving ~90 MB behind on
+# every publish is how the directory silently stops matching what it describes.
 rm -f "$out/nostragoalus.apk"
+# Staged and renamed, because this file IS the publication record: a reader
+# landing mid-write would see truncated JSON and report no build at all. A rename
+# within the directory is atomic.
+printf '{"version":"%s","builtAt":"%s","sizeBytes":%s,"sha256":"%s","url":"%s"}\\n' \
+  "$version" "$built" "$size" "$sum" "$R2_BASE/apk/$name" > "$out/.nostragoalus.apk.json.new"
+mv -f "$out/.nostragoalus.apk.json.new" "$out/nostragoalus.apk.json"
 echo "== sidecar -> $out/nostragoalus.apk.json"
 cat "$out/nostragoalus.apk.json"
+echo "== copy ONLY that sidecar to the host; the APK belongs in the bucket now."
 """

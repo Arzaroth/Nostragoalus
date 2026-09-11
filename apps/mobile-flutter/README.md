@@ -190,7 +190,11 @@ Not installed - propose it before adding it.
 ### Publishing the APK
 
 `mise -C apps/mobile-flutter run apk-publish` builds the release APK, stamps it
-with the web app's release version, and copies it where the site serves it from.
+with the web app's release version, uploads it to the R2 bucket the site points
+at, and writes the sidecar the site reads. It needs **rclone with an
+`r2-nostragoalus` remote configured** (`rclone config`); `NG_R2_REMOTE` and
+`NG_R2_BASE` override the remote and its public base. Only the sidecar goes to
+the web host, never the APK.
 It bakes the server origin in at compile time (`AppConfig.apiBase` is a
 `String.fromEnvironment` whose default is the emulator's host alias), and refuses
 to publish a build that could not work on a stranger's phone: the base must be

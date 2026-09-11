@@ -206,13 +206,34 @@ describe('a build published off the origin', () => {
     }
   })
 
-  // The dev path, and the fallback if a bucket publish is ever undone: a file
-  // that is actually here is served from here.
-  it('prefers a file on disk over the sidecar url', async () => {
-    await write('local bytes')
+  // THE stale-build bug: a host still holding the previous release's APK next to
+  // a fresh sidecar. Reading the file first paired its size and digest with the
+  // new sidecar's version, so the site advertised a build that never existed and
+  // served the old bytes under the new version's immutable URL.
+  it('wins over a stale APK left on disk', async () => {
+    await write('the previous release, still sitting here')
     await sidecar(JSON.stringify(full))
+    const build = await readAndroidBuild(dir)
+    expect(build.remoteUrl).toBe(REMOTE)
+    expect(build.sizeBytes).toBe(94098184)
+    expect(build.sha256).toBe('a'.repeat(64))
+  })
+
+  // The dev path, and the fallback if a bucket publish is ever undone: with no
+  // url to point at, a file that is actually here is served from here.
+  it('gives way to a local file when the sidecar names no bucket object', async () => {
+    await write('local bytes')
+    await sidecar(JSON.stringify({ version: '9.9.9', builtAt: full.builtAt }))
     const build = await readAndroidBuild(dir)
     expect(build.remoteUrl).toBeNull()
     expect(build.sizeBytes).toBe('local bytes'.length)
+  })
+
+  // A truncated scp or an operator emptying the old APK instead of deleting it
+  // must not take a live bucket build offline.
+  it('is unaffected by junk at the APK path', async () => {
+    await write('')
+    await sidecar(JSON.stringify(full))
+    expect((await readAndroidBuild(dir)).remoteUrl).toBe(REMOTE)
   })
 })

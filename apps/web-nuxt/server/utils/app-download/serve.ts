@@ -9,63 +9,56 @@ import {
 // What a request for the APK should get, decided without touching the
 // filesystem or an H3 event so it can be reasoned about and tested directly.
 //
-// Two things shape this, and neither is about bandwidth bills.
+// The APK is ~90 MB and was served `no-cache` under one fixed name, so every
+// download streamed the whole file out of the Node process and the CDN in front
+// absorbed none of it. Caching it needs a URL whose bytes never change, hence the
+// versioned name: a new build gets a new URL instead of new bytes behind the old
+// one. Once the bytes are in the bucket the origin stops serving them at all and
+// only points there.
 //
-// The APK is ~94 MB and was served `no-cache`, so every download streamed the
-// whole file out of the Node process and the CDN in front absorbed none of it.
-// Caching it needs a URL whose bytes never change, hence the versioned name: a
-// new build gets a new URL instead of new bytes behind the old one.
-//
-// And a cache in front is not by itself a shield. Cloudflare's cache key
-// includes the query string, so `?x=1`, `?x=2`, ... are all misses, and each
-// miss drags the full file off the origin - a loop with no rate limit behind it.
-// A query string on a download URL has no legitimate use here, so it is answered
-// with a redirect to the canonical URL: such a request costs a few hundred bytes
-// instead of 94 MB, whether or not anything is cached in front. That is a
-// mitigation, not the fix - the fix is a cache rule that ignores the query
-// string, or moving the object off the origin. See TODO.md.
+// A cache in front is not by itself a shield, which is why the ONLY request that
+// streams anything is one whose raw target is exactly the canonical URL.
+// Cloudflare's cache key includes the query string, so `?x=1`, `?x=2`, ... would
+// each be a miss dragging the full file off the origin; and the path is
+// percent-decoded before routing, so `%6Eostragoalus-...` is another unlimited
+// supply of distinct keys for the same bytes. Both are answered with a redirect
+// to the canonical URL - a few hundred bytes instead of ~90 MB - rather than
+// enumerated. That is a mitigation, not the fix: the fix is a cache rule that
+// ignores the query string, and the bucket. See TODO.md.
 
 export type ApkResponse =
   | { kind: 'serve'; filename: string; immutable: boolean }
   | { kind: 'redirect'; to: string }
   | { kind: 'notFound' }
 
-/// [name] is the requested last path segment; [query] is the raw query string
-/// without its `?` (empty when there is none).
-export function apkResponse(build: AndroidBuild, name: string, query = ''): ApkResponse {
-  const canonical = androidDownloadUrl(build.version)
-  // Before anything else: a query string means the canonical URL, cheaply. Ahead
-  // of the availability check too, so a flood neither stats nor hashes anything.
-  if (query !== '') return { kind: 'redirect', to: canonical }
+/// [name] is the requested last path segment, as the router resolved it.
+/// [rawTarget] is the request target exactly as it arrived, path and query
+/// included, so a spelling that is not the canonical one is sent there instead
+/// of being served.
+export function apkResponse(build: AndroidBuild, name: string, rawTarget = ''): ApkResponse {
   if (!build.available) return { kind: 'notFound' }
 
-  // The bytes live in the bucket. Every URL for them points there, so the ~90 MB
-  // never leaves this process - the whole reason for publishing them off-origin.
-  if (build.remoteUrl) {
-    const versionedName = downloadFilename(build.version)
-    return name === versionedName || name === APK_FILENAME
-      ? { kind: 'redirect', to: build.remoteUrl }
-      : { kind: 'notFound' }
-  }
-
   const versioned = downloadFilename(build.version)
-  // The versioned name of the build actually published: cacheable forever,
-  // because these bytes are the only bytes this URL will ever have.
-  if (name === versioned && versioned !== APK_FILENAME) {
-    return { kind: 'serve', filename: versioned, immutable: true }
-  }
-  // The stable alias every already-installed app has pinned. It has to keep
-  // answering, so it points at the versioned URL rather than serving bytes -
-  // unless there is no versioned URL to point at (an unversioned, hand-copied
-  // APK), in which case it is the only URL there is and it serves uncached.
-  if (name === APK_FILENAME) {
-    return canonical === ANDROID_DOWNLOAD_PATH
-      ? { kind: 'serve', filename: APK_FILENAME, immutable: false }
-      : { kind: 'redirect', to: canonical }
-  }
-  // A versioned name from some other build. Serving today's bytes under
-  // yesterday's version would be a lie that a cache then keeps for a year.
-  return { kind: 'notFound' }
+  // Only two names exist: this build's versioned name, and the stable alias every
+  // install up to 4.9.0 has compiled in. A versioned name from some other build is
+  // not this build's bytes, and serving them under it would be a lie an immutable
+  // cache then keeps for a year.
+  if (name !== versioned && name !== APK_FILENAME) return { kind: 'notFound' }
+
+  // The bytes live in the bucket: every URL for them points there, and nothing is
+  // ever streamed from this process.
+  if (build.remoteUrl) return { kind: 'redirect', to: build.remoteUrl }
+
+  const canonical = androidDownloadUrl(build.version)
+  // The alias when a versioned URL exists, a query string, a percent-encoded
+  // spelling, a bare `?` - anything that is not character-for-character the
+  // canonical URL gets sent to it.
+  if (rawTarget !== canonical) return { kind: 'redirect', to: canonical }
+
+  // An unversioned build (a hand-copied APK with no sidecar) has no versioned
+  // URL, so the alias IS canonical and serves - uncached, because a replaced APK
+  // must not come back from a cache under the old bytes.
+  return { kind: 'serve', filename: versioned, immutable: canonical !== ANDROID_DOWNLOAD_PATH }
 }
 
 /// Whether the client already holds exactly these bytes, so the answer can be a

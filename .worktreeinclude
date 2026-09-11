@@ -6,9 +6,12 @@
 .env
 .env.*
 
-# Android signing config. The keystore itself lives outside the repo; this only
-# points at it. Without it `mise -C apps/mobile-flutter run apk-publish` refuses
-# to build in a fresh worktree, which is exactly where a release gets cut.
+# Android signing config. Without it `mise -C apps/mobile-flutter run apk-publish`
+# refuses to build in a fresh worktree, which is exactly where a release is cut.
+# It carries the store and key PASSWORDS in plaintext (the keystore file itself
+# lives outside the repo), so this fans the release signing secret out to every
+# live worktree - accepted for the same reason .env is, and it stays uncommittable
+# because copy-ignored only ever touches gitignored files.
 apps/mobile-flutter/app/android/key.properties
 
 # Dependencies - skip the cold reinstall

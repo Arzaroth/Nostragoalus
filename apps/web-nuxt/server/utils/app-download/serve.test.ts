@@ -31,8 +31,10 @@ describe('androidDownloadUrl', () => {
 })
 
 describe('apkResponse', () => {
+  const CANON = '/download/nostragoalus-4.9.0.apk'
+
   it('serves the current versioned name, cacheable forever', () => {
-    expect(apkResponse(build('4.9.0'), 'nostragoalus-4.9.0.apk')).toEqual({
+    expect(apkResponse(build('4.9.0'), 'nostragoalus-4.9.0.apk', CANON)).toEqual({
       kind: 'serve',
       filename: 'nostragoalus-4.9.0.apk',
       immutable: true,
@@ -42,18 +44,18 @@ describe('apkResponse', () => {
   // Every install of 4.9.0 and earlier has this path pinned, so it has to keep
   // answering - but as a redirect, not 94 MB.
   it('redirects the stable alias to the versioned URL', () => {
-    expect(apkResponse(build('4.9.0'), 'nostragoalus.apk')).toEqual({
+    expect(apkResponse(build('4.9.0'), 'nostragoalus.apk', '/download/nostragoalus.apk')).toEqual({
       kind: 'redirect',
-      to: '/download/nostragoalus-4.9.0.apk',
+      to: CANON,
     })
   })
 
   // Today's bytes under yesterday's version is a lie an immutable cache would
   // then hold for a year.
   it('refuses a versioned name that is not the published build', () => {
-    expect(apkResponse(build('4.9.0'), 'nostragoalus-4.8.0.apk').kind).toBe('notFound')
-    expect(apkResponse(build('4.9.0'), 'anything-else.apk').kind).toBe('notFound')
-    expect(apkResponse(build('4.9.0'), '').kind).toBe('notFound')
+    expect(apkResponse(build('4.9.0'), 'nostragoalus-4.8.0.apk', '/x').kind).toBe('notFound')
+    expect(apkResponse(build('4.9.0'), 'anything-else.apk', '/x').kind).toBe('notFound')
+    expect(apkResponse(build('4.9.0'), '', '/x').kind).toBe('notFound')
   })
 
   it('has nothing to serve when no build is published', () => {
@@ -65,7 +67,7 @@ describe('apkResponse', () => {
     // The alias is the only URL, so it must serve rather than redirect - to
     // itself, which would be a loop.
     it('serves the alias directly, uncached', () => {
-      expect(apkResponse(build(null), 'nostragoalus.apk')).toEqual({
+      expect(apkResponse(build(null), 'nostragoalus.apk', '/download/nostragoalus.apk')).toEqual({
         kind: 'serve',
         filename: 'nostragoalus.apk',
         immutable: false,
@@ -73,34 +75,39 @@ describe('apkResponse', () => {
     })
 
     it('still has no versioned URL', () => {
-      expect(apkResponse(build(null), 'nostragoalus-4.9.0.apk').kind).toBe('notFound')
+      expect(apkResponse(build(null), 'nostragoalus-4.9.0.apk', '/x').kind).toBe('notFound')
     })
   })
 
-  // The reason a cache in front is not by itself a shield: Cloudflare's cache key
-  // includes the query string, so `?x=1`, `?x=2`, ... all miss and each miss
-  // pulls the whole file off the origin. Answering with a redirect makes such a
-  // request cost a few hundred bytes instead of 94 MB.
-  describe('a query string', () => {
-    it('gets the canonical URL instead of the file', () => {
-      expect(apkResponse(build('4.9.0'), 'nostragoalus-4.9.0.apk', 'x=1')).toEqual({
+  // A cache in front is not by itself a shield: Cloudflare's cache key includes
+  // the query string, and the path is percent-decoded before routing, so both are
+  // an unlimited supply of distinct keys for the same ~90 MB. Only the canonical
+  // target streams; every other spelling is sent to it.
+  describe('a target that is not the canonical one', () => {
+    it('redirects a query string rather than serving', () => {
+      expect(apkResponse(build('4.9.0'), 'nostragoalus-4.9.0.apk', `${CANON}?x=1`)).toEqual({
         kind: 'redirect',
-        to: '/download/nostragoalus-4.9.0.apk',
-      })
-      expect(apkResponse(build('4.9.0'), 'nostragoalus.apk', 'x=2')).toEqual({
-        kind: 'redirect',
-        to: '/download/nostragoalus-4.9.0.apk',
+        to: CANON,
       })
     })
 
-    // Answered before the availability check, so a flood neither stats nor
-    // hashes anything.
-    it('is answered even with no build published', () => {
-      expect(apkResponse(NO_ANDROID_BUILD, 'nostragoalus.apk', 'x=1').kind).toBe('redirect')
+    // h3 percent-decodes the path before routing, so the router hands over the
+    // canonical NAME while the request target is something else entirely.
+    it('redirects a percent-encoded spelling of the same name', () => {
+      expect(
+        apkResponse(build('4.9.0'), 'nostragoalus-4.9.0.apk', '/download/%6Eostragoalus-4.9.0.apk'),
+      ).toEqual({ kind: 'redirect', to: CANON })
     })
 
-    it('does not stop an ordinary request', () => {
-      expect(apkResponse(build('4.9.0'), 'nostragoalus-4.9.0.apk', '').kind).toBe('serve')
+    it('redirects a bare question mark, which normalizes to no query at all', () => {
+      expect(apkResponse(build('4.9.0'), 'nostragoalus-4.9.0.apk', `${CANON}?`)).toEqual({
+        kind: 'redirect',
+        to: CANON,
+      })
+    })
+
+    it('does not stop the canonical request', () => {
+      expect(apkResponse(build('4.9.0'), 'nostragoalus-4.9.0.apk', CANON).kind).toBe('serve')
     })
   })
 })
@@ -134,24 +141,23 @@ describe('etagSatisfied', () => {
 // ~90 MB never leaves this process.
 describe('a build published off the origin', () => {
   it('sends both the versioned URL and the alias to the bucket', () => {
-    expect(apkResponse(build('4.9.0', REMOTE), 'nostragoalus-4.9.0.apk')).toEqual({
+    const canon = '/download/nostragoalus-4.9.0.apk'
+    expect(apkResponse(build('4.9.0', REMOTE), 'nostragoalus-4.9.0.apk', canon)).toEqual({
       kind: 'redirect',
       to: REMOTE,
     })
-    expect(apkResponse(build('4.9.0', REMOTE), 'nostragoalus.apk')).toEqual({
-      kind: 'redirect',
-      to: REMOTE,
-    })
+    expect(apkResponse(build('4.9.0', REMOTE), 'nostragoalus.apk', '/download/nostragoalus.apk'))
+      .toEqual({ kind: 'redirect', to: REMOTE })
   })
 
   it('still refuses a name that is not this build', () => {
-    expect(apkResponse(build('4.9.0', REMOTE), 'nostragoalus-4.8.0.apk').kind).toBe('notFound')
+    expect(apkResponse(build('4.9.0', REMOTE), 'nostragoalus-4.8.0.apk', '/x').kind).toBe('notFound')
   })
 
-  it('answers a query string without reaching the bucket either', () => {
-    expect(apkResponse(build('4.9.0', REMOTE), 'nostragoalus-4.9.0.apk', 'x=1')).toEqual({
-      kind: 'redirect',
-      to: '/download/nostragoalus-4.9.0.apk',
-    })
+  // Nothing is streamed from here at all, so an odd target is the same redirect.
+  it('sends an odd target to the bucket too, without touching the origin file', () => {
+    expect(
+      apkResponse(build('4.9.0', REMOTE), 'nostragoalus-4.9.0.apk', '/download/x.apk?x=1'),
+    ).toEqual({ kind: 'redirect', to: REMOTE })
   })
 })
