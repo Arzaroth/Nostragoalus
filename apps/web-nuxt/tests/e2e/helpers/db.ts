@@ -220,6 +220,34 @@ export async function deleteUserByEmail(email: string): Promise<void> {
 // cards just render without a link. Seasoned older than E2E_SLUG so it never
 // displaces the default competition (active list is newest-season-first), but
 // still active, which /api/competitions requires for the slug to validate.
+export const E2E_ALT_SLUG = 'e2e-alt'
+
+// A second, older-season competition, so a spec can prove the default MOVES.
+// Deliberately not the bracket one: that belongs to bracket-journey, and two
+// specs seeding and cleaning the same slug couples them through run order.
+export async function seedAltCompetition(): Promise<string> {
+  await cleanupAlt()
+  const { rows } = await db().query<{ id: string }>(
+    `insert into competition (id, slug, name, provider, external_competition_id, season_hint, is_active)
+     values (gen_random_uuid(), $1, 'E2E Alt Cup', 'fixture', 'e2e-alt', '2025', true)
+     returning id`,
+    [E2E_ALT_SLUG],
+  )
+  return rows[0].id
+}
+
+export async function cleanupAlt(): Promise<void> {
+  await db().query(`delete from competition where slug = $1`, [E2E_ALT_SLUG])
+}
+
+// The default competition is a single global row, so a spec that sets it has to
+// put it back: the e2e database outlives one `mise run e2e`, and leaving it
+// pointed at a competition a later cleanup deletes makes every slug-less landing
+// resolve to a competition that is not there.
+export async function clearDefaultCompetition(): Promise<void> {
+  await db().query(`delete from app_setting where key = 'default_competition'`)
+}
+
 export async function seedFixtureBracketCompetition(): Promise<string> {
   await cleanupBracket()
   const { rows } = await db().query<{ id: string }>(

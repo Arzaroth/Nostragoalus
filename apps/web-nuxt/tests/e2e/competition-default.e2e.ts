@@ -1,12 +1,13 @@
 import { test, expect } from '@playwright/test'
 import { ADMIN, dismissOnboarding, signIn } from './helpers/auth'
 import {
-  E2E_BRACKET_SLUG,
+  E2E_ALT_SLUG,
   cleanup,
-  cleanupBracket,
+  cleanupAlt,
+  clearDefaultCompetition,
   closeDb,
+  seedAltCompetition,
   seedCompetitionWithMatch,
-  seedFixtureBracketCompetition,
 } from './helpers/db'
 
 // The default competition used to be compiled in. Main path through the real UI:
@@ -14,8 +15,17 @@ import {
 // visitor with no `ng-competition` cookie then lands on that one - which is the
 // whole point of moving it out of the build.
 
+// The default is one global row and the e2e database outlives a single run, so
+// this spec both starts from a known state and puts it back. Without the reset
+// it poisons its own next run, and any later spec whose landing resolves through
+// the default lands on a competition this file's cleanup has since deleted.
+test.beforeAll(async () => {
+  await clearDefaultCompetition()
+})
+
 test.afterAll(async () => {
-  await cleanupBracket()
+  await clearDefaultCompetition()
+  await cleanupAlt()
   await cleanup()
   await closeDb()
 })
@@ -25,7 +35,7 @@ test('an admin changes the default competition and a cookie-less landing follows
   // seeds none of its own, so with a single competition it is already the
   // default and there is nothing to switch to.
   const seeded = await seedCompetitionWithMatch() // e2e-cup, season 2026
-  await seedFixtureBracketCompetition() // e2e-bracket, season 2025
+  await seedAltCompetition() // e2e-alt, season 2025
 
   await signIn(page, ADMIN)
   await dismissOnboarding(page)
@@ -39,7 +49,7 @@ test('an admin changes the default competition and a cookie-less landing follows
   const picker = section.locator('select').first()
   const saveBtn = section.getByRole('button', { name: 'Save', exact: true })
 
-  // Newest season leads, so the resolved default starts on e2e-cup (2026).
+  // Nothing stored, so the resolver falls back to the newest season: e2e-cup.
   await expect(picker).toBeVisible()
   await expect(picker).toHaveValue(seeded.slug)
   await expect(saveBtn).toBeDisabled()
@@ -47,8 +57,8 @@ test('an admin changes the default competition and a cookie-less landing follows
   // SSR-rendered, so the control can exist before hydration wires v-model:
   // retry until the choice sticks and arms Save.
   await expect(async () => {
-    await picker.selectOption(E2E_BRACKET_SLUG)
-    await expect(picker).toHaveValue(E2E_BRACKET_SLUG)
+    await picker.selectOption(E2E_ALT_SLUG)
+    await expect(picker).toHaveValue(E2E_ALT_SLUG)
     await expect(saveBtn).toBeEnabled()
   }).toPass({ timeout: 15_000 })
 
@@ -58,13 +68,13 @@ test('an admin changes the default competition and a cookie-less landing follows
   // Reloading proves it persisted rather than only moving the local draft.
   await page.reload()
   await page.waitForLoadState('networkidle')
-  await expect(section.locator('select').first()).toHaveValue(E2E_BRACKET_SLUG)
+  await expect(section.locator('select').first()).toHaveValue(E2E_ALT_SLUG)
 
   // The payoff: a visitor with no remembered competition is pointed at the new
-  // default, even though it is not the newest season. The landing CTA is built
-  // from the same resolved value.
+  // default, even though it is NOT the newest season - which is what proves the
+  // stored setting wins rather than coincidentally agreeing with the fallback.
   await page.context().clearCookies({ name: 'ng-competition' })
   await page.goto('/')
   await page.waitForLoadState('networkidle')
-  await expect(page.locator(`a[href="/${E2E_BRACKET_SLUG}/matches"]`).first()).toBeVisible()
+  await expect(page.locator(`a[href="/${E2E_ALT_SLUG}/matches"]`).first()).toBeVisible()
 })
