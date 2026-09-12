@@ -2963,6 +2963,28 @@ blocking):
       (the mobile app). A translator opening fr.json cannot tell which surface a
       `download` key belongs to.
 
+## Mobile polish batch - deferred (feat/mobile-polish-batch)
+
+- [ ] The call log a room renders is fetched once, on entry. A call that starts
+      or ends while the chat is open leaves the timeline untouched until the
+      screen is rebuilt - `leagueCallLogProvider` / `dmCallLogProvider` are not
+      invalidated by the voice events (`voice:started`, `voice:ended`) the hub
+      already pushes to the same screen.
+- [ ] The mobile call log inherits the web's pagination ceiling: the route
+      answers the latest 50 rows per scope, so scrolling far enough back in a
+      busy room reaches messages older than the oldest call it knows about, and
+      those stretches render with no call lines at all rather than with a "load
+      more" edge.
+- [ ] `CallLineTile` has no widget test. The logic under it
+      (`chat/call_log.dart`) is covered case by case, but nothing asserts that a
+      MISSED call actually renders in the error colour with the missed-call
+      glyph, which is the whole point of the row.
+- [ ] The app's version line moved to `apps/mobile-flutter/app/pubspec.yaml` and
+      nothing bumps it - there is no `mise run release` equivalent on the mobile
+      side, so the name and the build number are hand-edited before an
+      `apk-publish`. The build number in particular can only ever go up, and a
+      mistake there is unrecoverable without an uninstall.
+
 ## Release flakes
 
 - [ ] `pnpm test:components` can fail a release with every test green.
