@@ -1,4 +1,19 @@
-import type { AppStage, MatchStatus, NormalizedBracket, NormalizedMatch, Score, Team, Winner } from '../../../shared/types/match'
+import type {
+  AppStage,
+  MatchDetail,
+  MatchStatus,
+  NormalizedBracket,
+  NormalizedGoal,
+  NormalizedMatch,
+  Score,
+  SquadPlayer,
+  SubstitutionEvent,
+  Team,
+  TeamMatchStats,
+  TimelineEvent,
+  TimelineEventKind,
+  Winner,
+} from '../../../shared/types/match'
 import { RateLimiter } from './rate-limiter'
 import { bracketFromKnockoutMatches } from './bracket-order'
 import {
@@ -39,6 +54,8 @@ interface WrPhaseId {
 
 export interface WrMatch {
   matchId: string
+  attendance?: number | null
+  venue?: { name?: string | null } | null
   description?: string | null
   eventPhase?: string | null
   eventPhaseId?: WrPhaseId | null
@@ -148,13 +165,18 @@ function toWinner(score: Score, status: MatchStatus): Winner {
   return 'DRAW'
 }
 
-export function normalizeWorldRugbyMatch(match: WrMatch): NormalizedMatch {
+export function normalizeWorldRugbyMatch(match: WrMatch, eventId?: string): NormalizedMatch {
   const status = mapWorldRugbyStatus(match.status)
   const score = toScore(match, status)
   const stage = mapWorldRugbyStage(match.eventPhaseId, match.eventPhase)
   const [home, away] = match.teams ?? []
   return {
     providerMatchId: String(match.matchId),
+    // The feed addresses a match by its own id alone, so there is no stage to
+    // carry. The event id goes here anyway because the detail sync selects on
+    // `providerStageId IS NOT NULL` - without it every rugby match is skipped
+    // silently and no try ever reaches goal_event.
+    providerStageId: eventId ?? null,
     stage,
     group: stage === 'GROUP' ? parseWorldRugbyGroup(match.eventPhaseId, match.eventPhase) : null,
     matchday: null,
@@ -165,6 +187,44 @@ export function normalizeWorldRugbyMatch(match: WrMatch): NormalizedMatch {
     score,
     winner: toWinner(score, status),
   }
+}
+
+// One timeline entry. Scoring entries carry `points`; `teamIndex` is 0 for the
+// home side and 1 for the away side, matching the order of `teams` and `scores`
+// on the match itself.
+export interface WrTimelineEvent {
+  type?: string | null
+  typeLabel?: string | null
+  group?: string | null
+  points?: number | null
+  teamIndex?: number | null
+  playerId?: string | null
+  time?: { secs?: number | null } | null
+  // Both halves of a substitution carry the same link id.
+  link?: string | number | null
+}
+
+interface WrSquadEntry {
+  team?: WrTeam | null
+  players?: { player?: { id?: string | null; name?: { display?: string | null } | null } | null }[] | null
+  // A management entry carries the person's fields inline, with `role` naming
+  // the job ("Head Coach", "Scrum Coach", "Logistics Manager", ...).
+  management?: { name?: { display?: string | null } | null; role?: string | null }[] | null
+}
+
+// Seconds from kick-off to a football-style minute label. 92s is 1:32, which is
+// during the second minute, so it reads as 2'.
+export function worldRugbyMinute(secs: number | null | undefined): string | null {
+  if (secs == null || secs < 0) return null
+  return `${Math.floor(secs / 60) + 1}'`
+}
+
+// Only a try is credited the way a goal is. Conversions and penalties are kicks,
+// almost always by one specialist, so counting them would turn the scorers board
+// into a kickers board - the local goal_event aggregation counts rows, not
+// points. Their points still move the running score below.
+export function isTryEvent(event: WrTimelineEvent): boolean {
+  return (event.group ?? '').toLowerCase() === 'try'
 }
 
 export interface WorldRugbyOptions {
@@ -192,11 +252,55 @@ export function worldRugbyProvider(options: WorldRugbyOptions): MatchDataProvide
     return (await response.json()) as T
   }
 
+  async function timelineOf(matchId: string): Promise<WrTimelineEvent[]> {
+    const doc = await getJson<{ timeline?: WrTimelineEvent[] | null }>(
+      `${baseUrl}/match/${encodeURIComponent(matchId)}/timeline?language=en`,
+    )
+    return doc.timeline ?? []
+  }
+
+  async function teamStatsOf(matchId: string): Promise<{ stats?: Record<string, unknown> | null }[]> {
+    const doc = await getJson<{ teamStats?: { stats?: Record<string, unknown> | null }[] | null }>(
+      `${baseUrl}/match/${encodeURIComponent(matchId)}/stats`,
+    )
+    return doc.teamStats ?? []
+  }
+
+  // One call for the whole tournament, memoised for the life of the adapter: it
+  // serves both the squad list and the id -> name map every timeline needs, and
+  // the alternative is a /player/{id} call per actor per match.
+  let squadsPromise: Promise<WrSquadEntry[]> | null = null
+  function squadsOnce(): Promise<WrSquadEntry[]> {
+    squadsPromise ??= getJson<{ squads?: WrSquadEntry[] | null }>(
+      `${baseUrl}/event/${encodeURIComponent(eventId)}/squads`,
+    )
+      .then((doc) => doc.squads ?? [])
+      .catch(() => {
+        // A tournament whose squads are not named yet answers with empty ones;
+        // a failure here must not take the whole detail sync down with it.
+        squadsPromise = null
+        return []
+      })
+    return squadsPromise
+  }
+
+  async function playerNames(): Promise<Map<string, string>> {
+    const names = new Map<string, string>()
+    for (const squad of await squadsOnce()) {
+      for (const entry of squad.players ?? []) {
+        const id = entry.player?.id
+        const name = entry.player?.name?.display
+        if (id && name) names.set(String(id), name)
+      }
+    }
+    return names
+  }
+
   async function schedule(): Promise<NormalizedMatch[]> {
     const doc = await getJson<{ matches?: WrMatch[] | null }>(
       `${baseUrl}/event/${encodeURIComponent(eventId)}/schedule?language=en`,
     )
-    return (doc.matches ?? []).map(normalizeWorldRugbyMatch)
+    return (doc.matches ?? []).map((m) => normalizeWorldRugbyMatch(m, eventId))
   }
 
   return {
@@ -239,7 +343,7 @@ export function worldRugbyProvider(options: WorldRugbyOptions): MatchDataProvide
       const doc = await getJson<{ content?: WrMatch[] | null }>(
         `${baseUrl}/match?startDate=${encodeURIComponent(date)}&endDate=${encodeURIComponent(date)}&sort=asc&pageSize=100`,
       )
-      return (doc.content ?? []).map(normalizeWorldRugbyMatch)
+      return (doc.content ?? []).map((m) => normalizeWorldRugbyMatch(m, eventId))
     },
 
     async getLiveMatches(): Promise<NormalizedMatch[]> {
@@ -252,6 +356,200 @@ export function worldRugbyProvider(options: WorldRugbyOptions): MatchDataProvide
       const knockout = all.filter((m) => m.stage !== 'GROUP')
       if (knockout.length === 0) return null
       return bracketFromKnockoutMatches(knockout)
+    },
+
+    async getMatchDetail({ matchId }): Promise<MatchDetail | null> {
+      const [match, events, names] = await Promise.all([
+        getJson<WrMatch>(`${baseUrl}/match/${encodeURIComponent(matchId)}`),
+        timelineOf(matchId),
+        playerNames(),
+      ])
+      const sides = [match.teams?.[0], match.teams?.[1]]
+      const cards = { home: { yellow: 0, red: 0 }, away: { yellow: 0, red: 0 } }
+      const goals: NormalizedGoal[] = []
+      const substitutions: SubstitutionEvent[] = []
+      const subsOff = new Map<string, WrTimelineEvent>()
+
+      for (const event of events) {
+        const index = event.teamIndex === 1 ? 1 : 0
+        const side = index === 1 ? ('AWAY' as const) : ('HOME' as const)
+        const team = sides[index]
+        const type = (event.type ?? '').toLowerCase()
+
+        if (type === 'yellow') cards[side === 'HOME' ? 'home' : 'away'].yellow += 1
+        else if (type === 'red') cards[side === 'HOME' ? 'home' : 'away'].red += 1
+
+        if (isTryEvent(event)) {
+          goals.push({
+            side,
+            teamId: team?.id ?? null,
+            teamName: team?.name ?? '',
+            teamCode: team?.abbreviation ?? null,
+            playerId: event.playerId ?? null,
+            playerName: (event.playerId && names.get(event.playerId)) || '',
+            minute: worldRugbyMinute(event.time?.secs),
+            goalType: event.points ?? null,
+            ownGoal: false,
+            assistPlayerId: null,
+            assistPlayerName: null,
+          })
+        }
+
+        if (type === 'sub off') subsOff.set(String(event.link ?? `${index}:${event.time?.secs ?? ''}`), event)
+      }
+
+      // Both halves of a swap carry the same `link`, and Sub On is emitted
+      // before its Sub Off - so the pairing is a second pass, not a running map.
+      // An unpaired one still ships (a blood replacement goes off and back on)
+      // rather than being dropped.
+      for (const event of events) {
+        if ((event.type ?? '').toLowerCase() !== 'sub on') continue
+        const index = event.teamIndex === 1 ? 1 : 0
+        const off = subsOff.get(String(event.link ?? `${index}:${event.time?.secs ?? ''}`))
+        substitutions.push({
+          side: index === 1 ? 'AWAY' : 'HOME',
+          minute: worldRugbyMinute(event.time?.secs),
+          playerOffId: off?.playerId ?? null,
+          playerOffName: (off?.playerId && names.get(off.playerId)) || '',
+          playerOnId: event.playerId ?? null,
+          playerOnName: (event.playerId && names.get(event.playerId)) || '',
+        })
+      }
+
+      const stats = await teamStatsOf(matchId).catch(() => null)
+      const possession = (i: number) => {
+        const value = stats?.[i]?.stats?.Possession
+        return typeof value === 'number' ? Math.round(value * 100) : null
+      }
+
+      return {
+        possessionHome: possession(0),
+        possessionAway: possession(1),
+        attendance: typeof match.attendance === 'number' ? match.attendance : null,
+        stadium: match.venue?.name ?? null,
+        cards,
+        goals,
+        bookings: [],
+        substitutions,
+        playerNames: Object.fromEntries(names),
+        homeTeamId: sides[0]?.id ?? null,
+        awayTeamId: sides[1]?.id ?? null,
+        // The per-match stats hang off the same match id, so this is what
+        // getMatchStats is handed back.
+        ifesId: String(match.matchId ?? matchId),
+      }
+    },
+
+    async getMatchTimeline({ matchId }): Promise<TimelineEvent[]> {
+      const [events, names] = await Promise.all([timelineOf(matchId), playerNames()])
+      const out: TimelineEvent[] = []
+      const running = [0, 0]
+
+      for (const event of events) {
+        const index = event.teamIndex === 1 ? 1 : 0
+        const side = index === 1 ? ('AWAY' as const) : ('HOME' as const)
+        const type = (event.type ?? '').toLowerCase()
+        // Every scoring entry moves the running score, including the conversion
+        // that does not get a line of its own.
+        if (typeof event.points === 'number' && event.points > 0) running[index] += event.points
+
+        const kind: TimelineEventKind | null = isTryEvent(event)
+          ? 'goal'
+          : (event.group ?? '').toLowerCase() === 'pen'
+            ? 'penalty-goal'
+            : (event.group ?? '').toLowerCase() === 'dg'
+              ? 'goal'
+              : type === 'yellow'
+                ? 'yellow'
+                : type === 'red'
+                  ? 'red'
+                  : type === 'sub on'
+                    ? 'sub'
+                    : null
+        // Conversions have no line of their own: they follow a try by seconds
+        // and would read as a second score for the same move. Their points are
+        // already in the running score above.
+        if (!kind) continue
+
+        out.push({
+          kind,
+          side,
+          minute: worldRugbyMinute(event.time?.secs),
+          playerName: (event.playerId && names.get(event.playerId)) || null,
+          playerInName: kind === 'sub' ? (event.playerId && names.get(event.playerId)) || null : null,
+          playerOutName: null,
+          periodKind: null,
+          text: null,
+          homeScore: running[0]!,
+          awayScore: running[1]!,
+        })
+      }
+      return out
+    },
+
+    async getMatchStats({ ifesId }): Promise<Record<string, TeamMatchStats> | null> {
+      const [stats, match] = await Promise.all([
+        teamStatsOf(ifesId),
+        getJson<WrMatch>(`${baseUrl}/match/${encodeURIComponent(ifesId)}`),
+      ])
+      if (stats.length === 0) return null
+      const out: Record<string, TeamMatchStats> = {}
+      stats.forEach((entry, index) => {
+        const teamId = match.teams?.[index]?.id
+        if (!teamId) return
+        const s = entry.stats ?? {}
+        const num = (key: string) => (typeof s[key] === 'number' ? (s[key] as number) : null)
+        const pct = (key: string) => (typeof s[key] === 'number' ? Math.round((s[key] as number) * 100) : null)
+        out[teamId] = {
+          possession: pct('Possession'),
+          passes: num('Passes'),
+          // The nearest honest analogues. The rest of this shape is football -
+          // attempts, crosses, corners, offsides have no rugby counterpart, and
+          // inventing one would be worse than leaving the row blank.
+          fouls: num('PenaltiesConceded'),
+          forcedTurnovers: num('TurnoversWon'),
+          attempts: null,
+          onTarget: null,
+          passesCompleted: null,
+          crosses: null,
+          corners: null,
+          offsides: null,
+          distanceKm: null,
+          pressuresApplied: null,
+        }
+      })
+      return Object.keys(out).length > 0 ? out : null
+    },
+
+    async getTeamTournament({ teamRef }) {
+      const squads = await squadsOnce()
+      const entry = squads.find((sq) => sq.team?.abbreviation === teamRef)
+      if (!entry) return { squad: [], coach: null, stats: null }
+
+      const squad: SquadPlayer[] = (entry.players ?? []).flatMap((p) => {
+        const id = p.player?.id
+        const name = p.player?.name?.display
+        if (!id || !name) return []
+        return [{
+          playerId: String(id),
+          name,
+          // The feed's `number` is a position code ("SR", "CE"), not a shirt
+          // number - squad numbers are handed out per match, not per tournament,
+          // so there is none to carry here.
+          shirtNumber: null,
+          // Deliberately null: the position enum is GK/DF/MF/FW, and a hooker is
+          // none of them. The feed's positionLabel has nowhere to go until the
+          // shape learns about rugby.
+          position: null,
+          captain: false,
+          pictureUrl: null,
+        }]
+      })
+
+      // Anchored: the roles also include "Head Strength & Conditioning Coach",
+      // "Forwards Coach" and a dozen more.
+      const head = (entry.management ?? []).find((m) => /^head coach$/i.test((m.role ?? '').trim()))
+      return { squad, coach: head?.name?.display ?? null, stats: null }
     },
   }
 }

@@ -5,6 +5,8 @@ import {
   normalizeWorldRugbyMatch,
   parseWorldRugbyGroup,
   worldRugbyProvider,
+  worldRugbyMinute,
+  isTryEvent,
   type WrMatch,
 } from './worldrugby'
 import { ProviderRateLimitError, ProviderUpstreamError } from './types'
@@ -390,5 +392,281 @@ describe('team codes', () => {
     })
     expect(m.homeTeam.code).toBe('FRA')
     expect(m.awayTeam.code).toBe('NZL')
+  })
+})
+
+describe('worldRugbyMinute', () => {
+  it('reads seconds from kick-off as the minute being played', () => {
+    // 92s is 1:32, which is during the second minute.
+    expect(worldRugbyMinute(92)).toBe("2'")
+    expect(worldRugbyMinute(0)).toBe("1'")
+    expect(worldRugbyMinute(3371)).toBe("57'")
+  })
+
+  it('has no minute for a missing or nonsense time', () => {
+    expect(worldRugbyMinute(null)).toBeNull()
+    expect(worldRugbyMinute(undefined)).toBeNull()
+    expect(worldRugbyMinute(-1)).toBeNull()
+  })
+})
+
+describe('isTryEvent', () => {
+  it('counts only tries, not the kicks', () => {
+    // The scorers board counts goal_event rows, not points, so folding in
+    // conversions and penalties would turn it into a kickers board.
+    expect(isTryEvent({ group: 'Try', type: 'T5' })).toBe(true)
+    expect(isTryEvent({ group: 'Con', type: 'C2' })).toBe(false)
+    expect(isTryEvent({ group: 'Pen', type: 'P3' })).toBe(false)
+    expect(isTryEvent({ group: 'DG', type: 'D3' })).toBe(false)
+    expect(isTryEvent({})).toBe(false)
+  })
+})
+
+describe('match detail, timeline and stats', () => {
+  const MATCH = {
+    matchId: '28766',
+    attendance: 78690,
+    venue: { name: 'Stade de France' },
+    teams: [
+      { id: '42', name: 'France', abbreviation: 'FRA' },
+      { id: '37', name: 'New Zealand', abbreviation: 'NZL' },
+    ],
+  }
+  const TIMELINE = {
+    timeline: [
+      { type: 'T5', group: 'Try', points: 5, teamIndex: 1, playerId: 'p1', time: { secs: 92 } },
+      { type: 'C2', group: 'Con', points: 2, teamIndex: 1, playerId: 'p2', time: { secs: 150 } },
+      { type: 'P3', group: 'Pen', points: 3, teamIndex: 0, playerId: 'p3', time: { secs: 285 } },
+      { type: 'D3', group: 'DG', points: 3, teamIndex: 0, playerId: 'p3', time: { secs: 1595 } },
+      { type: 'Yellow', teamIndex: 1, playerId: 'p1', time: { secs: 4000 } },
+      { type: 'Sub On', teamIndex: 0, playerId: 'p4', link: 9947, time: { secs: 2910 } },
+      { type: 'Sub Off', teamIndex: 0, playerId: 'p3', link: 9947, time: { secs: 2910 } },
+      { type: 'Ruck', teamIndex: 0, time: { secs: 3000 } },
+    ],
+  }
+  const SQUADS = {
+    squads: [
+      {
+        team: { id: '42', abbreviation: 'FRA' },
+        players: [
+          { player: { id: 'p3', name: { display: 'Thomas Ramos' } } },
+          { player: { id: 'p4', name: { display: 'Romain Taofifenua' } } },
+          { player: { id: null, name: { display: 'No id' } } },
+        ],
+        management: [
+          { name: { display: 'Someone Else' }, role: 'Head Strength & Conditioning Coach' },
+          { name: { display: 'Fabien Galthie' }, role: 'Head Coach' },
+        ],
+      },
+      { team: { id: '37', abbreviation: 'NZL' }, players: [{ player: { id: 'p1', name: { display: "Mark Tele'a" } } }] },
+    ],
+  }
+  const STATS = {
+    teamStats: [
+      { stats: { Possession: 0.49, Passes: 108, PenaltiesConceded: 4, TurnoversWon: 8 } },
+      { stats: { Possession: 0.51, Passes: 154 } },
+    ],
+  }
+
+  const full = () => stub({ '/timeline': TIMELINE, '/stats': STATS, '/squads': SQUADS, '/match/28766': MATCH })
+  const make = (impl: typeof fetch) => worldRugbyProvider({ eventId: '1893', fetchImpl: impl, rateLimiter: nowait() })
+
+  it('records tries as the scoring plays, and nothing else', async () => {
+    const d = await make(full().impl).getMatchDetail!({ matchId: '28766' })
+    expect(d!.goals).toHaveLength(1)
+    expect(d!.goals[0]).toMatchObject({
+      side: 'AWAY',
+      teamCode: 'NZL',
+      playerName: "Mark Tele'a",
+      minute: "2'",
+      goalType: 5,
+      ownGoal: false,
+    })
+  })
+
+  it('carries possession, attendance, venue and cards', async () => {
+    const d = await make(full().impl).getMatchDetail!({ matchId: '28766' })
+    expect(d!.possessionHome).toBe(49)
+    expect(d!.possessionAway).toBe(51)
+    expect(d!.attendance).toBe(78690)
+    expect(d!.stadium).toBe('Stade de France')
+    expect(d!.cards).toEqual({ home: { yellow: 0, red: 0 }, away: { yellow: 1, red: 0 } })
+    expect(d!.homeTeamId).toBe('42')
+    expect(d!.awayTeamId).toBe('37')
+  })
+
+  it('pairs a substitution on its link, not its timestamp', async () => {
+    // Sub On is emitted before its Sub Off, so a running map never has the
+    // partner yet; both halves share a link id.
+    const d = await make(full().impl).getMatchDetail!({ matchId: '28766' })
+    expect(d!.substitutions).toHaveLength(1)
+    expect(d!.substitutions[0]).toMatchObject({
+      side: 'HOME',
+      minute: "49'",
+      playerOffName: 'Thomas Ramos',
+      playerOnName: 'Romain Taofifenua',
+    })
+  })
+
+  it('still ships a substitution whose partner is missing', async () => {
+    const lone = { timeline: [{ type: 'Sub On', teamIndex: 0, playerId: 'p4', link: 1, time: { secs: 600 } }] }
+    const { impl } = stub({ '/timeline': lone, '/stats': STATS, '/squads': SQUADS, '/match/28766': MATCH })
+    const d = await make(impl).getMatchDetail!({ matchId: '28766' })
+    expect(d!.substitutions).toHaveLength(1)
+    expect(d!.substitutions[0]!.playerOffName).toBe('')
+  })
+
+  it('survives a match whose stats call fails', async () => {
+    const { impl } = stub({ '/timeline': TIMELINE, '/squads': SQUADS, '/match/28766': MATCH })
+    const d = await make(impl).getMatchDetail!({ matchId: '28766' })
+    expect(d).not.toBeNull()
+    expect(d!.possessionHome).toBeNull()
+    expect(d!.goals).toHaveLength(1)
+  })
+
+  it('runs the score through every kick, but gives a conversion no line of its own', async () => {
+    const tl = await make(full().impl).getMatchTimeline!({ matchId: '28766' })
+    expect(tl.map((e) => e.kind)).toEqual(['goal', 'penalty-goal', 'goal', 'yellow', 'sub'])
+    // The try is 5; the conversion's 2 lands on the next entry's running score.
+    expect(tl[0]).toMatchObject({ homeScore: 0, awayScore: 5, minute: "2'", playerName: "Mark Tele'a" })
+    expect(tl[1]).toMatchObject({ kind: 'penalty-goal', homeScore: 3, awayScore: 7 })
+    expect(tl[2]).toMatchObject({ kind: 'goal', homeScore: 6, awayScore: 7 })
+  })
+
+  it('drops the phases of play that are not events', async () => {
+    const tl = await make(full().impl).getMatchTimeline!({ matchId: '28766' })
+    expect(tl).toHaveLength(5)
+  })
+
+  it('keys match stats by team id and leaves the football-only fields null', async () => {
+    const st = await make(full().impl).getMatchStats!({ ifesId: '28766' })
+    // Sorted, not insertion-ordered: integer-like keys enumerate numerically.
+    expect(Object.keys(st ?? {}).sort()).toEqual(['37', '42'])
+    expect(st!['42']).toMatchObject({ possession: 49, passes: 108, fouls: 4, forcedTurnovers: 8 })
+    expect(st!['42']!.corners).toBeNull()
+    expect(st!['42']!.offsides).toBeNull()
+  })
+
+  it('has no match stats when the feed carries none', async () => {
+    const { impl } = stub({ '/stats': { teamStats: [] }, '/match/28766': MATCH })
+    expect(await make(impl).getMatchStats!({ ifesId: '28766' })).toBeNull()
+  })
+
+  it('skips a stats block it cannot attach to a team, and a missing figure', async () => {
+    // More stat blocks than teams, and a block whose numbers are absent - both
+    // would otherwise key the record on undefined or coerce a null to 0.
+    const odd = {
+      teamStats: [{ stats: { Possession: 0.6 } }, { stats: null }, { stats: { Possession: 0.4 } }],
+    }
+    const { impl } = stub({ '/stats': odd, '/match/28766': MATCH })
+    const st = await make(impl).getMatchStats!({ ifesId: '28766' })
+    expect(Object.keys(st ?? {}).sort()).toEqual(['37', '42'])
+    expect(st!['37']).toMatchObject({ possession: null, passes: null })
+  })
+
+  it('has no squad when the team carries none and no coach when none is listed', async () => {
+    const bare = { squads: [{ team: { id: '42', abbreviation: 'FRA' } }] }
+    const { impl } = stub({ '/squads': bare, '/match/28766': MATCH })
+    const t = await make(impl).getTeamTournament!({ teamRef: 'FRA', matches: [] })
+    expect(t).toEqual({ squad: [], coach: null, stats: null })
+  })
+
+  it('builds a squad and names the head coach, not the other coaches', async () => {
+    const t = await make(full().impl).getTeamTournament!({ teamRef: 'FRA', matches: [] })
+    expect(t.coach).toBe('Fabien Galthie')
+    expect(t.squad.map((p) => p.name)).toEqual(['Thomas Ramos', 'Romain Taofifenua'])
+    // Squad numbers are handed out per match, so a tournament squad has none.
+    expect(t.squad[0]!.shirtNumber).toBeNull()
+    expect(t.squad[0]!.position).toBeNull()
+  })
+
+  it('has an empty squad for a team it does not carry', async () => {
+    const t = await make(full().impl).getTeamTournament!({ teamRef: 'ZZZ', matches: [] })
+    expect(t).toEqual({ squad: [], coach: null, stats: null })
+  })
+
+  it('reads a red card, and leaves an unknown actor unnamed', async () => {
+    const tl = {
+      timeline: [
+        { type: 'Red', teamIndex: 1, playerId: 'nobody', time: { secs: 3000 } },
+        { type: 'T5', group: 'Try', points: 5, teamIndex: 0, playerId: 'ghost', time: { secs: 100 } },
+      ],
+    }
+    const { impl } = stub({ '/timeline': tl, '/stats': STATS, '/squads': SQUADS, '/match/28766': MATCH })
+    const d = await make(impl).getMatchDetail!({ matchId: '28766' })
+    expect(d!.cards.away.red).toBe(1)
+    // A player id the squads do not carry must not become the literal id.
+    expect(d!.goals[0]!.playerName).toBe('')
+
+    const events = await make(impl).getMatchTimeline!({ matchId: '28766' })
+    expect(events.map((e) => e.kind)).toEqual(['red', 'goal'])
+    expect(events[0]!.playerName).toBeNull()
+  })
+
+  it('survives a feed with every optional field missing', async () => {
+    // Ragged documents: no teams on the match, events with no side, no clock,
+    // no actor and no group. None of it should throw or invent a value.
+    const ragged = {
+      timeline: [
+        { type: 'T5', group: 'Try', points: 5 },
+        { type: 'Sub On' },
+        { type: 'Sub Off' },
+        {},
+      ],
+    }
+    const { impl } = stub({ '/timeline': ragged, '/stats': {}, '/squads': {}, '/match/28766': {} })
+    const p = make(impl)
+
+    const d = await p.getMatchDetail!({ matchId: '28766' })
+    expect(d!.goals[0]).toMatchObject({ side: 'HOME', teamName: '', teamCode: null, minute: null, playerId: null })
+    expect(d!.homeTeamId).toBeNull()
+    expect(d!.attendance).toBeNull()
+    expect(d!.stadium).toBeNull()
+    expect(d!.ifesId).toBe('28766')
+
+    const tl = await p.getMatchTimeline!({ matchId: '28766' })
+    expect(tl.map((e) => e.kind)).toEqual(['goal', 'sub'])
+    expect(tl[0]).toMatchObject({ minute: null, playerName: null, homeScore: 5, awayScore: 0 })
+
+    expect(await p.getMatchStats!({ ifesId: '28766' })).toBeNull()
+    expect(await p.getTeamTournament!({ teamRef: 'FRA', matches: [] })).toEqual({ squad: [], coach: null, stats: null })
+  })
+
+  it('reads the other side of every paired branch', async () => {
+    // Home red card, away substitution, and a try the feed gave no point value.
+    const tl = {
+      timeline: [
+        { type: 'Red', teamIndex: 0, playerId: 'p3', time: { secs: 100 } },
+        { type: 'T5', group: 'Try', teamIndex: 1, playerId: 'p1', time: { secs: 200 } },
+        { type: 'Sub On', teamIndex: 1, playerId: 'p1', link: 5, time: { secs: 300 } },
+        { type: 'Sub Off', teamIndex: 1, playerId: 'p2', link: 5, time: { secs: 300 } },
+      ],
+    }
+    const { impl } = stub({ '/timeline': tl, '/stats': STATS, '/squads': SQUADS, '/match/28766': MATCH })
+    const d = await make(impl).getMatchDetail!({ matchId: '28766' })
+    expect(d!.cards.home.red).toBe(1)
+    expect(d!.goals[0]!.goalType).toBeNull()
+    expect(d!.substitutions[0]!.side).toBe('AWAY')
+  })
+
+  it('has no stats when no block can be attached to a team', async () => {
+    const { impl } = stub({ '/stats': STATS, '/match/28766': { matchId: '28766' } })
+    expect(await make(impl).getMatchStats!({ ifesId: '28766' })).toBeNull()
+  })
+
+  it('skips a squad entry with no player behind it', async () => {
+    const ragged = { squads: [{ team: { abbreviation: 'FRA' }, players: [{}, { player: { id: 'x' } }], management: [{}] }] }
+    const { impl } = stub({ '/squads': ragged, '/match/28766': MATCH })
+    const t = await make(impl).getTeamTournament!({ teamRef: 'FRA', matches: [] })
+    expect(t.squad).toEqual([])
+    expect(t.coach).toBeNull()
+  })
+
+  it('does not take the detail sync down when squads are unavailable', async () => {
+    // A tournament whose squads are not named yet, or a failing call.
+    const { impl } = stub({ '/timeline': TIMELINE, '/stats': STATS, '/match/28766': MATCH })
+    const d = await make(impl).getMatchDetail!({ matchId: '28766' })
+    expect(d!.goals).toHaveLength(1)
+    expect(d!.goals[0]!.playerName).toBe('')
   })
 })

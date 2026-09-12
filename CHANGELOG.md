@@ -7,6 +7,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ### Added
 
+- Rugby matches carry their detail: try scorers with the minute, cards, substitutions, possession, attendance and the ground, plus a play-by-play that runs the score through every conversion and penalty. The try-scorer board fills itself from that, and picking a best scorer now has a squad to pick from - 33 players and the head coach per team.
 - A rugby champion pick is priced off the World Rugby ranking, not FIFA's. Backing one of the top four pays the least and a side outside the top twenty pays the most, so picking South Africa is worth what picking South Africa is worth.
 - The crystal ball holds a rugby ball while you are in a rugby tournament. An unlocked skin still wins - that one you went looking for.
 - Rugby is scored on the margin, not the exact scoreline. Nobody calls 27-24 on judgement, so a rugby tournament now rewards getting the winning margin into the right band - within a converted try (1-7), 8-14, or 15 and up - and the exact score becomes a lucky bonus rather than the main prize. The rarity bonus moves with it: it counts how much of the field read the result, instead of handing everyone who called the winner the top tier. A tournament picks all of this up when it is added, and an admin can retune every number.

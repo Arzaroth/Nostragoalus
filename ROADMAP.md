@@ -839,9 +839,16 @@ effort buckets; order within a bucket is not priority.
     the crystal ball (`LogoRugby.vue`, plus `mark-rugby.svg` for the static
     emblem). An unlocked skin still wins - that is a deliberate unlock, and it
     should not be undone by which tournament is being viewed.
-  - Rugby, still to do: tries rather than goals through `goal_event` and the
-    timeline (`/match/{id}/timeline` carries typed `T5`/`C2`/`P3`), and two
-    top-scorer boards (tries and points). ESPN covers rugby under `sports/rugby/`. Sport switch
+  - [x] **Tries reach `goal_event`, and the rest of the detail with them**:
+    play-by-play, cards, substitutions, possession, attendance, ground, per-match
+    team stats, and tournament squads + head coach. The try-scorer board fills
+    from the local goal-event aggregation with no `getTopScorers` needed, and the
+    best-scorer pick finally has a squad behind it.
+  - Rugby, still to do: a **points** scorer board beside the try one (the feed
+    has the points on every scoring event; the local aggregation counts rows,
+    so this needs its own query rather than more provider work). **Line-ups are
+    not reachable** - no endpoint exists - so that panel should be hidden for
+    rugby rather than left empty. ESPN covers rugby under `sports/rugby/`. Sport switch
     drives theme or at least logo. Multi-sport is a MAJOR.
   - Basketball: wanted, but **NBA playoffs is not a smaller NBA** - best-of-7 is
     variable-length multi-leg, a generalization of the UCL problem rather than

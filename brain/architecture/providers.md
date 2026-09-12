@@ -287,9 +287,33 @@ typed bronze final, and the World Rugby rankings that will drive champion tiers.
   per source key, since men's and women's are different tables under codes of
   the same shape. The sevens feeds answer 400; that surfaces as null ranks,
   which the champion routes already treat as "use the flat bonus".
-- **Not wired yet:** `/match/{id}/timeline` (typed `T5` try, `C2` conversion,
-  `P3` penalty, `Miss Con`, `Miss Pen`, `Yellow`) is live and keyless; it
-  belongs with tries-through-`goal_event`, not with the adapter.
+- **Match detail** comes from three documents: `/match/{id}` (venue,
+  attendance, team ids), `/match/{id}/timeline` (typed `T5` try 5, `C2`
+  conversion 2, `P3` penalty 3, `D3` drop goal 3, plus `Yellow`, `Red`,
+  `Sub On`/`Sub Off`), and `/match/{id}/stats` (137 team figures). Three things
+  the mapping has to get right:
+  - **Only a try becomes a `goal_event`.** The scorers board counts rows, not
+    points, so folding in conversions and penalties would make it a kickers
+    board. The other scores still move the play-by-play's running total, which
+    is why it lands on the real full-time score.
+  - **A conversion gets no timeline line of its own** - it follows its try by
+    seconds and would read as a second score for the same move.
+  - **Substitutions pair on `link`, not on the clock.** Both halves carry the
+    same link id, and `Sub On` is emitted *before* its `Sub Off`, so a running
+    map never has the partner yet.
+- **Squads:** `/event/{id}/squads` gives every squad for the tournament, with
+  `management[].role` naming the head coach (anchor the match - the roles also
+  include "Head Strength & Conditioning Coach"). One call serves both the squad
+  list and the player-id -> name map every timeline needs, so it is memoised per
+  adapter. A tournament whose squads are not named yet answers with empty ones:
+  RWC 2027 has 24 squads and 0 players today.
+- **`providerStageId` carries the event id**, though the feed addresses a match
+  by its own id alone. Without it `sync/details.ts` - which selects on
+  `providerStageId IS NOT NULL` - skips every rugby match silently, and the
+  team page's `getTeamTournament` is handed no matches.
+- **No line-ups.** There is no endpoint for a matchday XV at any route shape;
+  `getMatchLineups` stays unimplemented and that panel is empty for rugby.
+  The feed's squad `number` is a position code ("SR", "CE"), not a shirt number.
 
 A competition names its sport twice for different reasons: `competition.sport`
 (the `sport` pg enum, `FOOTBALL` / `RUGBY_UNION`) is looked up from the provider
