@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [4.11.0] - 2026-09-12
+
 ### Ajouté
 
 - Application Android : les appels apparaissent desormais dans la conversation, comme sur le site : qui l'a lance et combien de temps il a dure, ainsi que les appels manques que vous n'auriez jamais vus autrement.

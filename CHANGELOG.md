@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [4.11.0] - 2026-09-12
+
 ### Added
 
 - Android app: calls now appear in the conversation, the way they do on the website - who started one and how long it ran, and a missed call you would otherwise never have seen.
