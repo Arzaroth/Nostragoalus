@@ -3393,4 +3393,18 @@ Deferred by the review fix pass (each was a deliberate call, not an oversight):
       commit the churn; verified byte-identical to the generator ignoring
       whitespace and trailing commas. Pin the SDK (or reformat once, on
       purpose) before this bites someone mid-review.
+- [ ] **The Flutter client parses `defaultSlug` but ignores it.** The competition
+      admin pass added the field to `/api/competitions` and to
+      `CompetitionsResponse`, so the model carries it, but nothing in the app
+      reads it: mobile still lands on whatever the server resolves per request
+      rather than honouring the admin's chosen default the way the web does.
+      The two clients disagree about the feature's central behaviour until this
+      is wired.
+- [ ] **The mobile About screen shows no version.** `ui/about_screen.dart` lists
+      client, E2EE and website but not the build, so the only in-app version is
+      the Preferences update card (`ui/widgets/update_check_card.dart`), which
+      reads `dev` on any build not stamped with `--dart-define=APP_VERSION`. The
+      web `/about` is the canonical "what is live" surface and the mobile About
+      is its mirror, so it should carry the version too - one PanelRow plus a
+      key in five locales.
 
