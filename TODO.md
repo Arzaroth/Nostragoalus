@@ -2965,20 +2965,48 @@ blocking):
 
 ## Mobile polish batch - deferred (feat/mobile-polish-batch)
 
-- [ ] The call log a room renders is fetched once, on entry. A call that starts
-      or ends while the chat is open leaves the timeline untouched until the
-      screen is rebuilt - `leagueCallLogProvider` / `dmCallLogProvider` are not
-      invalidated by the voice events (`voice:started`, `voice:ended`) the hub
-      already pushes to the same screen.
+- [x] ~~The call log a room renders is fetched once, on entry.~~ Fixed in the
+      review pass: the hub's `voice:log` frame routes through `LiveFrameRouter`
+      and invalidates `callLogProvider`, as the web does.
 - [ ] The mobile call log inherits the web's pagination ceiling: the route
       answers the latest 50 rows per scope, so scrolling far enough back in a
       busy room reaches messages older than the oldest call it knows about, and
       those stretches render with no call lines at all rather than with a "load
       more" edge.
-- [ ] `CallLineTile` has no widget test. The logic under it
-      (`chat/call_log.dart`) is covered case by case, but nothing asserts that a
-      MISSED call actually renders in the error colour with the missed-call
-      glyph, which is the whole point of the row.
+- [x] ~~`CallLineTile` has no widget test.~~ Covered in the review pass
+      (`test/ui/voice_ui_test.dart`), along with `VoiceCallButton` and the
+      in-call-only `VoiceBar`.
+- [ ] `anchorCalls` and `callLineText` are hand-ports of `callLinesByAnchor` /
+      `callLineText` inside `ChatPanel.vue`, and this is exactly the pure-logic
+      shape `shared/parity-json` + `apps/mobile-flutter/parity/` exists to pin -
+      but no vector was added, because the web's copies live inside the component
+      rather than in an exported util. Extracting them to `app/utils/voice.ts`
+      (where `formatCallDuration` already lives) would make a `voice-call-log`
+      vector cheap, and until then a change to the anchoring rule lands on the
+      web with both gates green and the two clients ordering a room differently.
+- [ ] The two clients disagree on a call status this build does not know: the
+      app renders nothing, while the web's `callLineText` has no unknown branch
+      and falls through to the ENDED wording. Neither is obviously right; they
+      should at least be the same.
+- [ ] An ENDED call with no parseable `endedAt` renders `Call by Ana · ` with a
+      dangling separator, in all five locales. Faithful to the web (which
+      substitutes `''` the same way), so fixing it means fixing both: either a
+      separate `voice.log.endedNoDuration` key or dropping to the ongoing
+      wording.
+- [ ] `participantCount` generates as a Dart `double` because the OpenAPI
+      snapshot says `type: number`, so the first UI to render it will print
+      "3.0". Nothing reads it yet. The fix belongs in `tool/gen_models.dart`
+      (honour `format: int32` / integer-valued numbers), not at the call site.
+- [ ] `chatItems` re-parses every message and call timestamp inside `build`, so
+      a room with 50 messages and 50 calls does ~100 `DateTime.tryParse` calls on
+      every typing-indicator or presence rebuild. The anchoring only changes when
+      the two lists do.
+- [ ] A DM no longer offers a quiet way to JOIN a call already in progress: the
+      bottom bar that used to do it is in-call-only now (as asked), and the app
+      bar's button rings the other party, who may already be on the call. The web
+      has the same shape, so this is a parity-consistent gap rather than a
+      regression against it - `handleVoiceInvite` filters only the caller out of
+      the ring targets, on both clients.
 - [ ] The app's version line moved to `apps/mobile-flutter/app/pubspec.yaml` and
       nothing bumps it - there is no `mise run release` equivalent on the mobile
       side, so the name and the build number are hand-edited before an
