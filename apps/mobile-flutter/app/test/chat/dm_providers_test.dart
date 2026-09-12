@@ -98,13 +98,15 @@ void main() {
         }
       };
 
-  Map<String, Object?> message(String id, String ciphertext, {int epoch = 1}) => {
+  Map<String, Object?> message(String id, String ciphertext,
+          {int epoch = 1, String createdAt = '2026-07-21T10:00:00.000Z'}) =>
+      {
         'id': id,
         'leagueId': '',
         'userId': 'them',
         'ciphertext': ciphertext,
         'epoch': epoch,
-        'createdAt': '2026-07-21T10:00:00.000Z',
+        'createdAt': createdAt,
         'authorName': 'Them',
         'authorImage': null,
         'moderation': 'VISIBLE',

@@ -225,7 +225,11 @@ class AppTheme {
       splashFactory: InkSparkle.splashFactory,
       visualDensity: VisualDensity.standard,
       pageTransitionsTheme: const PageTransitionsTheme(builders: {
-        TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
+        // Transparent: the floodlight ground is painted behind the whole
+        // navigator (app.dart), and the builder otherwise fills the transition
+        // with ColorScheme.surface, which flashes dark over it on every push.
+        TargetPlatform.android:
+            FadeForwardsPageTransitionsBuilder(backgroundColor: Colors.transparent),
       }),
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,

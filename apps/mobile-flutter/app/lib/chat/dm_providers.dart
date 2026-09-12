@@ -87,7 +87,8 @@ final dmRoomProvider = FutureProvider.family<DmRoomView, String>((ref, threadId)
 
   final msgs = await api.dmMessages(threadId);
   final lines = <ChatLine>[];
-  for (final m in msgs.messages) {
+  // Newest first off the wire (see the route docs); send order from here on.
+  for (final m in msgs.messages.reversed) {
     final k = keys[m.epoch.toInt()];
     String? text;
     if (k != null) {

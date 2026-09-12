@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show TextInput;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../auth/sso.dart';
@@ -53,6 +54,9 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     FocusScope.of(context).unfocus();
+    // Tells the platform the pair is complete, which is what makes a password
+    // manager offer to SAVE it. Without it credentials are only ever read.
+    TextInput.finishAutofillContext();
     await ref
         .read(authControllerProvider.notifier)
         .signIn(_email.text.trim(), _password.text);
@@ -117,7 +121,12 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 420),
-            child: Form(
+            // AutofillGroup, or Android treats each field as its own fill unit
+            // and a password manager fills only the one that was tapped. The
+            // hints alone are not enough - the grouping is what makes an
+            // email + password pair fillable in one gesture.
+            child: AutofillGroup(
+              child: Form(
               key: _formKey,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -227,6 +236,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   ),
                 ],
               ),
+            ),
             ),
           ),
         ),

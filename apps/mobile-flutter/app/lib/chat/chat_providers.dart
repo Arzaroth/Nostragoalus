@@ -222,10 +222,13 @@ final leagueChatProvider =
       key: keys[epoch]);
 });
 
+/// [messages] arrives NEWEST first - both chat routes document that, and page
+/// backwards with `before=`. The rest of the app wants send order, so it is
+/// flipped here once rather than at each render site.
 List<ChatLine> _decryptLines(
     SodiumSumo sodium, List<Message> messages, Map<int, SecureKey> keys) {
   final lines = <ChatLine>[];
-  for (final m in messages) {
+  for (final m in messages.reversed) {
     final k = keys[m.epoch.toInt()];
     String? text;
     if (k != null) {

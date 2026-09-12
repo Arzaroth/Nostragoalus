@@ -90,13 +90,15 @@ void main() {
             : <Map<String, Object?>>[],
       };
 
-  Map<String, Object?> message(String id, String ciphertext, {int epoch = 1}) => {
+  Map<String, Object?> message(String id, String ciphertext,
+          {int epoch = 1, String createdAt = '2026-07-21T10:00:00.000Z'}) =>
+      {
         'id': id,
         'leagueId': 'l1',
         'userId': 'them',
         'ciphertext': ciphertext,
         'epoch': epoch,
-        'createdAt': '2026-07-21T10:00:00.000Z',
+        'createdAt': createdAt,
         'authorName': 'Them',
         'authorImage': null,
         'moderation': 'VISIBLE',
@@ -251,17 +253,24 @@ void main() {
       final key = e2ee.generateGroupKey(sodium);
       final b = build({
         '/api/leagues/l1/chat': () => Reply(200, status(me, groupKey: key)),
+        // The route answers NEWEST first (it pages backwards with `before=`),
+        // so this is the newer message on top.
         '/api/leagues/l1/chat/messages': () => Reply(200, {
               'messages': [
-                message('m1', e2ee.encryptMessage(sodium, 'hello', key)),
-                message('m2', 'not-a-ciphertext'),
+                message('m1', e2ee.encryptMessage(sodium, 'hello', key),
+                    createdAt: '2026-07-21T10:05:00.000Z'),
+                message('m2', 'not-a-ciphertext',
+                    createdAt: '2026-07-21T10:00:00.000Z'),
               ]
             }),
       }, identity: me);
 
       final view = await b.c.read(leagueChatProvider('l1').future);
       expect(view.state, ChatState.ready);
-      expect(view.lines.map((l) => l.text), ['hello', null]);
+      // Send order, oldest first: the reversed ListView renders item 0 at the
+      // bottom, so leaving the wire order here put the newest message at the TOP.
+      expect(view.lines.map((l) => l.text), [null, 'hello']);
+      expect(view.lines.map((l) => l.id), ['m2', 'm1']);
       expect(view.lines.first.authorName, 'Them');
     });
 
