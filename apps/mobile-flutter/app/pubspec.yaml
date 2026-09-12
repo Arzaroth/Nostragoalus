@@ -12,7 +12,7 @@ publish_to: none
 # is an uninstall, which throws away the E2EE chat identity in the keystore. The
 # last site-numbered publish was 4.10.0, and the old scheme derived the code as
 # major*10000 + minor*100 + patch, so the bar to clear is 41000.
-version: 1.0.0+41001
+version: 1.0.1+41002
 
 environment:
   sdk: ^3.5.0
