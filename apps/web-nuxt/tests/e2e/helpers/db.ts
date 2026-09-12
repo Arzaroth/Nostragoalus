@@ -360,6 +360,16 @@ export async function seedLeagueMember(leagueId: string, userId: string, role = 
   await db().query(`insert into league_member (league_id, user_id, role) values ($1, $2, $3)`, [leagueId, userId, role])
 }
 
+// An evergreen invite link (no expiry, no use cap) for the invite-landing spec.
+export async function seedLeagueInvite(leagueId: string): Promise<string> {
+  const token = `e2e-inv-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`
+  await db().query(`insert into league_invite (id, league_id, token) values (gen_random_uuid(), $1, $2)`, [
+    leagueId,
+    token,
+  ])
+  return token
+}
+
 // A named private league with chat already switched on, so it shows up in the
 // chat dock's league switcher. No group key is seeded: the specs using this only
 // drive the dock chrome, never the message stream.
