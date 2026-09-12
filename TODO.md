@@ -1122,8 +1122,39 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
 - [ ] TEAM_NAME_ALIASES is in-code; a DB alias table (or an admin override to
       pin a match's event ref) would fix unmatchable names without a deploy.
 - [ ] Extract the provider JSON envelope (rate limit + status mapping + json)
-      shared by fifa/uefa/alltime-h2h/sofascore - sofascore is the 4th copy,
-      now with extra knobs (403=rate-limit, 404 sentinel, parse-challenge).
+      shared by fifa/uefa/alltime-h2h/sofascore/espn - espn is the 5th copy,
+      now with extra knobs (403=rate-limit, 404 sentinel, parse-challenge,
+      abort timeout).
+- [ ] No route or seed can point a competition at a provider: `provider` is
+      free text on `competition`, and the only writer is the hardcoded
+      `DEFAULT_COMPETITIONS` seed (fifa/uefa) in `competitions/store.ts`. The
+      ESPN adapter is therefore dormant - reachable only by editing Postgres by
+      hand. Either seed a competition that uses it or add an admin competition
+      editor; whichever lands needs the e2e spec the gate asks for, and only
+      then is ESPN worth a CHANGELOG entry (one was written and withdrawn in the
+      ESPN pass for exactly this reason).
+- [ ] ESPN cannot sync a competition without groups (a domestic league). Group
+      rounds need a matchday, `assignGroupMatchdays` derives it from the group
+      letter, and a league has none - so its fixtures would get no matchday and
+      be dropped at insert by the `findRoundId` IS NULL lookup. Needs either a
+      matchday source for leagues (ESPN publishes none on the scoreboard) or a
+      league-shaped round model. Until then the ESPN adapter is
+      group-and-knockout only, whatever ESPN's league coverage offers.
+- [ ] The `matchday ?? 1` in `ensureRounds` vs the `IS NULL` lookup in
+      `findRoundId` (sync/rounds.ts) disagree, so a GROUP match arriving with a
+      null matchday is counted in `skipped` and the sync still reports success.
+      That silence is what hid the ESPN group stage going missing. Make the
+      mismatch loud (or make the two agree) so the next provider does not pay
+      for it.
+- [ ] ESPN implements no optional provider method (`getMatchDetail`,
+      `getBracket`, `getTopScorers`, `getMatchTimeline`, lineups, per-team
+      stats). Each needs a per-match `summary` call and the polling budget that
+      implies - decide per competition that needs one.
+- [ ] `kickoffTime: ?? ''` in uefa.ts has the same shape the ESPN pass removed:
+      an undated event becomes an Invalid Date in `upsertMatches`, which throws
+      inside the match loop and abandons every match after it in that batch.
+      Either drop undated events in uefa.ts too, or make the upsert loop skip a
+      bad row rather than abort the run.
 - [ ] normalizeTeamName (odds matcher) vs searchable() (app/utils/format)
       duplicate diacritic folding with diverging special cases.
 - [ ] RateLimiter.acquire is check-then-sleep; concurrent callers can fire
