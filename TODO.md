@@ -755,7 +755,7 @@ landed alongside it (verified by running the stack):
       deploy, before any `fixtures:import`) is usable straight away. `global-setup`
       also seeds one directly (`seedDefaultScoringConfig` in `tests/e2e/helpers/db.ts`)
       as belt-and-braces, since the boot hook swallows its own errors.
-- [ ] **Test-side seed can theoretically race the boot seed**: `seedDefaultScoringConfig`
+- [x] **Test-side seed can theoretically race the boot seed**: `seedDefaultScoringConfig`
       (`helpers/db.ts`) is an unguarded `insert ... where not exists` with no
       try/catch, and `global-setup` does not wrap the call. If it ran concurrently
       with the app boot hook's `ensureDefaultScoringConfig`, the loser would violate
@@ -770,20 +770,25 @@ landed alongside it (verified by running the stack):
       racing the off-by-default flag and the HMR first-compile. `signUp`/`signIn`
       also navigate off `/verify-email` / `/login` themselves when the app's
       post-auth client redirect races under the dev server.
-- [ ] **Keycloak readiness is only ordering-dependent**: the SSO spec passes
+- [x] **Keycloak readiness is only ordering-dependent**: the SSO spec passes
       because it runs last (KC has ~1.5 min to import its realm by then), but
       nothing explicitly waits on the issuer's `.well-known/openid-configuration`.
       `e2e-up` starts Keycloak with `up -d` (returns immediately) and KC
       `start-dev --import-realm` takes ~30-60s, so a cold/slow machine could fire
       the provider-registration POST before the IdP discovery doc is up. Add a poll
       on `.well-known/openid-configuration` before registering if it ever flakes.
-- [ ] **e2e helpers default to the dev stack when `E2E_*` is unset**: `helpers/db.ts`
+      DONE, but not by polling the issuer: E2E_KC_ISSUER is the docker-internal
+      `keycloak:8080`, which the Playwright process on the host cannot resolve.
+      `helpers/sso.ts` retries `test-connection` through the app instead - the app
+      can reach Keycloak, and that call is the one that fetches the discovery
+      document, so the retry both waits for readiness and does the step.
+- [x] **e2e helpers default to the dev stack when `E2E_*` is unset**: `helpers/db.ts`
       / maildev / APP fall back to :5432/:1080/:3000. Mitigated by
       `playwright.config.ts` loading `.env.e2e` and by fully namespaced cleanup (no
       catastrophic wipe), but importing the helpers outside Playwright would
       seed/delete `e2e-cup` in the dev DB. Make the helpers refuse to run without
       an explicit e2e target.
-- [ ] **`rewards.e2e.ts` "markdown description renders for viewers" is flaky/red**:
+- [x] **`rewards.e2e.ts` "markdown description renders for viewers" is flaky/red**:
       the spec clicks the SSR-rendered "Add a description" button without the
       `expect(...).toPass()` interactivity gate the other specs use, so it fails
       `toBeVisible()`/click before hydration wires the handler (seen red on the

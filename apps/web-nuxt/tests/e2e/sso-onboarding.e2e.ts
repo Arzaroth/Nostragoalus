@@ -1,6 +1,7 @@
 import { test, expect, request, type APIRequestContext } from '@playwright/test'
 import { ADMIN } from './helpers/auth'
 import { closeDb, deleteUserByEmail, getUserByEmail, verifySsoDomain } from './helpers/db'
+import { testConnectionWhenReady } from './helpers/sso'
 
 // Exercises the onboarding lifecycle gate, the login resolver, and SCIM
 // provisioning/deprovisioning over real HTTP against the dockerized stack +
@@ -68,6 +69,7 @@ test('enable is gated on a passing test + verified domain, and disabling hides t
   expect(noTest.status()).toBe(409)
 
   // Connection test passes against Keycloak.
+  await testConnectionWhenReady(admin, PROVIDER_ID)
   const tc = await admin.post(`/api/admin/sso/${PROVIDER_ID}/test-connection`)
   expect(tc.ok()).toBeTruthy()
   expect(((await tc.json()) as { ok: boolean }).ok).toBe(true)

@@ -5,15 +5,30 @@ import { Pool } from 'pg'
 // (its own competition + a future-kickoff match) rather than the live WC data.
 // Self-contained raw SQL (no drizzle/#shared imports, which Playwright's runner
 // can't resolve) against the running dev Postgres.
-const CONNECTION =
-  process.env.E2E_DATABASE_URL ?? 'postgres://nostragoalus:nostragoalus@localhost:5432/nostragoalus'
+// Required, not defaulted. These helpers seed and DELETE namespaced rows
+// (`cleanup()` drops the e2e competition and everything under it), and the old
+// fallback pointed at :5432 - the shared dev database, not the e2e stack's
+// :5433. Under Playwright the variable always arrives via `.env.e2e`; anything
+// importing these helpers outside it (a scratch script, a unit test, an editor
+// task runner) would silently have been writing to dev data.
+function requireE2eTarget(): string {
+  const url = process.env.E2E_DATABASE_URL
+  if (!url) {
+    throw new Error(
+      'E2E_DATABASE_URL is not set. The e2e db helpers seed and delete rows, and will not '
+      + 'guess a target - the old default was the shared dev database. Run through Playwright '
+      + '(which loads .env.e2e) or set it explicitly.',
+    )
+  }
+  return url
+}
 
 export const E2E_SLUG = 'e2e-cup'
 export const E2E_BRACKET_SLUG = 'e2e-bracket'
 
 let pool: Pool | null = null
 function db(): Pool {
-  if (!pool) pool = new Pool({ connectionString: CONNECTION })
+  if (!pool) pool = new Pool({ connectionString: requireE2eTarget() })
   return pool
 }
 
@@ -31,6 +46,7 @@ export async function seedDefaultScoringConfig(): Promise<void> {
     insert into scoring_config (id, version, is_active, competition_id, bonus_source, crowd_tiers)
     select gen_random_uuid(), 1, true, null, 'NONE', '[]'::jsonb
     where not exists (select 1 from scoring_config where competition_id is null and is_active = true)
+    on conflict do nothing
   `)
 }
 

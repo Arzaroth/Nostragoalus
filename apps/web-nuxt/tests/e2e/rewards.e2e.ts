@@ -136,10 +136,16 @@ test('a league owner writes a markdown description that renders for viewers', as
   }).toPass({ timeout: 30_000 })
   await dismissOnboarding(page)
 
+  // SSR-rendered, so the button exists before hydration wires its handler:
+  // clicking on visibility alone races the first compile and fails to open the
+  // dialog. Retry until the editor it opens is actually there, the way
+  // roadmap.e2e.ts and sessions.e2e.ts gate their first interaction.
   const addDesc = page.getByRole('button', { name: 'Add a description' })
-  await expect(addDesc).toBeVisible()
-  await addDesc.click()
   const editor = page.getByRole('textbox', { name: 'About this league' })
+  await expect(async () => {
+    await addDesc.click()
+    await expect(editor).toBeVisible({ timeout: 2_000 })
+  }).toPass({ timeout: 20_000 })
   await editor.fill('## House rules\n\nBe **nice** to each other.')
   // The dialog footer Save (common.save), not the prizes "Save prizes".
   await page.getByRole('dialog').getByRole('button', { name: 'Save', exact: true }).click()

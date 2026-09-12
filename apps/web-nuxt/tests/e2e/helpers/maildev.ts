@@ -1,6 +1,15 @@
 // Read mail out of the maildev catcher the dev/preview stack already runs
 // (NUXT_SMTP_URL=smtp://maildev:1025, HTTP inbox on :1080).
-const MAILDEV = process.env.E2E_MAILDEV_URL ?? 'http://localhost:1080'
+// Required for the same reason as E2E_DATABASE_URL: the old default was the
+// dev stack's inbox on :1080, not the e2e stack's :1081, and these helpers
+// delete messages.
+const MAILDEV = (() => {
+  const url = process.env.E2E_MAILDEV_URL
+  if (!url) {
+    throw new Error('E2E_MAILDEV_URL is not set; the e2e mail helpers will not fall back to the dev inbox.')
+  }
+  return url
+})()
 
 interface Mail {
   id: string

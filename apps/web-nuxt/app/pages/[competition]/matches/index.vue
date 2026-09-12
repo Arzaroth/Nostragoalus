@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useHotkey } from '@tanstack/vue-hotkeys'
-import { IN_PLAY_STATUSES } from '#shared/types/match'
+import { IN_PLAY_STATUSES, matchIsInPlay } from '#shared/types/match'
 const { t, locale } = useI18n()
 useHead({ title: t('nav.matches') })
 const { enabled: crowdEnabled, totals: crowdTotals, leagueTotals, leagueActive } = useCrowdTotals()
@@ -739,7 +739,7 @@ watch(searchOpen, () => nextTick(updateListHeight))
                   <span v-if="pensResult(m)" class="block text-[10px] font-normal leading-tight" style="color: var(--p-text-muted-color)">{{ pensResult(m) }} {{ t('match.pens') }}</span>
                 </div>
                 <div v-else class="text-sm" style="color: var(--p-text-muted-color)">vs</div>
-                <div v-if="m.status === 'LIVE' || m.status === 'PAUSED'" class="flex items-center justify-center gap-1 text-[10px] font-bold" style="color: var(--ng-danger)">
+                <div v-if="matchIsInPlay(m.status)" class="flex items-center justify-center gap-1 text-[10px] font-bold" style="color: var(--ng-danger)">
                   <span class="w-1.5 h-1.5 rounded-full animate-pulse" style="background: var(--ng-danger)" />LIVE
                 </div>
               </div>

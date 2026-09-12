@@ -1,6 +1,7 @@
 import { test, expect, request, type APIRequestContext } from '@playwright/test'
 import { ADMIN, typeInto } from './helpers/auth'
 import { closeDb, verifySsoDomain } from './helpers/db'
+import { testConnectionWhenReady } from './helpers/sso'
 
 const APP = process.env.E2E_APP_URL ?? 'http://localhost:3000'
 const PROVIDER_ID = 'keycloak-e2e'
@@ -44,8 +45,7 @@ test.beforeAll(async () => {
   if (!res.ok()) throw new Error(`register sso provider failed: ${res.status()} ${await res.text()}`)
   // Onboarding gate: a provider lands as a draft and is only offered for login
   // once it passes a connection test AND its domain is verified, then is enabled.
-  const tc = await admin.post(`/api/admin/sso/${PROVIDER_ID}/test-connection`)
-  if (!tc.ok()) throw new Error(`sso test-connection failed: ${tc.status()} ${await tc.text()}`)
+  await testConnectionWhenReady(admin, PROVIDER_ID)
   // sso/check only routes a *verified* domain to its provider.
   await verifySsoDomain(PROVIDER_ID)
   const enable = await admin.put(`/api/admin/sso/${PROVIDER_ID}/status`, { data: { status: 'enabled' } })
