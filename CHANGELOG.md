@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [4.11.1] - 2026-09-12
+
 ### Fixed
 
 - Android app: an @-mention in chat showed a raw user id instead of the person's name, and mentions sent from the app were written as a plain name, so the website could not show them as mentions at all. Both clients now write and read the same thing, and a mention follows a rename.
