@@ -64,6 +64,15 @@ settings tells it that it is current forever, because `1.0.0` is not newer than
 `4.10.0`. Whoever runs one has to come back to the download page by hand. Four
 builds were ever published on the old line (4.7.0 through 4.10.0).
 
+The mirror of that inversion sets the deploy ORDER: **the server ships first,
+then the APK.** A server still running a release whose floor is 4.8.0 refuses
+`android/1.0.0` outright, because 1.0.0 compares older, and a 426 is not a
+degradation - it replaces the whole app with the update screen, so nothing loads
+and the only way out is another publish. `apk-publish` therefore asks the live
+`$api_base` with the exact header the build will send and refuses to build at all
+on a 426. That is the one ordering rule the split introduced; before it, the APK
+and the server were cut from the same number and could not disagree.
+
 A sideloaded APK never auto-updates, which is the whole problem: an install from
 any past release can still be talking to today's server. Two things address that,
 and neither is a compatibility matrix - there is one server, and the APK is

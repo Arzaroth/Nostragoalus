@@ -183,7 +183,20 @@ esac
 case "$code" in
   ''|*[!0-9]*) echo "apk-publish: pubspec build number '$code' is not an integer" >&2; exit 1 ;;
 esac
-echo "apk-publish: app $version (versionCode $code)" 
+echo "apk-publish: app $version (versionCode $code)"
+# The floor the LIVE server holds, asked with the header this build will send.
+# A published APK the server refuses is a brick rather than a degradation - the
+# 426 replaces the whole app with the update screen, so nothing loads and the
+# only way out is another publish. It is reachable whenever the app's version
+# line moves independently of the site's: the app restarted at 1.0.0, which
+# compares OLDER than any 4.x floor a not-yet-deployed server is still holding.
+# So the server ships first, then the APK. Asked before the build, not after the
+# upload, because a 90 MB round trip to learn this is a poor way to find out.
+probe=$(curl -s --max-time 15 -o /dev/null -w '%{http_code}' -H "x-ng-client: android/$version" "$api_base/api/competitions") || probe=000
+case "$probe" in
+  426) echo "apk-publish: $api_base refuses android/$version (426). Deploy the server carrying this app version's floor first, then publish." >&2; exit 1 ;;
+  000) echo "apk-publish: could not reach $api_base to check the client floor" >&2; exit 1 ;;
+esac
 flutter build apk --release --dart-define=API_BASE="$api_base" --dart-define=WEB_BASE="$web_base" --dart-define=APP_VERSION="$version" --build-name="$version" --build-number="$code"
 apk=build/app/outputs/flutter-apk/app-release.apk
 name="nostragoalus-$version.apk"
