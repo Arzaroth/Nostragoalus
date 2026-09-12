@@ -48,6 +48,9 @@ export default defineConfig(async () => ({
           name: 'nuxt',
           environment: 'nuxt',
           include: ['app/**/*.nuxt.test.ts'],
+          // Drains PrimeVue's deferred tooltip removal before teardown - see
+          // tests/setup-nuxt.ts for why that is a release-blocking flake.
+          setupFiles: ['./tests/setup-nuxt.ts'],
         },
       }),
     ],

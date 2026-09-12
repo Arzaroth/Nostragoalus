@@ -286,6 +286,18 @@ export function buildAuthOptions(database: AuthDb) {
       // Additive - the web app keeps using cookie sessions.
       bearer(),
       sso({
+        // DO NOT set `redirectURI` here without first gating the bare
+        // /api/auth/sso/callback route. @better-auth/sso registers that path in
+        // addition to the per-provider one, and it resolves the provider from
+        // the OAuth state rather than the URL - so SSO_CALLBACK_PREFIXES in
+        // server/utils/auth/sso-guard-paths.ts cannot match it and the
+        // draft/disabled-provider gate never fires there. The plugin only puts
+        // ssoProviderId into the state when this option is set, which is the
+        // single reason the bare route is inert today. Setting it (the
+        // documented way to share one callback URL across IdPs) would silently
+        // re-open sign-in for a draft provider, with no failing test.
+        // tests/sso-bare-callback.test.ts asserts this stays unset.
+        //
         // @better-auth/sso 1.6.x hardcodes trustProviderByName:false, so our
         // accountLinking.trustedProviders list no longer drives SSO link-trust;
         // trust now comes from a per-provider `domainVerified` flag + an email

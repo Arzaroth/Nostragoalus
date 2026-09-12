@@ -55,12 +55,20 @@ export default defineNuxtConfig({
       if (!process.env.VITEST) return
       nuxt.hook('app:templates', (app) => {
         const template = app.templates.find(t => t.filename === 'fetch.mjs')
-        if (template) {
-          template.getContents = () => 'export const $fetch = new Proxy(function () {}, {\n'
-            + '  apply: (_t, _thisArg, args) => globalThis.$fetch(...args),\n'
-            + '  get: (_t, prop) => globalThis.$fetch[prop],\n'
-            + '})\n'
+        // Throw rather than skip: if Nuxt renames this template the override
+        // silently stops applying, and the component tests that stub $fetch go
+        // on passing while no longer testing the stub. A loud failure here is
+        // the only thing that distinguishes the two.
+        if (!template) {
+          throw new Error(
+            'nuxt.config: no `fetch.mjs` app template to override under VITEST. '
+            + 'Nuxt probably renamed it - the $fetch stub in component tests is not being applied.',
+          )
         }
+        template.getContents = () => 'export const $fetch = new Proxy(function () {}, {\n'
+          + '  apply: (_t, _thisArg, args) => globalThis.$fetch(...args),\n'
+          + '  get: (_t, prop) => globalThis.$fetch[prop],\n'
+          + '})\n'
       })
     },
   ],

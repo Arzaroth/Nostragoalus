@@ -105,3 +105,27 @@ describe('storeAvatarFromDataUrl', () => {
     await expect(storeAvatarFromDataUrl(fakeDriver().d, `data:image/jpeg;base64,${big}`)).rejects.toBeInstanceOf(ValidationError)
   })
 })
+
+describe('fetchAvatarDataUrl enforces the allow-list itself', () => {
+  // The pairing with isUnusableAvatarUrl used to live only at an uncovered lib/
+  // call site, so a future caller that forgot it would turn this into a
+  // server-side fetch primitive carrying the user's OAuth bearer.
+  it('refuses a host outside the allow-list without making a request', async () => {
+    const fetchImpl = vi.fn()
+    expect(await fetchAvatarDataUrl('https://evil.example/photo/$value', 'tok', fetchImpl as never)).toBeNull()
+    expect(fetchImpl).not.toHaveBeenCalled()
+  })
+
+  it('refuses an allowed host on a different path', async () => {
+    const fetchImpl = vi.fn()
+    expect(await fetchAvatarDataUrl('https://graph.microsoft.com/v1.0/me/messages', 'tok', fetchImpl as never)).toBeNull()
+    expect(fetchImpl).not.toHaveBeenCalled()
+  })
+
+  it('refuses plain http and a non-URL', async () => {
+    const fetchImpl = vi.fn()
+    expect(await fetchAvatarDataUrl('http://graph.microsoft.com/v1.0/me/photo/$value', 'tok', fetchImpl as never)).toBeNull()
+    expect(await fetchAvatarDataUrl('not a url', 'tok', fetchImpl as never)).toBeNull()
+    expect(fetchImpl).not.toHaveBeenCalled()
+  })
+})

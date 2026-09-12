@@ -40,6 +40,13 @@ export async function fetchAvatarDataUrl(
   accessToken: string,
   fetchImpl: typeof fetch = fetch,
 ): Promise<string | null> {
+  // Re-checked here, not only at the call site. This function is the one that
+  // puts the user's OAuth bearer on an outbound request, and `user.image` is
+  // client-writable, so pairing it with isUnusableAvatarUrl() somewhere else
+  // makes the allow-list a convention rather than a property: any future caller
+  // that forgets the check turns this into a server-side request primitive
+  // against everything that token can reach. The only cost is one URL parse.
+  if (!isUnusableAvatarUrl(url)) return null
   try {
     const res = await fetchImpl(thumbnailUrl(url), { headers: { authorization: `Bearer ${accessToken}` } })
     if (!res.ok) return null
