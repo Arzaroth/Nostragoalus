@@ -46,16 +46,23 @@ Flutter's `name+code`. `apk-publish` reads both from there - the name becomes th
 `versionCode`. `apps/web-nuxt/package.json` is the SITE's version and no longer
 touches the app.
 
-They were one line until 4.10.0, which meant a site-only release minted an APK
+They were one line through 4.10.0, which meant a site-only release minted an APK
 whose app-side changes were nil, and every release told half its audience about
-work it had not done. The name restarted at 1.0.0 when they split; the code did
-NOT, because 40900 was already installed and Android refuses a lower code - an
-installed build could then only move forward by uninstalling, which throws away
-the E2EE chat identity held in the keystore.
+work it had not done. The NAME restarted at 1.0.0 when they split. The CODE did
+not, and could not: Android orders upgrades by versionCode alone and refuses a
+lower one, so an installed build would then only move forward by uninstalling,
+which throws away the E2EE chat identity held in the keystore. The old scheme
+derived the code as `major*10000 + minor*100 + patch`, so the published 4.10.0
+carries 41000 and the split had to start above it, at 41001. The bar is the
+highest code ever PUBLISHED, not the newest one built - that is the number a
+stranger's phone is holding.
 
 One artifact of the restart: a build from before the split reports 4.x, which
-compares as newer than any 1.x release, so the floor below cannot hold it back.
-Exactly one device ever ran one, and it stops reporting 4.x once it updates.
+compares as newer than any 1.x release. Both escape hatches close for it at
+once - the floor below can never refuse it, and the update check in its own
+settings tells it that it is current forever, because `1.0.0` is not newer than
+`4.10.0`. Whoever runs one has to come back to the download page by hand. Four
+builds were ever published on the old line (4.7.0 through 4.10.0).
 
 A sideloaded APK never auto-updates, which is the whole problem: an install from
 any past release can still be talking to today's server. Two things address that,
@@ -161,12 +168,23 @@ tooltips drifted apart the first time.
 A room's calls are part of its story, so the chat interleaves them: "started a
 call", "call by X, 2:30", "missed call from X", anchored before the first message
 newer than each, the way the web's ChatPanel does. `chat/call_log.dart` holds the
-pure part (the anchoring merge, the duration format the website also uses, and
-the i18n key per status - an unknown status renders nothing rather than an
-invented sentence). Starting a call is the app-bar button on the room;
-`widgets/voice_bar.dart` is call STATE and shows only while a call is running,
-because a bar permanently offering to join was a second call control competing
-with that button, and in a DM both sat on one screen.
+pure part (the anchoring merge and the i18n key per status - an unknown status
+renders nothing rather than an invented sentence); the duration is formatted by
+the same `formatCallDuration` the in-call bar uses, so a call reads the same in
+the timeline as it did on the clock. `callLogProvider` is ONE provider for both
+room kinds keyed on whichever id the room has, matching the web's single
+`useCallLog` factory, and the hub's `voice:log` frame invalidates it: without
+that the lines are a snapshot taken when the room opened, so the missed call the
+feature exists for is invisible until you leave and come back.
+
+Starting a call is `widgets/voice_actions.dart` in the app bar - one button for
+both room kinds, joining a league room quietly and ringing the other party in a
+DM, and hidden while this room's call is up. `widgets/voice_bar.dart` is call
+STATE and shows only while a call is running, because a bar permanently offering
+to join was a second call control competing with that button, and in a DM both
+sat on one screen. Every entry into a call goes through `runVoiceAction`, which
+is what makes a denied microphone say so; the three copies it replaced reported
+the same two failures three ways, one of them with no catch-all at all.
 
 Chat is a tab because mobile has no dock. The web keeps `ChatDock.vue` on every
 page; here `ui/chat_rooms_screen.dart` is the way in - direct messages, badged

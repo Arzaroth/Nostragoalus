@@ -218,17 +218,21 @@ final leagueChatProvider =
   return LeagueChatView(
       state: ChatState.ready,
       epoch: epoch,
-      lines: _decryptLines(sodium, msgs.messages, keys),
+      lines: _decryptLines(sodium, msgs.messages, keys, newestFirst: true),
       key: keys[epoch]);
 });
 
-/// [messages] arrives NEWEST first - both chat routes document that, and page
-/// backwards with `before=`. The rest of the app wants send order, so it is
-/// flipped here once rather than at each render site.
+/// The rest of the app wants send order, so the wire order is normalised here
+/// once rather than at each render site. Which order that is depends on the
+/// caller: a room page comes back NEWEST first (it pages backwards with
+/// `before=`), while the same route in thread mode already reverses server-side
+/// and answers oldest first. Passing it in rather than assuming is what keeps
+/// the two from cancelling out.
 List<ChatLine> _decryptLines(
-    SodiumSumo sodium, List<Message> messages, Map<int, SecureKey> keys) {
+    SodiumSumo sodium, List<Message> messages, Map<int, SecureKey> keys,
+    {required bool newestFirst}) {
   final lines = <ChatLine>[];
-  for (final m in messages.reversed) {
+  for (final m in newestFirst ? messages.reversed : messages) {
     final k = keys[m.epoch.toInt()];
     String? text;
     if (k != null) {
@@ -261,7 +265,7 @@ final leagueThreadProvider =
   if (identity == null) return const [];
   final keys = await ref.watch(leagueEpochKeysProvider(leagueId).future);
   final msgs = await ref.watch(apiProvider).chatMessages(leagueId, thread: threadId);
-  return _decryptLines(sodium, msgs.messages, keys);
+  return _decryptLines(sodium, msgs.messages, keys, newestFirst: false);
 });
 
 /// Encrypt + send a message to the league (optional @-mentions, image, or thread
@@ -380,13 +384,22 @@ final editChatProvider = Provider<Future<void> Function(String, String, String)>
   };
 });
 
-/// A league room's recent calls, for the chat's call lines. autoDispose so
-/// leaving the room drops them; the strip is decoration, and a failure renders
-/// nothing rather than taking the chat down with it.
-final leagueCallLogProvider =
-    FutureProvider.autoDispose.family<List<Call>, String>((ref, leagueId) async {
+/// Which room's calls to read. Exactly one id is set, mirroring how the server
+/// flattens the voice scope onto its `voice:log` frame - so a frame's ids are
+/// the key of the provider it has to invalidate.
+typedef CallLogScope = ({String? leagueId, String? threadId});
+
+/// A room's recent calls, for the chat's call lines. One provider for both room
+/// kinds, as on the web: leaving the two apart is how the league half and the DM
+/// half drift. autoDispose so leaving the room drops them, and a failure renders
+/// no lines rather than taking the chat down with it.
+final callLogProvider =
+    FutureProvider.autoDispose.family<List<Call>, CallLogScope>((ref, scope) async {
   try {
-    return (await ref.watch(apiProvider).voiceCalls(leagueId: leagueId)).calls;
+    final res = await ref
+        .watch(apiProvider)
+        .voiceCalls(leagueId: scope.leagueId, dmThreadId: scope.threadId);
+    return res.calls;
   } catch (_) {
     return const [];
   }

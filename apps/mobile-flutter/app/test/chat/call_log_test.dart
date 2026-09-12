@@ -23,21 +23,6 @@ Call call(
     (id: id, createdAt: createdAt);
 
 void main() {
-  group('formatCallDuration', () {
-    // The same shape the website uses, so one call reads the same on both.
-    test('is m:ss, and h:mm:ss past an hour', () {
-      expect(formatCallDuration(0), '0:00');
-      expect(formatCallDuration(9), '0:09');
-      expect(formatCallDuration(65), '1:05');
-      expect(formatCallDuration(600), '10:00');
-      expect(formatCallDuration(3661), '1:01:01');
-    });
-
-    test('does not render a negative clock', () {
-      expect(formatCallDuration(-5), '0:00');
-    });
-  });
-
   group('callDuration', () {
     test('measures a finished call', () {
       expect(
@@ -139,6 +124,16 @@ void main() {
         [msg('m1', '2026-07-21T11:00:00Z'), msg('m2', '2026-07-21T12:00:00Z')],
       );
       expect(a.before['m2']!.single.id, 'c1');
+    });
+
+    test('walks past a message whose timestamp does not parse', () {
+      final a = anchorCalls([call('c1', startedAt: '2026-07-21T11:00:00Z')], [
+        msg('m1', '2026-07-21T10:00:00Z'),
+        msg('m2', 'nonsense'),
+        msg('m3', '2026-07-21T12:00:00Z'),
+      ]);
+      expect(a.before.keys, ['m3']);
+      expect(a.tail, isEmpty);
     });
 
     test('skips a call whose start time does not parse', () {

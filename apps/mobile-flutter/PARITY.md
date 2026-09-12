@@ -170,9 +170,9 @@ with the data caveat noted per area.
 
 ## Versions & updates
 - [x] The app has its OWN version line (`apps/mobile-flutter/app/pubspec.yaml`,
-  `name+code`), independent of the website's. Restarted at 1.0.0; the build
-  number keeps counting from the site-numbered builds so an installed app
-  upgrades in place
+  `name+code`), independent of the website's. The NAME restarted at 1.0.0; the
+  build code did not - it has to stay above the highest ever published (41000,
+  from the site-numbered 4.10.0) or Android refuses the upgrade in place
 - [x] The build identifies itself (`x-ng-client: android/<version>`, stamped by
   `apk-publish`), and the server answers 426 for a build below
   `MIN_ANDROID_CLIENT`; the app swaps the whole tree for an update screen

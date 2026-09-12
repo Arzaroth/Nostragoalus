@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../chat/chat_providers.dart' show ChatState;
+import '../chat/chat_providers.dart' show ChatState, callLogProvider;
 import '../chat/dm_providers.dart';
 import '../chat/outbox.dart';
 import '../i18n/i18n_scope.dart';
@@ -22,6 +22,7 @@ import 'widgets/chat_message_list.dart';
 import 'widgets/chat_recovery_gate.dart';
 import 'widgets/empty_state.dart';
 import 'widgets/kt_key_badge.dart';
+import 'widgets/voice_actions.dart';
 import 'widgets/voice_bar.dart';
 
 /// The id of the caller's newest own message the other participant has read
@@ -121,17 +122,6 @@ class _DmRoomScreenState extends ConsumerState<DmRoomScreen> {
     if (ok) ref.invalidate(dmRoomProvider(widget.threadId));
   }
 
-  Future<void> _call(String otherId) async {
-    try {
-      await ref.read(voiceServiceProvider).invite(_scope, [otherId]);
-    } on VoiceJoinException catch (e) {
-      if (!mounted) return;
-      showToast(context, context.tr(e.micDenied ? 'voice.error.micDenied' : 'err.serverError'));
-    } catch (e) {
-      if (mounted) showToast(context, apiMessage(context, e));
-    }
-  }
-
   void _send() {
     final text = _input.text.trim();
     if (text.isEmpty) return;
@@ -159,12 +149,7 @@ class _DmRoomScreenState extends ConsumerState<DmRoomScreen> {
           ],
         ),
         actions: [
-          if (otherId.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.call_outlined),
-              tooltip: context.tr('voice.call'),
-              onPressed: () => _call(otherId),
-            ),
+          if (otherId.isNotEmpty) VoiceCallButton(scope: _scope, ring: [otherId]),
         ],
       ),
       bottomNavigationBar: VoiceBar(scope: _scope),
@@ -192,7 +177,11 @@ class _DmRoomScreenState extends ConsumerState<DmRoomScreen> {
                       lines: view.lines,
                       outbox: outbox,
                       calls:
-                          ref.watch(dmCallLogProvider(widget.threadId)).valueOrNull ?? const [],
+                          ref
+                                  .watch(callLogProvider(
+                                      (leagueId: null, threadId: widget.threadId)))
+                                  .valueOrNull ??
+                              const [],
                       reverse: true,
                       emptyMessage: context.tr('chat.empty'),
                       tile: (line) => ChatLineTile(

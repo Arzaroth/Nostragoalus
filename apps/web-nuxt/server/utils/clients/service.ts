@@ -33,9 +33,12 @@ import { compareVersions } from '#shared/version'
 /// by tests rather than by turning anyone away on day one.
 ///
 /// One artifact of the reset: builds from before the split report 4.x, which
-/// compares as NEWER than any 1.x app release, so they are served whatever the
-/// floor says. Only one device ever ran one, and it stops reporting 4.x the
-/// moment it updates.
+/// compares as NEWER than any 1.x app release. That closes BOTH mechanisms for
+/// them at once - this floor can never refuse them, and the update check in
+/// their own settings (isNewerVersion in the app's update/app_update.dart) tells
+/// them they are current forever. A pre-split install is reachable only by
+/// someone going to the download page by hand. The only builds ever published
+/// on the old line were 4.7.0 to 4.10.0.
 export const MIN_ANDROID_CLIENT = '1.0.0'
 
 export const CLIENT_HEADER = 'x-ng-client'

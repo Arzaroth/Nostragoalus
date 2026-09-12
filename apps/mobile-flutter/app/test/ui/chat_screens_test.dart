@@ -273,6 +273,55 @@ void main() {
       expect(chatItems(lines, const [], reverse: true).length, 2);
       expect(chatItems(const [], outbox).length, 2);
     });
+
+    group('with calls interleaved', () {
+      Call call(String id, String startedAt) => Call(
+            id: id,
+            status: CallStatusValue.ended,
+            initiatorId: 'me',
+            initiatorName: 'Me',
+            participantCount: 2,
+            startedAt: startedAt,
+            endedAt: startedAt,
+          );
+
+      final timed = [
+        _line('a', at: '2026-07-01T10:00:00.000Z'),
+        _line('b', at: '2026-07-01T12:00:00.000Z'),
+      ];
+
+      String key(Object e) => switch (e) {
+            ChatLine() => e.id,
+            Call() => 'call:${e.id}',
+            _ => (e as OutboxEntry).localId,
+          };
+
+      test('a call lands above the first message newer than it', () {
+        final items = chatItems(timed, const [],
+            calls: [call('c1', '2026-07-01T11:00:00.000Z')]);
+        expect(items.map(key).toList(), ['a', 'call:c1', 'b']);
+      });
+
+      test('a call newer than every message sits under them, above pending sends', () {
+        final items = chatItems(timed, outbox,
+            calls: [call('c1', '2026-07-01T13:00:00.000Z')]);
+        expect(items.map(key).toList(), ['a', 'b', 'call:c1', 'p1', 'p2']);
+      });
+
+      // Reversed is what the rooms actually render: item 0 is the bottom row, so
+      // the whole timeline has to invert, call lines with it.
+      test('reversed, the call line keeps its place in the timeline', () {
+        final items = chatItems(timed, outbox,
+            reverse: true, calls: [call('c1', '2026-07-01T11:00:00.000Z')]);
+        expect(items.map(key).toList(), ['p2', 'p1', 'b', 'call:c1', 'a']);
+      });
+
+      test('a room with calls and no messages still shows them', () {
+        final items =
+            chatItems(const [], const [], calls: [call('c1', '2026-07-01T11:00:00.000Z')]);
+        expect(items.map(key).toList(), ['call:c1']);
+      });
+    });
   });
 
   group('mentionIdsIn', () {
@@ -317,6 +366,21 @@ void main() {
         otherReadAt: readAt,
       );
       expect(lastSeenOwnMessage(view, 'me'), 'a');
+    });
+
+    // Two own messages, both read: the answer is the NEWEST of them, and lines
+    // arrive oldest first. A first-match loop would return 'a' and look right in
+    // every other case here.
+    test('marks the newest read message, not the first one', () {
+      final view = DmRoomView(
+        state: ChatState.ready,
+        lines: [
+          _line('a', userId: 'me', at: '2026-07-01T10:00:00.000Z'),
+          _line('b', userId: 'me', at: '2026-07-01T11:00:00.000Z'),
+        ],
+        otherReadAt: readAt,
+      );
+      expect(lastSeenOwnMessage(view, 'me'), 'b');
     });
 
     test('ignores own messages sent after the read mark', () {

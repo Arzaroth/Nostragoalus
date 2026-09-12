@@ -288,9 +288,87 @@ void main() {
       expect(lines.single.text, 'in thread');
     });
 
+    // The same route, the opposite wire order: thread mode reverses server-side
+    // and answers oldest first. Reversing here too would cancel that out, and a
+    // single-message fixture cannot tell the two apart - which is how threads
+    // came out backwards the first time.
+    test('a thread keeps the order the server sent, which is oldest first', () async {
+      final me = e2ee.generateIdentity(sodium);
+      final key = e2ee.generateGroupKey(sodium);
+      final b = build({
+        '/api/leagues/l1/chat': () => Reply(200, status(me, groupKey: key)),
+        '/api/leagues/l1/chat/messages': () => Reply(200, {
+              'messages': [
+                message('m1', e2ee.encryptMessage(sodium, 'first', key),
+                    createdAt: '2026-07-21T10:00:00.000Z'),
+                message('m2', e2ee.encryptMessage(sodium, 'second', key),
+                    createdAt: '2026-07-21T10:05:00.000Z'),
+              ]
+            }),
+      }, identity: me);
+
+      final lines = await b.c.read(leagueThreadProvider(('l1', 'root')).future);
+      expect(lines.map((l) => l.id), ['m1', 'm2']);
+      expect(lines.map((l) => l.text), ['first', 'second']);
+    });
+
     test('a thread is empty without an identity', () async {
       final b = build(const {}, noIdentity: true);
       expect(await b.c.read(leagueThreadProvider(('l1', 'root')).future), isEmpty);
+    });
+  });
+
+  group('the call log', () {
+    Map<String, Object?> callRow(String id) => {
+          'id': id,
+          'status': 'ENDED',
+          'initiatorId': 'u1',
+          'initiatorName': 'Ana',
+          'participantCount': 2,
+          'startedAt': '2026-07-21T10:00:00.000Z',
+          'endedAt': '2026-07-21T10:01:00.000Z',
+        };
+
+    test('reads a league room scoped by league id', () async {
+      final b = build({
+        '/api/voice/calls': () => Reply(200, {
+              'calls': [callRow('c1')]
+            }),
+      });
+      final calls =
+          await b.c.read(callLogProvider((leagueId: 'l1', threadId: null)).future);
+      expect(calls.single.id, 'c1');
+      expect(b.adapter.queries['/api/voice/calls'], {'leagueId': 'l1'});
+    });
+
+    test('reads a DM scoped by thread id', () async {
+      final b = build({
+        '/api/voice/calls': () => Reply(200, {'calls': []}),
+      });
+      await b.c.read(callLogProvider((leagueId: null, threadId: 't1')).future);
+      expect(b.adapter.queries['/api/voice/calls'], {'dmThreadId': 't1'});
+    });
+
+    // The strip is decoration. A room the server will not answer for still has
+    // to open and show its messages.
+    test('a refused read renders no lines rather than failing the room', () async {
+      final b = build({
+        '/api/voice/calls': () => Reply(404, {'error': 'not a member'}),
+      });
+      expect(await b.c.read(callLogProvider((leagueId: 'l1', threadId: null)).future),
+          isEmpty);
+    });
+
+    test('a payload that does not match the contract degrades the same way', () async {
+      final b = build({
+        '/api/voice/calls': () => Reply(200, {
+              'calls': [
+                {'id': 'c1'}
+              ]
+            }),
+      });
+      expect(await b.c.read(callLogProvider((leagueId: 'l1', threadId: null)).future),
+          isEmpty);
     });
   });
 

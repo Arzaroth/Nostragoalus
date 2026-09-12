@@ -54,12 +54,17 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     FocusScope.of(context).unfocus();
-    // Tells the platform the pair is complete, which is what makes a password
-    // manager offer to SAVE it. Without it credentials are only ever read.
-    TextInput.finishAutofillContext();
     await ref
         .read(authControllerProvider.notifier)
         .signIn(_email.text.trim(), _password.text);
+    // Closing the context is what makes a password manager offer to SAVE the
+    // pair; without it credentials are only ever read. It happens after the
+    // server has ruled, and saves only what the server accepted - a manager
+    // talked into storing a rejected password overwrites the working one, and
+    // the user is then autofilled into failing every subsequent sign-in.
+    if (!mounted) return;
+    TextInput.finishAutofillContext(
+        shouldSave: ref.read(authControllerProvider).valueOrNull != null);
   }
 
   /// When the email's domain is SSO-managed, offer the provider instead of a

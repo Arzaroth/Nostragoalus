@@ -67,7 +67,11 @@ class ChatMessageList extends StatelessWidget {
         return switch (item) {
           ChatLine() => tile(item),
           Call() => CallLineTile(call: item),
-          _ => OutboxTile(entry: item as OutboxEntry),
+          OutboxEntry() => OutboxTile(entry: item),
+          // A fourth timeline kind (a date separator, an unread divider) would
+          // otherwise reach the blind cast a wildcard leaves here and crash the
+          // list mid-scroll instead of failing at the build.
+          _ => const SizedBox.shrink(),
         };
       },
     );

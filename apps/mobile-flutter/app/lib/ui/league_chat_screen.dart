@@ -284,7 +284,11 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
               ChatState.ready => ChatMessageList(
                   lines: view.lines,
                   outbox: outbox,
-                  calls: ref.watch(leagueCallLogProvider(widget.leagueId)).valueOrNull ?? const [],
+                  calls: ref
+                          .watch(callLogProvider(
+                              (leagueId: widget.leagueId, threadId: null)))
+                          .valueOrNull ??
+                      const [],
                   reverse: true,
                   emptyMessage: context.tr('chat.empty'),
                   tile: (line) => _tile(line, members, selfId),

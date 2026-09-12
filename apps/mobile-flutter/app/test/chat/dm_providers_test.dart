@@ -261,6 +261,31 @@ void main() {
       expect(lines[0].text, isNull, reason: 'corrupt ciphertext');
       expect(lines[1].text, isNull, reason: 'no key for that epoch');
     });
+
+    // The route answers newest first. Fixtures here carry the wire order, so a
+    // test that stopped reversing would have to claim a DM reads backwards.
+    test('reads oldest first, whatever order the wire used', () async {
+      final me = e2ee.generateIdentity(sodium);
+      final key = e2ee.generateGroupKey(sodium);
+      final b = build(
+        {
+          '/api/dm/t1': () => Reply(200, thread('t1', me, groupKey: key)),
+          '/api/dm/t1/messages': () => Reply(200, {
+                'messages': [
+                  message('m2', e2ee.encryptMessage(sodium, 'second', key),
+                      createdAt: '2026-07-21T10:05:00.000Z'),
+                  message('m1', e2ee.encryptMessage(sodium, 'first', key),
+                      createdAt: '2026-07-21T10:00:00.000Z'),
+                ]
+              }),
+        },
+        identity: me,
+        kt: _kt(),
+      );
+      final lines = (await b.c.read(dmRoomProvider('t1').future)).lines;
+      expect(lines.map((l) => l.id), ['m1', 'm2']);
+      expect(lines.map((l) => l.text), ['first', 'second']);
+    });
   });
 
   group('starting a DM', () {

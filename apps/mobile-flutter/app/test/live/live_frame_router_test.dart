@@ -20,6 +20,7 @@ void main() {
       onDmTyping: (thread, who) => calls.add('dmTyping:$thread/$who'),
       onRing: (f) => calls.add('ring:${f['from']}'),
       onRingCancelled: (from) => calls.add('cancelled:$from'),
+      onCallLog: (league, thread) => calls.add('callLog:$league/$thread'),
     );
   });
 
@@ -83,6 +84,14 @@ void main() {
       'from': 'u9',
     });
     expect(calls, ['ring:u9', 'cancelled:u9']);
+  });
+
+  // The server flattens the scope onto the frame - one id set, the other absent
+  // - and the room's call-log read is keyed on exactly that pair.
+  test('voice:log carries whichever room id the scope had', () {
+    router.handle({'type': 'voice:log', 'leagueId': 'l1', 'matchId': null});
+    router.handle({'type': 'voice:log', 'threadId': 't1'});
+    expect(calls, ['callLog:l1/null', 'callLog:null/t1']);
   });
 
   test('unknown and malformed frames are ignored', () {

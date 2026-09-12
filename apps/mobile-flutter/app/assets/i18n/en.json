@@ -1812,7 +1812,6 @@
       }
   },
   "voice": {
-    "join": "Join voice",
     "inCall": "{n} in voice",
     "call": "Call",
     "joinVoice": "Join voice",

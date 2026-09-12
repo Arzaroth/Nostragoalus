@@ -17,6 +17,7 @@ class LiveFrameRouter {
     this.onDmTyping,
     this.onRing,
     this.onRingCancelled,
+    this.onCallLog,
   });
 
   /// Any live score change: the fixtures list is stale.
@@ -41,6 +42,10 @@ class LiveFrameRouter {
   /// An incoming call, and the caller giving up on it.
   final void Function(Map<String, dynamic> frame)? onRing;
   final void Function(String from)? onRingCancelled;
+
+  /// A room's call log changed (opened, closed, or missed). Exactly one of the
+  /// two ids is set, which is how the server flattens the scope.
+  final void Function(String? leagueId, String? threadId)? onCallLog;
 
   void handle(LiveFrame frame) {
     switch (frame['type']) {
@@ -83,6 +88,10 @@ class LiveFrameRouter {
       case 'voice:cancelled':
         final from = frame['from'];
         if (from is String) onRingCancelled?.call(from);
+      case 'voice:log':
+        final league = frame['leagueId'];
+        final thread = frame['threadId'];
+        onCallLog?.call(league is String ? league : null, thread is String ? thread : null);
     }
   }
 }

@@ -9,6 +9,7 @@ import '../live/live_frame_router.dart';
 import '../live/live_service.dart';
 import '../state/providers.dart';
 import '../voice/voice_service.dart';
+import '../chat/chat_providers.dart';
 import '../chat/dm_providers.dart';
 import 'account_screen.dart';
 import 'chat_rooms_screen.dart';
@@ -18,6 +19,7 @@ import 'matches_screen.dart';
 import 'onboarding_tour.dart';
 import 'standings_screen.dart';
 import 'widgets/app_nav_bar.dart';
+import 'widgets/voice_actions.dart';
 
 /// How long an unanswered incoming ring stays on screen (matches the web's
 /// RING_TIMEOUT_MS).
@@ -124,6 +126,11 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     onRingCancelled: (from) {
       if (_ringFrom == from) _dismissRing();
     },
+    // Without this the call lines in a room are a snapshot taken when it opened:
+    // a call that starts, ends or is missed while you are reading never appears,
+    // and an ongoing line never resolves to its duration.
+    onCallLog: (leagueId, threadId) =>
+        ref.invalidate(callLogProvider((leagueId: leagueId, threadId: threadId))),
   );
 
   // One map for both rooms: the key is `<room>|<userId>`, where a room is a
@@ -240,16 +247,7 @@ class _HomeShellState extends ConsumerState<HomeShell> {
     _ringTimer = null;
   }
 
-  Future<void> _accept(VoiceScope scope) async {
-    try {
-      await ref.read(voiceServiceProvider).join(scope);
-    } on VoiceJoinException catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(context.tr(e.micDenied ? 'voice.error.micDenied' : 'err.serverError')),
-      ));
-    }
-  }
+  Future<void> _accept(VoiceScope scope) => joinVoice(context, ref, scope);
 
   static const _liveStatuses = {StatusValue.live, StatusValue.paused};
 

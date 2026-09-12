@@ -1,21 +1,13 @@
 import '../api/models.gen.dart';
+import '../voice/voice_mesh.dart';
 
 /// Call lines for a chat room, interleaved into the message timeline the way the
 /// web's ChatPanel does: a room's calls are part of its story, and a chat that
 /// shows only the messages loses "you called and I missed it" entirely.
 
-/// Seconds rendered the way the web renders them (`m:ss`, or `h:mm:ss` past an
-/// hour) so the same call reads the same on both clients.
-String formatCallDuration(int totalSeconds) {
-  final secs = totalSeconds < 0 ? 0 : totalSeconds;
-  final h = secs ~/ 3600;
-  final m = (secs % 3600) ~/ 60;
-  final s = secs % 60;
-  final ss = s.toString().padLeft(2, '0');
-  return h > 0 ? '$h:${m.toString().padLeft(2, '0')}:$ss' : '$m:$ss';
-}
-
-/// How long the call ran, or null while it is still running.
+/// How long the call ran, or null while it is still running. Rendered by the
+/// same [formatCallDuration] the in-call bar uses, so a call reads the same in
+/// the timeline as it did on the clock.
 String? callDuration(Call call) {
   final ended = DateTime.tryParse(call.endedAt ?? '');
   final started = DateTime.tryParse(call.startedAt);
@@ -56,6 +48,10 @@ String? callDuration(Call call) {
   for (final c in calls) {
     final started = DateTime.tryParse(c.startedAt)?.millisecondsSinceEpoch;
     if (started == null) continue;
+    // A message whose timestamp does not parse cannot anchor anything, so it
+    // sorts as the oldest thing there is and the scan walks straight past it -
+    // the calls around it still land on either side of the messages that DO
+    // place, rather than piling up behind an unreadable one.
     while (i < messages.length &&
         (DateTime.tryParse(messages[i].createdAt)?.millisecondsSinceEpoch ?? 0) <= started) {
       i += 1;

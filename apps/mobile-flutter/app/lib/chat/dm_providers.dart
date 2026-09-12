@@ -87,7 +87,8 @@ final dmRoomProvider = FutureProvider.family<DmRoomView, String>((ref, threadId)
 
   final msgs = await api.dmMessages(threadId);
   final lines = <ChatLine>[];
-  // Newest first off the wire (see the route docs); send order from here on.
+  // Newest first off the wire (see the route docs; the DM route has no thread
+  // mode, so unlike the league one it is always this order); send order below.
   for (final m in msgs.messages.reversed) {
     final k = keys[m.epoch.toInt()];
     String? text;
@@ -198,12 +199,3 @@ final dmAttachmentProvider =
   }
 });
 
-/// The same for a DM thread. See [leagueCallLogProvider].
-final dmCallLogProvider =
-    FutureProvider.autoDispose.family<List<Call>, String>((ref, threadId) async {
-  try {
-    return (await ref.watch(apiProvider).voiceCalls(dmThreadId: threadId)).calls;
-  } catch (_) {
-    return const [];
-  }
-});
