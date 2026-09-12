@@ -271,4 +271,66 @@ describe('AdminCompetitionsSection error paths', () => {
     await vi.waitFor(() => expect(w.text()).toContain('FIFA World Cup 2026'))
     expect(w.text()).toContain('Pick a different default competition first.')
   })
+
+  describe('a provider that splits its catalog', () => {
+    // World Rugby carries men's / women's / age-grade union and sevens as
+    // separate catalogs, so the provider alone does not identify a feed.
+    beforeEach(() => {
+      fetchMock.mockImplementation(async (url: string, opts?: Opts) => {
+        if (url === '/api/admin/competitions/discover') return CATALOG
+        if (url === '/api/admin/competitions/probe') return GOOD_PROBE
+        if (url === '/api/admin/competitions' && opts?.method === 'POST') {
+          return { ...LIST.competitions[0], slug: opts.body!.slug }
+        }
+        return { ...LIST, discoverableProviders: ['espn', 'worldrugby'] }
+      })
+    })
+
+    it('offers no sub-feed picker for a single-feed provider', async () => {
+      const w = await setup(true)
+      await vi.waitFor(() => expect(w.text()).toContain('FIFA World Cup 2026'))
+      await buttonWith(w, 'Add a competition').trigger('click')
+      expect(w.text()).not.toContain('Sub-feed')
+    })
+
+    it('picks up the sub-feed and carries it through discover, probe and create', async () => {
+      const w = await setup(true)
+      await vi.waitFor(() => expect(w.text()).toContain('FIFA World Cup 2026'))
+      await buttonWith(w, 'Add a competition').trigger('click')
+
+      const providerSelect = selects(w).find((s: Found) =>
+        (s.element as HTMLSelectElement).innerHTML.includes('worldrugby'),
+      )!
+      await providerSelect.setValue('worldrugby')
+      await vi.waitFor(() => expect(w.text()).toContain('Sub-feed'))
+
+      await buttonWith(w, 'List what it carries').trigger('click')
+      await vi.waitFor(() =>
+        // Defaulted to the men's union feed rather than left blank, so the
+        // catalog request is never sent without one.
+        expect(fetchMock).toHaveBeenCalledWith('/api/admin/competitions/discover', {
+          params: { provider: 'worldrugby', providerSport: 'mru' },
+        }),
+      )
+
+      // Wait for the catalog to RENDER, not just for its request: catalogSelect
+      // takes the last select on the page, which is the sub-feed picker until
+      // the catalog one exists.
+      await vi.waitFor(() => expect(w.text()).toContain('European Championship'))
+      await catalogSelect(w).setValue('uefa.euro')
+      await buttonWith(w, 'Check it').trigger('click')
+      await vi.waitFor(() => expect(w.text()).toContain('This one works.'))
+      expect(fetchMock).toHaveBeenCalledWith('/api/admin/competitions/probe', {
+        params: { provider: 'worldrugby', externalCompetitionId: 'uefa.euro', providerSport: 'mru', seasonHint: '2028' },
+      })
+
+      await buttonWith(w, 'Add it').trigger('click')
+      await vi.waitFor(() =>
+        expect(fetchMock).toHaveBeenCalledWith('/api/admin/competitions', {
+          method: 'POST',
+          body: expect.objectContaining({ provider: 'worldrugby', providerSport: 'mru' }),
+        }),
+      )
+    })
+  })
 })

@@ -1135,6 +1135,7 @@
       "colCompetition": "Competition",
       "colSource": "Source",
       "colProvider": "Provider",
+      "colSubFeed": "Sub-feed",
       "archived": "archived",
       "isDefault": "default",
       "archive": "Archive",

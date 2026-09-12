@@ -7,7 +7,7 @@ import { ProviderError, ValidationError } from '../errors'
 // and the offline fixture provider has exactly one, so neither implements
 // discovery; football-data can, but its catalog needs a token, so it stays out
 // until someone actually configures one.
-export const DISCOVERABLE_PROVIDERS = ['espn'] as const
+export const DISCOVERABLE_PROVIDERS = ['espn', 'worldrugby'] as const
 export type DiscoverableProvider = (typeof DISCOVERABLE_PROVIDERS)[number]
 
 // ESPN's catalog is ~218 entries and each one costs a request to name, so a
@@ -23,24 +23,31 @@ export function clearDiscoveryCache(): void {
 export interface DiscoveryDeps {
   // Injected so this is testable without a Nitro runtime: the real factory
   // reads useRuntimeConfig() for the keyed providers' credentials.
-  makeProvider?: (provider: string) => MatchDataProvider
+  makeProvider?: (provider: string, providerSport?: string | null) => MatchDataProvider
   now?: () => number
 }
 
 export async function discoverForProvider(
   provider: DiscoverableProvider,
   deps: DiscoveryDeps = {},
+  providerSport?: string | null,
 ): Promise<DiscoveredCompetition[]> {
   const now = deps.now?.()
   // externalCompetitionId is irrelevant to discovery but the factory needs one
   // to build an adapter; any value gives the same catalog.
   const makeProvider =
-    deps.makeProvider ?? ((p: string) => providerForCompetition({ provider: p, externalCompetitionId: '', seasonHint: null }))
+    deps.makeProvider ??
+    ((p: string, sport?: string | null) =>
+      providerForCompetition({ provider: p, externalCompetitionId: '', seasonHint: null, sport }))
 
-  const hit = cache.get(provider, now)
+  // Keyed on the sub-feed too: World Rugby's men's and women's catalogs are
+  // different lists, and caching one under the bare provider would serve the
+  // wrong sport for the whole TTL.
+  const key = providerSport ? `${provider}:${providerSport}` : provider
+  const hit = cache.get(key, now)
   if (hit) return hit
 
-  const adapter = makeProvider(provider)
+  const adapter = makeProvider(provider, providerSport)
   if (!adapter.discoverCompetitions) {
     throw new ValidationError(`provider ${provider} cannot list its competitions`)
   }
@@ -58,6 +65,6 @@ export async function discoverForProvider(
   // A rate-limited or half-failed walk can still resolve, just short. Caching an
   // empty catalog would wedge the admin's screen for the whole TTL with no error
   // and no way to retry.
-  if (found.length > 0) cache.set(provider, found, now)
+  if (found.length > 0) cache.set(key, found, now)
   return found
 }

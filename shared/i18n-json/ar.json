@@ -1308,6 +1308,7 @@
       "colCompetition": "البطولة",
       "colSource": "المصدر",
       "colProvider": "المزوّد",
+      "colSubFeed": "التغذية الفرعية",
       "archived": "مؤرشفة",
       "isDefault": "الافتراضية",
       "archive": "أرشفة",

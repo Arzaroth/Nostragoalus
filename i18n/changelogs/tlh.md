@@ -5,6 +5,10 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### chel
+
+- che'wI': DaH ragh'e' qaD chellaH. World Rugby De' Hal ngeb pagh lo'lu'; ghom, may' Qav je, wej Daq may' je lulaDlu'chu'. 2027 ragh qaD naQ; 16 ghom chu' je tu'lu'. 'ach QIv mI' HIja' 'ej HaSta, DaH nay' rur.
+
 ## [4.12.1] - 2026-09-12
 
 ### tI'pu'

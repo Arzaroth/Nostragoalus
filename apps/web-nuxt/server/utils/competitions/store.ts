@@ -2,6 +2,7 @@ import { eq, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { competition } from '../../../db/schema'
 import { FALLBACK_COMPETITION } from '../../../shared/competition'
+import type { Sport } from '../../../shared/sport'
 import { getAppSetting, setAppSetting } from '../settings/service'
 import { ConflictError, NotFoundError, ValidationError } from '../errors'
 
@@ -139,6 +140,10 @@ export interface NewCompetition {
   provider: string
   externalCompetitionId: string
   seasonHint: string | null
+  sport?: Sport
+  // The provider's sub-feed within the sport, when it splits one: World Rugby
+  // carries men's, women's, age-grade and sevens as separate catalogs.
+  providerSport?: string | null
 }
 
 export async function createCompetition(db: AppDatabase, input: NewCompetition) {
@@ -157,6 +162,8 @@ export async function createCompetition(db: AppDatabase, input: NewCompetition) 
       externalCompetitionId: input.externalCompetitionId,
       externalSeasonId: null,
       seasonHint: input.seasonHint,
+      sport: input.sport ?? 'FOOTBALL',
+      providerSport: input.providerSport ?? null,
       isActive: true,
     })
     .returning()

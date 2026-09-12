@@ -3,6 +3,7 @@ import { db } from '../../../../db'
 import { defineValidatedHandler } from '../../../utils/validated-handler'
 import { addCompetition } from '../../../utils/competitions/service'
 import { MATCH_PROVIDERS } from '../../../utils/providers/factory'
+import { sportForProvider } from '../../../../shared/sport'
 
 const bodySchema = z.object({
   slug: z.string().min(1).max(64),
@@ -10,6 +11,7 @@ const bodySchema = z.object({
   provider: z.enum(MATCH_PROVIDERS),
   externalCompetitionId: z.string().min(1).max(64),
   seasonHint: z.string().min(1).max(16).nullable(),
+  providerSport: z.string().min(1).max(8).nullable().optional(),
 })
 
 const responseSchema = z.object({
@@ -19,11 +21,15 @@ const responseSchema = z.object({
   provider: z.string(),
   externalCompetitionId: z.string(),
   seasonHint: z.string().nullable(),
+  sport: z.string(),
   isActive: z.boolean(),
 })
 
 export default defineValidatedHandler({ admin: true, body: bodySchema, response: responseSchema }, async ({ body }) => {
-  const row = await addCompetition(db, body)
+  // The sport is looked up from the provider rather than accepted from the
+  // client: a provider serves exactly one, so letting it be posted only creates
+  // a way to get it wrong.
+  const row = await addCompetition(db, { ...body, sport: sportForProvider(body.provider) })
   return {
     id: row.id,
     slug: row.slug,
@@ -31,6 +37,7 @@ export default defineValidatedHandler({ admin: true, body: bodySchema, response:
     provider: row.provider,
     externalCompetitionId: row.externalCompetitionId,
     seasonHint: row.seasonHint,
+    sport: row.sport,
     isActive: row.isActive,
   }
 })

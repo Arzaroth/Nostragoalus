@@ -103,6 +103,7 @@ export interface ProbeTarget {
   provider: string
   externalCompetitionId: string
   seasonHint: string | null
+  providerSport?: string | null
 }
 
 export interface ProbeDeps {
@@ -126,7 +127,7 @@ export async function probeCompetition(target: ProbeTarget, deps: ProbeDeps = {}
     deps.makeProvider ??
     ((t: ProbeTarget, seasonId?: string) =>
       providerForCompetition(
-        { provider: t.provider, externalCompetitionId: t.externalCompetitionId, seasonHint: t.seasonHint },
+        { provider: t.provider, externalCompetitionId: t.externalCompetitionId, seasonHint: t.seasonHint, sport: t.providerSport },
         seasonId,
       ))
   const resolveSeason = deps.resolveSeason ?? defaultResolveSeason

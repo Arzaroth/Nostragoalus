@@ -5,6 +5,10 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Ajouté
+
+- Admin : les tournois de rugby peuvent être ajoutés, depuis le flux officiel de World Rugby plutôt que celui d'un tiers. Les poules, les phases finales et la petite finale sont lues correctement, et la Coupe du monde 2027 - y compris ses nouveaux huitièmes - est déjà complète. Le barème et l'habillage du site restent ceux du football : c'est une porte ouverte, pas encore un mode rugby.
+
 ## [4.12.1] - 2026-09-12
 
 ### Corrigé

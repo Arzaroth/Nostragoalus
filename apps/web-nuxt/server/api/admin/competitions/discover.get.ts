@@ -2,7 +2,12 @@ import { z } from 'zod'
 import { defineReadHandler } from '../../../utils/read-handler'
 import { discoverForProvider, DISCOVERABLE_PROVIDERS } from '../../../utils/competitions/discovery'
 
-const querySchema = z.object({ provider: z.enum(DISCOVERABLE_PROVIDERS) })
+const querySchema = z.object({
+  provider: z.enum(DISCOVERABLE_PROVIDERS),
+  // World Rugby splits its catalog per sub-feed (men's union, sevens, ...);
+  // every football provider has a single feed and ignores this.
+  providerSport: z.string().min(1).max(8).optional(),
+})
 
 const responseSchema = z.object({
   competitions: z.array(
@@ -16,7 +21,7 @@ const responseSchema = z.object({
 })
 
 export default defineReadHandler({ response: responseSchema, auth: 'admin', query: querySchema }, async ({ query }) => {
-  return { competitions: await discoverForProvider(query.provider) }
+  return { competitions: await discoverForProvider(query.provider, {}, query.providerSport) }
 })
 
 defineRouteMeta({

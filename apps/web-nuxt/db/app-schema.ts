@@ -24,6 +24,11 @@ import { REACTION_EMOJIS } from '#shared/reactions'
 
 const pk = () => text('id').primaryKey().$defaultFn(() => randomUUID())
 
+// What the competition is played at. Drives the provider family, the ranking
+// source behind champion tiers, the scoring preset and the theme. Additive:
+// every existing competition is FOOTBALL.
+export const sportEnum = pgEnum('sport', ['FOOTBALL', 'RUGBY_UNION'])
+
 export const stageEnum = pgEnum('stage', ['GROUP', 'R32', 'R16', 'QF', 'SF', 'THIRD_PLACE', 'FINAL'])
 
 // Mirrors the normalized MatchStatus in shared/types/match.ts (providers map their
@@ -114,6 +119,10 @@ export const competition = pgTable(
     slug: text('slug').notNull(),
     name: text('name').notNull(),
     provider: text('provider').notNull(),
+    sport: sportEnum('sport').notNull().default('FOOTBALL'),
+    // The provider's own sub-feed within the sport, when it has several:
+    // World Rugby splits men's/women's/sevens into separate catalogs.
+    providerSport: text('provider_sport'),
     externalCompetitionId: text('external_competition_id').notNull(),
     externalSeasonId: text('external_season_id'),
     seasonHint: text('season_hint'),

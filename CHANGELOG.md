@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+
+- Admin: rugby tournaments can be added, from World Rugby's own match feed rather than a third party. Pools, the knockout rounds and the bronze final all come through correctly, and the 2027 Rugby World Cup - including its new round of 16 - already reads in full. Scoring and the look of the site are still the football ones, so this opens the door rather than walking through it.
+
 ## [4.12.1] - 2026-09-12
 
 ### Fixed

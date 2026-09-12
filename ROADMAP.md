@@ -812,6 +812,15 @@ effort buckets; order within a bucket is not priority.
     bracket is one match per tie, scoring has no aggregate concept, and
     `stageEnum` has no value for the league-phase playoff round. Its own
     feature, sequenced after the admin work. Later generalizes to best-of-N.
+  - [x] **The rugby data source is World Rugby's own feed, not ESPN**
+    (`api.wr-rims-prod.pulselive.com/rugby/v3`, the Pulselive/RIMS backend behind
+    rugbyworldcup.com). Keyless, and it carries in one place what ESPN does not
+    hand over together: typed pool letters, a typed bronze final, the World Rugby
+    rankings for champion tiers, and a try/conversion/penalty timeline. Adapter,
+    discovery and the admin sub-feed picker shipped; RWC 2027 reads in full
+    (52 matches, pools A-F, the new round of 16, bronze final) months ahead.
+    Still football-shaped: scoring preset, rankings and theme are the next slices.
+    See [brain/architecture/providers.md](brain/architecture/providers.md).
   - Rugby: closeness tiers need retuning. Exact 3 / diff 2 / outcome 1
     degenerates when nobody guesses 27-24, so exact collapses into luck. Port to
     **margin bands** (correct winner + margin in 1-7 / 8-14 / 15+), which

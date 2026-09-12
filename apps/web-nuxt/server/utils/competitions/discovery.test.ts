@@ -88,3 +88,43 @@ describe('discovery cache', () => {
     expect(discover).toHaveBeenCalledTimes(2)
   })
 })
+
+describe('per-sport catalogs', () => {
+  const catalogFor = (sport: string | null | undefined): DiscoveredCompetition[] => [
+    { externalCompetitionId: `evt-${sport}`, name: `Event ${sport}`, seasonHint: '2027', isTournament: null },
+  ]
+
+  it('passes the sub-feed through to the provider', async () => {
+    const seen: (string | null | undefined)[] = []
+    const make = (_p: string, sport?: string | null) => {
+      seen.push(sport)
+      return adapter({ discoverCompetitions: async () => catalogFor(sport) })
+    }
+    const found = await discoverForProvider('worldrugby', { makeProvider: make }, 'wru')
+    expect(seen).toEqual(['wru'])
+    expect(found[0]!.externalCompetitionId).toBe('evt-wru')
+  })
+
+  it('caches each sub-feed separately', async () => {
+    // One entry per provider would serve the men's catalog to an admin who asked
+    // for the women's, for the whole TTL and with nothing to indicate it.
+    const make = vi.fn((_p: string, sport?: string | null) =>
+      adapter({ discoverCompetitions: async () => catalogFor(sport) }),
+    )
+    const mens = await discoverForProvider('worldrugby', { makeProvider: make }, 'mru')
+    const womens = await discoverForProvider('worldrugby', { makeProvider: make }, 'wru')
+    expect(mens[0]!.externalCompetitionId).toBe('evt-mru')
+    expect(womens[0]!.externalCompetitionId).toBe('evt-wru')
+    expect(make).toHaveBeenCalledTimes(2)
+
+    await discoverForProvider('worldrugby', { makeProvider: make }, 'mru')
+    expect(make).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps the bare provider key when no sub-feed is named', async () => {
+    const make = vi.fn(() => adapter({ discoverCompetitions: async () => CATALOG }))
+    await discoverForProvider('espn', { makeProvider: make })
+    await discoverForProvider('espn', { makeProvider: make })
+    expect(make).toHaveBeenCalledTimes(1)
+  })
+})

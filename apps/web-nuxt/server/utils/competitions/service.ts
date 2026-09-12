@@ -14,6 +14,7 @@ export async function addCompetition(db: AppDatabase, input: NewCompetition, dep
       provider: input.provider,
       externalCompetitionId: input.externalCompetitionId,
       seasonHint: input.seasonHint,
+      providerSport: input.providerSport,
     },
     deps,
   )

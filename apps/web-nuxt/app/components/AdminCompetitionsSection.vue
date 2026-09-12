@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
+import { PROVIDER_SPORTS } from '#shared/sport'
 
 const props = defineProps<{ isAdmin: boolean }>()
 const { t } = useI18n()
@@ -116,6 +117,12 @@ const setActive = useMutation({
 
 const adding = ref(false)
 const provider = ref('')
+// Only World Rugby splits its catalog; for every other provider this stays null
+// and is never sent.
+const subFeeds = computed(() => PROVIDER_SPORTS[provider.value] ?? null)
+const providerSport = ref('')
+watch(subFeeds, (feeds) => { providerSport.value = feeds?.[0]?.value ?? '' }, { immediate: true })
+const sportParam = computed(() => (subFeeds.value && providerSport.value ? { providerSport: providerSport.value } : {}))
 const catalog = ref<Discovered[] | null>(null)
 const chosen = ref('')
 const probe = ref<Probe | null>(null)
@@ -141,7 +148,10 @@ function suggestSlug(name: string, season: string | null): string {
 }
 
 const discover = useMutation({
-  mutationFn: () => $fetch<{ competitions: Discovered[] }>('/api/admin/competitions/discover', { params: { provider: provider.value } }),
+  mutationFn: () =>
+    $fetch<{ competitions: Discovered[] }>('/api/admin/competitions/discover', {
+      params: { provider: provider.value, ...sportParam.value },
+    }),
   onSuccess: (res) => {
     err.value = ''
     catalog.value = res.competitions
@@ -157,6 +167,7 @@ const runProbe = useMutation({
       params: {
         provider: provider.value,
         externalCompetitionId: chosen.value,
+        ...sportParam.value,
         ...(chosenEntry.value?.seasonHint ? { seasonHint: chosenEntry.value.seasonHint } : {}),
       },
     }),
@@ -185,6 +196,7 @@ const create = useMutation({
         provider: provider.value,
         externalCompetitionId: chosen.value,
         seasonHint: chosenEntry.value?.seasonHint ?? null,
+        ...sportParam.value,
       },
     }),
   onSuccess: async () => {
@@ -301,6 +313,16 @@ const canCreate = computed(
                   style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
                 >
                   <option v-for="p in data.discoverableProviders" :key="p" :value="p">{{ p }}</option>
+                </select>
+              </label>
+              <label v-if="subFeeds" class="flex flex-col gap-1">
+                <span class="text-xs font-semibold" style="color: var(--p-text-muted-color)">{{ t('admin.competitions.colSubFeed') }}</span>
+                <select
+                  v-model="providerSport"
+                  class="rounded-lg border px-2 py-1.5 text-sm w-48"
+                  style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
+                >
+                  <option v-for="f in subFeeds" :key="f.value" :value="f.value">{{ f.label }}</option>
                 </select>
               </label>
               <button

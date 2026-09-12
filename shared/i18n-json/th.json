@@ -1130,6 +1130,7 @@
       "colCompetition": "การแข่งขัน",
       "colSource": "แหล่งข้อมูล",
       "colProvider": "ผู้ให้บริการ",
+      "colSubFeed": "ฟีดย่อย",
       "archived": "เก็บเข้าคลังแล้ว",
       "isDefault": "ค่าเริ่มต้น",
       "archive": "เก็บเข้าคลัง",

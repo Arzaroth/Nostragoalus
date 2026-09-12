@@ -515,7 +515,8 @@
                       "fifa",
                       "uefa",
                       "espn",
-                      "football-data"
+                      "football-data",
+                      "worldrugby"
                     ]
                   },
                   "externalCompetitionId": {
@@ -528,6 +529,12 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 16
+                  },
+                  "providerSport": {
+                    "nullable": true,
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 8
                   }
                 },
                 "required": [
@@ -568,6 +575,9 @@
                       "nullable": true,
                       "type": "string"
                     },
+                    "sport": {
+                      "type": "string"
+                    },
                     "isActive": {
                       "type": "boolean"
                     }
@@ -579,6 +589,7 @@
                     "provider",
                     "externalCompetitionId",
                     "seasonHint",
+                    "sport",
                     "isActive"
                   ],
                   "additionalProperties": false

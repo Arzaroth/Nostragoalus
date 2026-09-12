@@ -246,6 +246,51 @@ The scorer board and the per-team season aggregate exist only on
   [bracket-order.ts](../../apps/web-nuxt/server/utils/providers/bracket-order.ts),
   which UEFA now uses too - it had its own copy of the same walk.
 
+## Match data: World Rugby (keyless, the whole tournament in one call)
+
+`api.wr-rims-prod.pulselive.com/rugby/v3` - the Pulselive (RIMS) backend that
+rugbyworldcup.com and world.rugby themselves run on. Chosen over ESPN's rugby
+feed because it is the official stream and carries, in one place, the three
+things the app needs and ESPN does not hand over together: typed pool letters, a
+typed bronze final, and the World Rugby rankings that will drive champion tiers.
+
+- **One document per tournament:** `/event/{id}/schedule` returns the whole
+  fixture list, so `listFixtures` ignores its `season` argument - the event id
+  already pins the season. `getBracket` and `getLiveMatches` filter that same
+  document rather than calling anything else.
+- **Event ids are two shapes:** numeric for legacy seasons (`1893` = RWC 2023),
+  a uuid from 2025 on. Both resolve on the same route, so
+  `externalCompetitionId` stays opaque text.
+- **Phases are typed, except when they are not.** `eventPhaseId` gives
+  `{type: "Pool", subType: "A"}` for pools and `Quarter` / `Semi` /
+  `Final:Final` / `Final:Bronze` for the knockout. The 2027 World Cup's new
+  **round of 16** arrives with `eventPhaseId: null` and only an `eventPhase`
+  label ("Round of 16 (1)"), so the typed field is authoritative when present
+  and the label is the fallback. A pool whose letter goes missing is worse than
+  it sounds: `assignGroupMatchdays` keys off the letter and a null group is
+  dropped at insert.
+- **`[0, 0]` means "not played", not a goalless draw.** The feed sends zeros for
+  every unplayed match, so the score is only taken once the status says the
+  match started. Taken at face value it settles predictions on unplayed fixtures.
+- **Status codes:** only `C` (complete) and `U` (upcoming) have been observed on
+  a live feed - nothing was in play when the adapter was written. The in-play
+  codes are mapped from the same Pulselive vocabulary used elsewhere, and
+  anything unrecognised falls through to `SCHEDULED`, never `FINISHED`.
+- **Discovery:** `/event?page&pageSize&sort=desc` enumerates ~2400 events, each
+  tagged with a sport code (`mru` men's union, `wru` women's, `jmu`/`jwu` U20,
+  `mrs`/`wrs` sevens). The adapter filters to its own sport and stops after five
+  pages - an admin is choosing a season to run, not browsing an archive.
+- **Not wired yet:** `/rankings/{sport}` (World Rugby rankings, for champion
+  tiers instead of FIFA's) and `/match/{id}/timeline` (typed `T5` try, `C2`
+  conversion, `P3` penalty, `Miss Con`, `Miss Pen`, `Yellow`) are both live and
+  keyless; they belong with the rugby scoring preset, not with the adapter.
+
+A competition names its sport twice for different reasons: `competition.sport`
+(the `sport` pg enum, `FOOTBALL` / `RUGBY_UNION`) is looked up from the provider
+and drives ranking source, scoring preset and theme; `competition.providerSport`
+is the sub-feed within that provider, and only World Rugby has more than one.
+See [../../apps/web-nuxt/shared/sport.ts](../../apps/web-nuxt/shared/sport.ts).
+
 ## Match data: fixture (offline, e2e only)
 
 `server/utils/providers/fixture.ts` serves a canned, fully decided 8-team
@@ -308,7 +353,9 @@ container, check that binary is present before blaming the provider.
 
 ## Sources
 
-- `apps/web-nuxt/server/utils/providers/**` (FIFA, UEFA, ESPN, football-data adapters, `cycle-tls.ts`)
+- `apps/web-nuxt/server/utils/providers/**` (FIFA, UEFA, ESPN, football-data, World Rugby adapters, `cycle-tls.ts`)
+- `apps/web-nuxt/shared/sport.ts` (sport enum mirror, per-provider sub-feeds)
+- `apps/web-nuxt/server/utils/competitions/discovery.ts` (catalog, cached per provider and sub-feed)
 - `apps/web-nuxt/server/utils/odds/providers/sofascore.ts`, `apps/web-nuxt/server/utils/odds/{sync,provider-config}.ts` (odds provider registry)
 - `apps/web-nuxt/server/utils/champion/ranking.ts`
 - `apps/web-nuxt/server/tasks/**` (`matches:finalize`, `fixtures:refresh`, `scores:poll`, `odds:*`)

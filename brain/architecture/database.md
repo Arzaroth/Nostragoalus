@@ -41,7 +41,8 @@ Logical names are the Drizzle TS exports; the SQL tables are snake_case
   `user` carries app additionalFields (push* toggles, profilePrivate,
   skin/skinsUnlocked, hiddenFromLeaderboard). See
   [auth.md](auth.md) and [../features/sso-provisioning.md](../features/sso-provisioning.md).
-- **Competition core:** `competition`, `round` (kind, stage, kickoffAt), `match`
+- **Competition core:** `competition` (provider + `sport` + `providerSport`, the
+  provider's sub-feed), `round` (kind, stage, kickoffAt), `match`
   (status, fullTimeScore), `goal_event` (side, player, minute, ownGoal),
   `match_lineups` (frozen official XI, never re-fetched once final). See
   [../features/competitions.md](../features/competitions.md).
@@ -81,6 +82,7 @@ Logical names are the Drizzle TS exports; the SQL tables are snake_case
 ## Enums
 
 `base_tier` (EXACT/DIFF/OUTCOME/MISS), `bonus_source` (NONE/CROWD/ODDS),
+`sport` (FOOTBALL/RUGBY_UNION),
 `outcome` (HOME/DRAW/AWAY), `round_kind` (GROUP_MATCHDAY/KNOCKOUT), `stage`
 (GROUP/R32/R16/QF/SF/THIRD_PLACE/FINAL), `match_status`
 (SCHEDULED/LIVE/PAUSED/FINISHED/POSTPONED/CANCELLED/SUSPENDED/AWARDED/INTERRUPTED),

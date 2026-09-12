@@ -3,6 +3,7 @@ import { uefaProvider } from './uefa'
 import { espnProvider } from './espn'
 import { footballDataProvider } from './football-data'
 import { fixtureProvider } from './fixture'
+import { worldRugbyProvider, type WorldRugbySport } from './worldrugby'
 import type { MatchDataProvider } from './types'
 
 export interface ProviderSelection {
@@ -12,13 +13,14 @@ export interface ProviderSelection {
   fifaSeasonId?: string
   footballDataToken?: string
   apiFootballKey?: string
+  sport?: string | null
   fetchImpl?: typeof fetch
 }
 
 // The providers a competition may be bound to, as an admin may name them.
 // 'fixture' is deliberately absent: it serves canned offline data for the e2e
 // stack, so binding a real competition to it would show invented matches.
-export const MATCH_PROVIDERS = ['fifa', 'uefa', 'espn', 'football-data'] as const
+export const MATCH_PROVIDERS = ['fifa', 'uefa', 'espn', 'football-data', 'worldrugby'] as const
 export type MatchProviderKey = (typeof MATCH_PROVIDERS)[number]
 
 export function createProvider(selection: ProviderSelection): MatchDataProvider {
@@ -53,6 +55,14 @@ export function createProvider(selection: ProviderSelection): MatchDataProvider 
     return espnProvider({
       league: selection.externalCompetitionId || 'fifa.world',
       season: selection.seasonHint,
+      fetchImpl: selection.fetchImpl,
+    })
+  }
+
+  if (selection.provider === 'worldrugby') {
+    return worldRugbyProvider({
+      eventId: selection.externalCompetitionId || '',
+      sport: (selection.sport as WorldRugbySport | null | undefined) ?? null,
       fetchImpl: selection.fetchImpl,
     })
   }

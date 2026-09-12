@@ -7,6 +7,7 @@ const querySchema = z.object({
   provider: z.enum(MATCH_PROVIDERS),
   externalCompetitionId: z.string().min(1).max(64),
   seasonHint: z.string().min(1).max(16).optional(),
+  providerSport: z.string().min(1).max(8).optional(),
 })
 
 const responseSchema = z.object({
@@ -27,6 +28,7 @@ export default defineReadHandler({ response: responseSchema, auth: 'admin', quer
   // admin the competition is the problem.
   return probeCompetition({
     provider: query.provider,
+    providerSport: query.providerSport ?? null,
     externalCompetitionId: query.externalCompetitionId,
     seasonHint: query.seasonHint ?? null,
   })
