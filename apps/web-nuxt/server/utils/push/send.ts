@@ -96,6 +96,12 @@ export async function pushToUser(
 // Push for a stored notification (the createNotification hook): the category and
 // content derive from the notification type.
 export async function pushNotification(db: AppDatabase, userId: string, data: NotificationData): Promise<number> {
+  // Gated before the default-competition lookup, not after: createNotification
+  // fires this and forgets it, so any query here outlives its caller. With push
+  // unconfigured pushToUser does no database work at all, and a stray read would
+  // land after the caller was done with the connection - which in tests means a
+  // pglite instance that has already been closed.
+  if (!ensureConfigured()) return 0
   const fallbackSlug = await getDefaultCompetitionSlug(db)
   return pushToUser(db, userId, categoryForType(data.type), (locale) => notificationPushContent(data, locale, fallbackSlug))
 }

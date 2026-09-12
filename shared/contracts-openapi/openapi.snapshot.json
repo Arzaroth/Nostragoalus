@@ -222,6 +222,67 @@
         }
       }
     },
+    "/api/admin/competitions/{slug}/active": {
+      "put": {
+        "tags": [
+          "Admin (internal)"
+        ],
+        "summary": "Archive or restore a competition",
+        "description": "Archiving hides a competition from the switcher and from the default resolver, keeping every prediction, trophy, league and chat room attached to it. There is deliberately no delete: competition cascades into round, match, competition_award, user_achievement and showcase_pin, so removing a row would take a tournament's whole history with it. Archiving the current default hands the default to the newest active season.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "isActive": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "isActive"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "{ slug, isActive }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "slug": {
+                      "type": "string"
+                    },
+                    "isActive": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "slug",
+                    "isActive"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not an admin."
+          },
+          "404": {
+            "description": "Unknown competition."
+          },
+          "422": {
+            "description": "Invalid payload."
+          }
+        }
+      }
+    },
     "/api/admin/competitions/default": {
       "put": {
         "tags": [
@@ -276,6 +337,345 @@
           },
           "422": {
             "description": "Invalid payload."
+          }
+        }
+      }
+    },
+    "/api/admin/competitions/discover": {
+      "get": {
+        "tags": [
+          "Admin (internal)"
+        ],
+        "summary": "List the competitions a provider carries",
+        "description": "The provider's own catalog, for the add-a-competition flow. Cached briefly in memory: ESPN's catalog is ~218 entries and each costs a request to name. isTournament is the provider's own claim and gates nothing - probe the fixtures before trusting any entry.",
+        "responses": {
+          "200": {
+            "description": "{ competitions: [{ externalCompetitionId, name, seasonHint, isTournament }] }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "competitions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "externalCompetitionId": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "seasonHint": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "isTournament": {
+                            "nullable": true,
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "externalCompetitionId",
+                          "name",
+                          "seasonHint",
+                          "isTournament"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "competitions"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not an admin."
+          },
+          "422": {
+            "description": "Unknown or non-enumerable provider."
+          },
+          "502": {
+            "description": "The provider's catalog could not be read."
+          }
+        }
+      }
+    },
+    "/api/admin/competitions": {
+      "get": {
+        "tags": [
+          "Admin (internal)"
+        ],
+        "summary": "Every competition, archived ones included",
+        "description": "The admin competition list: provider binding, season and active state for every competition, plus the resolved default and which providers can enumerate their catalog. Unlike /api/competitions this includes archived rows, since the admin screen is where they are restored.",
+        "responses": {
+          "200": {
+            "description": "{ competitions, defaultSlug, discoverableProviders }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "competitions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "slug": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "provider": {
+                            "type": "string"
+                          },
+                          "externalCompetitionId": {
+                            "type": "string"
+                          },
+                          "seasonHint": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "isActive": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "slug",
+                          "name",
+                          "provider",
+                          "externalCompetitionId",
+                          "seasonHint",
+                          "isActive"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "defaultSlug": {
+                      "type": "string"
+                    },
+                    "discoverableProviders": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "competitions",
+                    "defaultSlug",
+                    "discoverableProviders"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not an admin."
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Admin (internal)"
+        ],
+        "summary": "Add a competition",
+        "description": "Creates a competition from a provider and its external id. The season is probed again server-side and the competition is refused unless every fixture would actually reach the match table - a client-side probe result is not trusted. The slug is permanent: it is in every URL, the ng-competition cookie, share images and push deep-links.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "slug": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "provider": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "externalCompetitionId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "seasonHint": {
+                    "nullable": true,
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "slug",
+                  "name",
+                  "provider",
+                  "externalCompetitionId",
+                  "seasonHint"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The created competition.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "slug": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "provider": {
+                      "type": "string"
+                    },
+                    "externalCompetitionId": {
+                      "type": "string"
+                    },
+                    "seasonHint": {
+                      "nullable": true,
+                      "type": "string"
+                    },
+                    "isActive": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "slug",
+                    "name",
+                    "provider",
+                    "externalCompetitionId",
+                    "seasonHint",
+                    "isActive"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad slug, or a competition the app cannot ingest."
+          },
+          "403": {
+            "description": "Not an admin."
+          },
+          "409": {
+            "description": "That slug is taken."
+          },
+          "422": {
+            "description": "Invalid payload."
+          },
+          "502": {
+            "description": "The provider could not be read."
+          }
+        }
+      }
+    },
+    "/api/admin/competitions/probe": {
+      "get": {
+        "tags": [
+          "Admin (internal)"
+        ],
+        "summary": "Dry-run a competition before adding it",
+        "description": "Fetches and normalizes a real season without writing anything, and reports what would actually reach the match table. Blocks on: nothing returned, any fixture that would be silently skipped at insert (a group fixture with no matchday - a domestic league or a single-table league phase), and a two-legged knockout, which the round schema cannot hold. A provider's own 'is this a tournament' flag is not trusted here.",
+        "responses": {
+          "200": {
+            "description": "{ fixtures, ingestible, dropped, groups, stages, twoLeggedStages, hasBracket, supported, blockers }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "fixtures": {
+                      "type": "number"
+                    },
+                    "ingestible": {
+                      "type": "number"
+                    },
+                    "dropped": {
+                      "type": "number"
+                    },
+                    "groups": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "stages": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "twoLeggedStages": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "hasBracket": {
+                      "type": "boolean"
+                    },
+                    "supported": {
+                      "type": "boolean"
+                    },
+                    "blockers": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "fixtures",
+                    "ingestible",
+                    "dropped",
+                    "groups",
+                    "stages",
+                    "twoLeggedStages",
+                    "hasBracket",
+                    "supported",
+                    "blockers"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not an admin."
+          },
+          "422": {
+            "description": "Invalid query."
+          },
+          "502": {
+            "description": "The provider could not be read."
           }
         }
       }
