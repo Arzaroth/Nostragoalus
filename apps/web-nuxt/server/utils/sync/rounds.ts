@@ -75,3 +75,16 @@ export async function findRoundId(
   const rows = await db.select({ id: round.id }).from(round).where(where).limit(1)
   return rows.length ? rows[0].id : null
 }
+
+// A fixture reaches the match table only when the round ensureRounds() files it
+// under is the one findRoundId() then looks for. They disagree in exactly one
+// case: a GROUP fixture carrying no matchday is filed under matchday 1 but
+// looked up as NULL, so upsertMatches() counts it in `skipped` and it never
+// appears. Derived from both functions rather than restating the rule, so a
+// change to either is reflected here. Used by the competition probe to tell an
+// admin that up front, instead of leaving them with an empty competition.
+export function isIngestible(stage: AppStage, matchday: number | null): boolean {
+  const filedUnder = roundDefForMatch(stage, matchday).matchday
+  const lookedUpAs = stage === 'GROUP' ? matchday : null
+  return filedUnder === lookedUpAs
+}
