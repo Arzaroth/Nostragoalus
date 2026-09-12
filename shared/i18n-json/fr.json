@@ -1119,6 +1119,16 @@
     "deleteMailSent": "Mail de confirmation envoyé - le compte sera supprimé en ouvrant le lien."
   },
   "admin": {
+    "competitions": {
+      "title": "Compétitions",
+      "hint": "Les tournois proposés par l'application, et celui sur lequel elle s'ouvre.",
+      "intro": "La compétition par défaut est celle vers laquelle pointe un lien sans tournoi : la page d'accueil, une première visite, ou une notification qui dépasse un seul tournoi. Seule une compétition active peut être choisie - l'archiver transmet le rôle à la saison active la plus récente.",
+      "none": "Aucune compétition pour l'instant.",
+      "defaultLabel": "Compétition par défaut",
+      "save": "Enregistrer",
+      "saved": "Enregistré.",
+      "saveFailed": "Impossible d'enregistrer la compétition par défaut."
+    },
     "odds": {
       "title": "Fournisseur de cotes",
       "hint": "Choisissez quel fournisseur cote les matchs de chaque compétition.",

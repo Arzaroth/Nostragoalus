@@ -41,6 +41,30 @@ and from legacy un-prefixed paths. `apps/web-nuxt/app/middleware/competition.glo
 redirects a legacy path like `/matches` to `/<last>/matches`, and
 `[competition]/index.vue` redirects to that competition's matches.
 
+## The default competition
+
+Where a slug-less context lands (a first visit with no cookie, the `/` redirect,
+the deep link of a notification that spans competitions) is **admin-set**, not
+compiled in: it is the `default_competition` key in `app_setting`, written from
+the admin Competitions section and read by `getDefaultCompetitionSlug()` in
+`apps/web-nuxt/server/utils/competitions/store.ts`.
+
+The stored slug is resolved, never trusted: it wins only while it names an
+*active* competition, because archiving or deleting that competition would
+otherwise 404 every slug-less landing. Failing that it takes the newest active
+season, and only with no competition at all does it fall back to
+`FALLBACK_COMPETITION` in `apps/web-nuxt/shared/competition.ts`. Writes are
+validated the same way, so an unknown or archived slug is a 404 rather than a
+setting that silently does nothing.
+
+The client learns it from `/api/competitions`, which returns `defaultSlug`
+alongside the list. `apps/web-nuxt/app/plugins/competition-meta.server.ts`
+resolves both during SSR into a `useState` the payload carries, so the first
+render already knows them; the route middleware validates slugs against the same
+state instead of fetching the list again. Pure helpers that need it
+(`cabinetPath`, `notificationPushContent`) take it as an argument rather than
+importing a constant, since the value is not knowable at build time.
+
 ## The switcher
 
 `CompetitionPill.vue` sits next to each page's H1 (chosen over a header dropdown
@@ -67,3 +91,6 @@ competition id in the service layer.
 - `apps/web-nuxt/app/middleware/competition.global.ts`
 - `apps/web-nuxt/app/components/CompetitionPill.vue`
 - `apps/web-nuxt/server/api/competitions/index.get.ts`
+- `apps/web-nuxt/server/api/admin/competitions/default.put.ts`
+- `apps/web-nuxt/app/components/AdminCompetitionsSection.vue`
+- `apps/web-nuxt/app/plugins/competition-meta.server.ts`

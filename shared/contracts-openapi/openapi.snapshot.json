@@ -222,6 +222,64 @@
         }
       }
     },
+    "/api/admin/competitions/default": {
+      "put": {
+        "tags": [
+          "Admin (internal)"
+        ],
+        "summary": "Set the default competition",
+        "description": "The competition a slug-less context lands on: the \"/\" redirect, a first visit with no cookie, and the deep link of a notification that carries no competition. Must name an active competition; archiving that competition silently reverts the default to the newest active season.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "competition": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "competition"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "{ defaultSlug } as resolved after the write.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "defaultSlug": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "defaultSlug"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not an admin."
+          },
+          "404": {
+            "description": "Unknown or archived competition."
+          },
+          "422": {
+            "description": "Invalid payload."
+          }
+        }
+      }
+    },
     "/api/admin/cron": {
       "get": {
         "tags": [
@@ -5530,10 +5588,10 @@
           "Competitions"
         ],
         "summary": "List competitions",
-        "description": "All active competitions, newest season first.",
+        "description": "All active competitions, newest season first, plus the slug a slug-less context should land on (admin-set, falling back to the newest active season).",
         "responses": {
           "200": {
-            "description": "Competition list: slug, name, season.",
+            "description": "{ competitions: [{ id, slug, name }], defaultSlug }.",
             "content": {
               "application/json": {
                 "schema": {
@@ -5561,10 +5619,14 @@
                         ],
                         "additionalProperties": false
                       }
+                    },
+                    "defaultSlug": {
+                      "type": "string"
                     }
                   },
                   "required": [
-                    "competitions"
+                    "competitions",
+                    "defaultSlug"
                   ],
                   "additionalProperties": false
                 }

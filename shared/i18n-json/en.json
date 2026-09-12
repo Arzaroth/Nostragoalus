@@ -1124,6 +1124,16 @@
     "deleteMailSent": "Confirmation mail sent - the account will be deleted when you open the link."
   },
   "admin": {
+    "competitions": {
+      "title": "Competitions",
+      "hint": "Which tournaments the app carries, and which one it opens on.",
+      "intro": "The default competition is where a link with no tournament in it lands: the home page, a first visit, and a notification about something that spans tournaments. Only an active competition can be the default - archiving it hands the default to the newest active season.",
+      "none": "No competitions yet.",
+      "defaultLabel": "Default competition",
+      "save": "Save",
+      "saved": "Saved.",
+      "saveFailed": "Could not save the default competition."
+    },
     "odds": {
       "title": "Odds provider",
       "hint": "Pick which provider prices each competition's matches.",

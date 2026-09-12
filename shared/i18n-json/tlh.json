@@ -1119,6 +1119,16 @@
     "deleteMailSent": "'olmeH QIn ngeHlu'ta' - leQ DapoSmoHDI' raQwI' Qaw'lu'."
   },
   "admin": {
+    "competitions": {
+      "title": "QaD",
+      "hint": "QaD lo'lu'bogh, 'ej wa'DIch poSlu'bogh.",
+      "intro": "QaD pagh ngu'bogh De'wI'Hom Dev QaD DevwI'. QaD taHtaH neH wIvlaH. lI'be'DI', QaD chu' Dev.",
+      "none": "QaD tu'lu'be'.",
+      "defaultLabel": "QaD DevwI'",
+      "save": "choq",
+      "saved": "choqlu'ta'.",
+      "saveFailed": "QaD DevwI' choqlu'laHbe'."
+    },
     "odds": {
       "title": "qI' tlhe'wI'",
       "hint": "yIwIv: nuq tlhe'wI' qel Hoch qaj qI'.",
