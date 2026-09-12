@@ -19,6 +19,11 @@ describe('createProvider', () => {
     expect(createProvider({ provider: 'fixture' }).meta.name).toBe('fixture')
   })
 
+  it('creates the espn provider with a default league and an explicit one', () => {
+    expect(createProvider({ provider: 'espn' }).meta.name).toBe('espn')
+    expect(createProvider({ provider: 'espn', externalCompetitionId: 'eng.1', seasonHint: '2026' }).meta.name).toBe('espn')
+  })
+
   it('throws for the not-yet-implemented api-football provider', () => {
     expect(() => createProvider({ provider: 'api-football', apiFootballKey: 'k' })).toThrow(/not implemented/)
   })

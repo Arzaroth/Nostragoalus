@@ -678,3 +678,26 @@ See [features/mobile-app.md](features/mobile-app.md).
   good by one dismissal, and tombstones are exempt from both retention sweeps by
   construction, so the table loses its only upper bound. See
   [features/notifications.md](features/notifications.md).
+
+- **The ESPN adapter derives half-time rather than fetching it.** The scoreboard
+  publishes no half-time score, and the per-match `summary` endpoint that does
+  (`competitors[].linescores`, five periods) costs one request per match - 104 of
+  them for a World Cup, against the single request the whole season otherwise
+  takes. But the scoreboard already carries every goal in
+  `competitions[0].details[]` with its minute, so summing the goals up to 45'
+  gives the same number for free. Checked against all 64 matches of the 2022
+  World Cup: the full-time score derived the same way matched the published one
+  in every match that had details at all (63 of 64; the 64th publishes no
+  details, and its half-time is simply left unset). The adapter reads the
+  scoreline itself off `competitors[].score` regardless - a score that moved is a
+  goal even when `details` has not caught up, so a lagging play-by-play can never
+  cost a point.
+- **ESPN is a fixtures adapter only, by choice.** It implements `listFixtures`,
+  `getMatchesByDate` and `getLiveMatches` and none of the optional methods
+  (`getMatchDetail`, `getBracket`, `getTopScorers`, `getMatchTimeline`,
+  lineups, per-team stats). Those exist on FIFA and UEFA because those feeds are
+  the primary source for the tournament the app actually runs; ESPN's value is
+  breadth - it is the only source that covers a domestic league - and breadth is
+  bought with the scoreboard alone. Adding a detail method later means a
+  per-match `summary` call and the polling budget that implies, which is a
+  decision to take when a competition needs it, not up front.

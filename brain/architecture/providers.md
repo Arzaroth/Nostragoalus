@@ -52,11 +52,56 @@ are unofficial or undocumented endpoints), so the quirks below are load-bearing.
 
 `matches:finalize` fetches match details (bounded) into `goal_event` and
 `match.possession*`. A football-data.org adapter exists as a fallback (its
-`/scorers` needs a token; FIFA is keyless). An api-football adapter is mapped but
-not implemented.
+`/scorers` needs a token; FIFA is keyless), and an [ESPN adapter](#match-data-espn-keyless-whole-season-in-one-call)
+covers fixtures for any competition ESPN carries. An api-football adapter is
+mapped but not implemented.
 
 This feeds [../features/predictions-and-scoring.md](../features/predictions-and-scoring.md)
 and [../features/best-scorer.md](../features/best-scorer.md).
+
+## Match data: ESPN (keyless, whole-season in one call)
+
+`server/utils/providers/espn.ts` reads ESPN's public site API - keyless,
+undocumented, no announced quota. `externalCompetitionId` is the ESPN league slug
+(`fifa.world`, `uefa.euro`, `eng.1`, `uefa.champions`), `seasonHint` the season
+year. Fixtures only: it implements `listFixtures` / `getMatchesByDate` /
+`getLiveMatches` and none of the optional detail methods.
+
+- **One call per sync.** `…/site/v2/sports/soccer/{league}/scoreboard?dates=YYYY`
+  returns the whole season (104 events for the 2026 World Cup). `dates` also takes
+  `YYYYMMDD` and `YYYYMMDD-YYYYMMDD` (both bounds included); **without `dates` the
+  endpoint serves the current day only**, which is what `getLiveMatches` relies on.
+  `limit` defaults to 100 - we send 500, or a 104-match tournament loses its tail.
+- **The User-Agent is filtered, in HTML.** An Akamai in front of the API 403s on
+  the agent and answers `<TITLE>Access Denied</TITLE>`, not an error JSON, so a
+  reader expecting JSON sees a parse failure rather than a refusal. Branded and
+  browser-shaped agents are refused; the adapter sends `curl/8.0`. If every ESPN
+  call starts failing with a 403 carrying HTML, suspect this before the endpoint.
+- **A scheduled match reports `score: "0"`** on both sides, not null - writing it
+  through would stamp every unplayed fixture 0-0. The adapter nulls the scoreline
+  unless the match has left the `pre` state.
+- **Postponed and abandoned arrive as `state: "post"`**, exactly like a finished
+  match; only `status.type.name` separates them, so the state alone would show a
+  full-time card for a match that never kicked off. Inside `post` the name decides,
+  and inside `in` an unknown name reads as LIVE, never as final.
+- **The stage is `event.season.slug`** (`group-stage`, `round-of-32`,
+  `quarterfinals`, `3rd-place-match`, `final`): hyphens out, then the shared ladder
+  in [stage.ts](../../apps/web-nuxt/server/utils/providers/stage.ts) reads it.
+- **The group letter is not on the scoreboard.** It comes from a second call,
+  `…/apis/v2/sports/soccer/{league}/standings` (**`apis/v2`, not `apis/site/v2`** -
+  the site path also answers 200, with an almost-empty object), whose `children[]`
+  are the groups; the adapter builds a team-id -> letter map, fetched once per
+  instance, skipped entirely when nothing is at the group stage, and degraded to
+  "no letters" rather than fatal when standings fail. Matching the group name is
+  strict (`^group [a-l]$`) because a domestic league's children are named after the
+  league, and `Premier League` ends in a letter that a loose match reads as group E.
+- **Half-time is derived**, not served: `competitions[0].details[]` carries every
+  goal with `clock.displayValue` and `scoreValue`, so goals up to 45' sum to the
+  half-time pair (shootout entries carry `shootout: true` and are excluded). ESPN
+  credits an own goal to the side it benefits, so no side-swap is needed. Verified
+  against all 64 matches of the 2022 World Cup.
+- **Penalties** are `competitors[].shootoutScore`; `competitors[].score` is the
+  120-minute scoreline, which lands in `fullTime` as it does for FIFA and UEFA.
 
 ## Match data: fixture (offline, e2e only)
 
@@ -120,7 +165,7 @@ container, check that binary is present before blaming the provider.
 
 ## Sources
 
-- `apps/web-nuxt/server/utils/providers/**` (FIFA, football-data adapters, `cycle-tls.ts`)
+- `apps/web-nuxt/server/utils/providers/**` (FIFA, UEFA, ESPN, football-data adapters, `cycle-tls.ts`)
 - `apps/web-nuxt/server/utils/odds/providers/sofascore.ts`, `apps/web-nuxt/server/utils/odds/{sync,provider-config}.ts` (odds provider registry)
 - `apps/web-nuxt/server/utils/champion/ranking.ts`
 - `apps/web-nuxt/server/tasks/**` (`matches:finalize`, `fixtures:refresh`, `scores:poll`, `odds:*`)

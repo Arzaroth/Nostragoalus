@@ -1,5 +1,6 @@
 import { fifaProvider } from './fifa'
 import { uefaProvider } from './uefa'
+import { espnProvider } from './espn'
 import { footballDataProvider } from './football-data'
 import { fixtureProvider } from './fixture'
 import type { MatchDataProvider } from './types'
@@ -38,6 +39,14 @@ export function createProvider(selection: ProviderSelection): MatchDataProvider 
     return uefaProvider({
       seasonYear: selection.seasonHint || '2024',
       competitionId: selection.externalCompetitionId || '3',
+      fetchImpl: selection.fetchImpl,
+    })
+  }
+
+  if (selection.provider === 'espn') {
+    return espnProvider({
+      league: selection.externalCompetitionId || 'fifa.world',
+      season: selection.seasonHint,
       fetchImpl: selection.fetchImpl,
     })
   }
