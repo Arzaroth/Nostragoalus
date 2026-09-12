@@ -1,5 +1,8 @@
 import type { AppStage, NormalizedMatch } from '../../../shared/types/match'
 import { isIngestible } from '../sync/rounds'
+import { providerForCompetition } from '../providers'
+import { resolveFifaSeasonId } from '../providers/fifa'
+import type { MatchDataProvider } from '../providers/types'
 
 // Why this exists: adding a competition from a provider's catalog is a leap of
 // faith without it. ESPN lists 218 leagues; most of them the app cannot ingest,
@@ -75,4 +78,52 @@ export function summarizeFixtures(fixtures: NormalizedMatch[], hasBracket: boole
     supported: blockers.length === 0,
     blockers,
   }
+}
+
+export interface ProbeTarget {
+  provider: string
+  externalCompetitionId: string
+  seasonHint: string | null
+}
+
+export interface ProbeDeps {
+  makeProvider?: (target: ProbeTarget, seasonId?: string) => MatchDataProvider
+  resolveSeason?: (target: ProbeTarget) => Promise<string | undefined>
+}
+
+// FIFA addresses a season by an id resolved from /seasons; every other provider
+// takes the year. Unlike the sync path this cannot cache the answer on the
+// competition row - the whole point is that the competition does not exist yet.
+async function defaultResolveSeason(target: ProbeTarget): Promise<string | undefined> {
+  if (target.provider !== 'fifa') return undefined
+  return resolveFifaSeasonId({ competitionId: target.externalCompetitionId, hint: target.seasonHint })
+}
+
+// Fetch and normalize a real season, write nothing, and report what would land.
+// Nothing here touches the database: a probe of a competition an admin then
+// decides against must leave no trace.
+export async function probeCompetition(target: ProbeTarget, deps: ProbeDeps = {}): Promise<CompetitionProbe> {
+  const makeProvider =
+    deps.makeProvider ??
+    ((t: ProbeTarget, seasonId?: string) =>
+      providerForCompetition(
+        { provider: t.provider, externalCompetitionId: t.externalCompetitionId, seasonHint: t.seasonHint },
+        seasonId,
+      ))
+  const resolveSeason = deps.resolveSeason ?? defaultResolveSeason
+
+  const seasonId = await resolveSeason(target)
+  const provider = makeProvider(target, seasonId)
+  const fixtures = await provider.listFixtures({ season: seasonId ?? target.seasonHint ?? '' })
+
+  // A provider with no bracket endpoint, or one that has not published a bracket
+  // yet, is information about the competition - not a reason to fail the probe.
+  let hasBracket = false
+  try {
+    hasBracket = !!(await provider.getBracket?.())
+  } catch {
+    hasBracket = false
+  }
+
+  return summarizeFixtures(fixtures, hasBracket)
 }

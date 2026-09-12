@@ -58,3 +58,15 @@ export class StorageError extends Error {
     this.name = 'StorageError'
   }
 }
+
+// An external provider's endpoint failed or answered with something unusable.
+// Maps to 502, not 500: the app is fine and the request was valid - the upstream
+// (undocumented, unversioned, keyless) is not. Keeping it distinct means an
+// admin reading "could not read ESPN's catalog" knows to retry rather than to
+// file a bug.
+export class ProviderError extends Error {
+  constructor(message = 'provider unavailable') {
+    super(message)
+    this.name = 'ProviderError'
+  }
+}

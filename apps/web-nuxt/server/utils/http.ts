@@ -1,4 +1,4 @@
-import { ConflictError, ForbiddenError, JokerQuotaError, LockedError, NotFoundError, SsoNotReadyError, StorageError, ValidationError } from './errors'
+import { ConflictError, ForbiddenError, JokerQuotaError, LockedError, NotFoundError, ProviderError, SsoNotReadyError, StorageError, ValidationError } from './errors'
 
 export function toHttpError(error: unknown): unknown {
   if (error instanceof NotFoundError) return createError({ statusCode: 404, statusMessage: error.message })
@@ -8,6 +8,7 @@ export function toHttpError(error: unknown): unknown {
   if (error instanceof SsoNotReadyError) return createError({ statusCode: 409, statusMessage: error.message })
   if (error instanceof ForbiddenError) return createError({ statusCode: 403, statusMessage: error.message })
   if (error instanceof ValidationError) return createError({ statusCode: 400, statusMessage: error.message })
+  if (error instanceof ProviderError) return createError({ statusCode: 502, statusMessage: error.message })
   // Generic client message: a StorageError's own message can carry the backend's
   // internal path/key, so keep that out of the response (cause stays server-side).
   if (error instanceof StorageError) return createError({ statusCode: 500, statusMessage: 'Storage error', cause: error })

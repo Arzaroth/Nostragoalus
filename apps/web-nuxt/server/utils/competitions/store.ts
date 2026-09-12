@@ -3,7 +3,7 @@ import type { AppDatabase } from '../../../db/types'
 import { competition } from '../../../db/schema'
 import { FALLBACK_COMPETITION } from '../../../shared/competition'
 import { getAppSetting, setAppSetting } from '../settings/service'
-import { NotFoundError } from '../errors'
+import { ConflictError, NotFoundError, ValidationError } from '../errors'
 
 export const DEFAULT_COMPETITIONS = [
   {
@@ -109,4 +109,50 @@ export async function setDefaultCompetitionSlug(db: AppDatabase, slug: string): 
   if (!target) throw new NotFoundError('competition not found')
   if (!target.isActive) throw new NotFoundError('competition is archived')
   await setAppSetting(db, DEFAULT_COMPETITION_KEY, slug)
+}
+
+// A slug is permanent once created: it is in every URL, the ng-competition
+// cookie, share images and push deep-links, so renaming it breaks links that are
+// already out in the world. Validated hard at creation for the same reason.
+const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+
+export interface NewCompetition {
+  slug: string
+  name: string
+  provider: string
+  externalCompetitionId: string
+  seasonHint: string | null
+}
+
+export async function createCompetition(db: AppDatabase, input: NewCompetition) {
+  if (!SLUG_RE.test(input.slug)) {
+    throw new ValidationError('slug must be lowercase letters, digits and single hyphens')
+  }
+  const clash = await getCompetitionBySlug(db, input.slug)
+  if (clash) throw new ConflictError('a competition already uses that slug')
+
+  const [row] = await db
+    .insert(competition)
+    .values({
+      slug: input.slug,
+      name: input.name,
+      provider: input.provider,
+      externalCompetitionId: input.externalCompetitionId,
+      externalSeasonId: null,
+      seasonHint: input.seasonHint,
+      isActive: true,
+    })
+    .returning()
+  return row
+}
+
+// Archiving, not deleting: competition cascades into round, match,
+// competition_award, user_achievement and showcase_pin, with leagues and chat
+// hanging off it, so a delete would take a tournament's whole history with it.
+// isActive=false already hides it from the switcher and the default resolver.
+export async function setCompetitionActive(db: AppDatabase, slug: string, isActive: boolean) {
+  const target = await getCompetitionBySlug(db, slug)
+  if (!target) throw new NotFoundError('competition not found')
+  const [row] = await db.update(competition).set({ isActive }).where(eq(competition.id, target.id)).returning()
+  return row
 }
