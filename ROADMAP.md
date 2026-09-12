@@ -746,11 +746,14 @@ effort buckets; order within a bucket is not priority.
     isomorphic deep-link builder (`shared/types/notifications.ts`), which has a
     Dart twin, so it becomes a parameter and the parity vectors move with it.
   - **`competition_provider` bindings table**, not a provider field on the row.
-    The row already carries a second provider for odds, and capabilities
-    genuinely differ: ESPN is fixtures-only, FIFA has bracket + timeline +
-    player stats, so the best World Cup config may be fixtures from ESPN with
-    bracket/detail from FIFA. Add the table up front - one-provider-per-row is
-    assumed at every `createProvider()` call site. First cut uses one binding
+    The row already carries a second provider for odds, and coverage differs by
+    competition rather than uniformly: ESPN now reaches FIFA/UEFA parity but
+    carries competitions FIFA does not, football-data needs a token for
+    `/scorers` while FIFA is keyless, and FIFA's gameday scorer stories 404 once
+    an edition ends. Bindings also turn a mid-tournament provider outage into a
+    re-point of one capability rather than a competition-wide switch. Add the
+    table up front - one-provider-per-row is assumed at every `createProvider()`
+    call site. First cut uses one binding
     for everything; per-capability routing later.
   - **Optional `discoverCompetitions?()`** on `MatchDataProvider`, matching the
     existing optional-method style. FIFA / ESPN / football-data can enumerate;
