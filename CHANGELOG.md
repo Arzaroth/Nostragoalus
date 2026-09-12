@@ -7,6 +7,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ### Added
 
+- A rugby champion pick is priced off the World Rugby ranking, not FIFA's. Backing one of the top four pays the least and a side outside the top twenty pays the most, so picking South Africa is worth what picking South Africa is worth.
+- The crystal ball holds a rugby ball while you are in a rugby tournament. An unlocked skin still wins - that one you went looking for.
 - Rugby is scored on the margin, not the exact scoreline. Nobody calls 27-24 on judgement, so a rugby tournament now rewards getting the winning margin into the right band - within a converted try (1-7), 8-14, or 15 and up - and the exact score becomes a lucky bonus rather than the main prize. The rarity bonus moves with it: it counts how much of the field read the result, instead of handing everyone who called the winner the top tier. A tournament picks all of this up when it is added, and an admin can retune every number.
 - Admin: rugby tournaments can be added, from World Rugby's own match feed rather than a third party. Pools, the knockout rounds and the bronze final all come through correctly, and the 2027 Rugby World Cup - including its new round of 16 - already reads in full. Scoring and the look of the site are still the football ones, so this opens the door rather than walking through it.
 

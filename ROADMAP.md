@@ -829,10 +829,19 @@ effort buckets; order within a bucket is not priority.
     rugby scoreline is unique, so the top rarity tier would pay the whole field.
     Applied as an editable per-competition override at creation. Ported to Dart
     in the same pass; 304 parity vectors green.
-  - Rugby, still to do: World Rugby rankings instead of FIFA for champion tiers
-    (the preset is a flat 10 until then, since every side reads as absent from
-    the FIFA table), tries rather than goals through `goal_event` and the
-    timeline, and two top-scorer boards (tries and points). ESPN covers rugby under `sports/rugby/`. Sport switch
+  - [x] **Champion tiers read the World Rugby table** (`/rankings/{sport}`),
+    picked per competition sport and cached per source - men's and women's are
+    different tables under codes of the same shape. Rugby tiers are tighter at
+    the top than football's (4/10/20) because the same handful of sides hold the
+    leading places for years. Sevens has no table; that 400 falls back to the
+    flat bonus, the path that already existed for a FIFA outage.
+  - [x] **The mark follows the sport**: a rugby competition puts a rugby ball in
+    the crystal ball (`LogoRugby.vue`, plus `mark-rugby.svg` for the static
+    emblem). An unlocked skin still wins - that is a deliberate unlock, and it
+    should not be undone by which tournament is being viewed.
+  - Rugby, still to do: tries rather than goals through `goal_event` and the
+    timeline (`/match/{id}/timeline` carries typed `T5`/`C2`/`P3`), and two
+    top-scorer boards (tries and points). ESPN covers rugby under `sports/rugby/`. Sport switch
     drives theme or at least logo. Multi-sport is a MAJOR.
   - Basketball: wanted, but **NBA playoffs is not a smaller NBA** - best-of-7 is
     variable-length multi-leg, a generalization of the UCL problem rather than

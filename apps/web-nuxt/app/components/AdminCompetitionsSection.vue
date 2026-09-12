@@ -55,7 +55,7 @@ async function refreshAll() {
   await invalidate()
   await queryClient.invalidateQueries({ queryKey: ['competitions'] })
   const fresh = await $fetch<{ competitions: Competition[]; defaultSlug: string }>('/api/competitions')
-  meta.value = { slugs: fresh.competitions.map((c) => c.slug), defaultSlug: fresh.defaultSlug }
+  meta.value = toCompetitionMeta(fresh)
 }
 
 const err = ref('')

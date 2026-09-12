@@ -13,3 +13,10 @@ export const competitionRefSchema = z.object({
   slug: z.string(),
   name: z.string(),
 })
+
+// The list adds the sport, so the client can dress itself for it (the header
+// mark) without a request per competition. Kept off the shared ref on purpose:
+// the leaderboard and league routes embed that ref and have no use for it.
+export const competitionListItemSchema = competitionRefSchema.extend({
+  sport: z.string(),
+})

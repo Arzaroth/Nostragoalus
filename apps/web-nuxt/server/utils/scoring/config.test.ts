@@ -127,9 +127,15 @@ describe('rulesForSport', () => {
     expect(rulesForSport('CURLING')).toBe(DEFAULT_RULES)
   })
 
-  it('keeps the rugby champion payout flat until World Rugby ranks are wired', () => {
-    // Rank-based tiers would read every rugby side as absent from the FIFA
-    // table and hand them all the long-shot payout.
-    expect(RUGBY_UNION_RULES.championTiers).toEqual([{ maxRank: null, points: 10 }])
+  it('tiers the rugby champion payout against the World Rugby table', () => {
+    // Tighter at the top than football's: the same handful of sides hold the
+    // leading places for years, so a top-4 pick is barely a call.
+    expect(championPointsForRank(1, RUGBY_UNION_RULES)).toBe(10)
+    expect(championPointsForRank(4, RUGBY_UNION_RULES)).toBe(10)
+    expect(championPointsForRank(5, RUGBY_UNION_RULES)).toBe(15)
+    expect(championPointsForRank(11, RUGBY_UNION_RULES)).toBe(25)
+    expect(championPointsForRank(21, RUGBY_UNION_RULES)).toBe(40)
+    // A side outside the table at all is still the catch-all long shot.
+    expect(championPointsForRank(null, RUGBY_UNION_RULES)).toBe(40)
   })
 })

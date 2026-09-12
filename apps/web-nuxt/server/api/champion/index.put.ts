@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { db } from '../../../db'
 import { resolveCompetition } from '../../utils/competitions/store'
 import { repickChampion, setChampionPick } from '../../utils/champion/service'
-import { getFifaRanks } from '../../utils/champion/ranking'
+import { getRanksForCompetition } from '../../utils/champion/ranking'
 import { championPointsForRank } from '../../utils/scoring/config'
 import { getScoringConfigFor } from '../../utils/scoring/store'
 import { defineValidatedHandler } from '../../utils/validated-handler'
@@ -22,7 +22,7 @@ export default defineValidatedHandler({ body: bodySchema, response: responseSche
   const competition = await resolveCompetition(db, body.competition || null)
   if (!competition) throw createError({ statusCode: 404, statusMessage: 'competition not found' })
 
-  const [ranks, config] = await Promise.all([getFifaRanks(), getScoringConfigFor(db, competition.id)])
+  const [ranks, config] = await Promise.all([getRanksForCompetition(competition), getScoringConfigFor(db, competition.id)])
   const fifaRank = ranks?.get(body.teamCode) ?? null
   // Ranks known -> tier by rank (an absent team is a catch-all long shot).
   // Ranking fetch failed (ranks null) -> flat fallback so a pick still saves.

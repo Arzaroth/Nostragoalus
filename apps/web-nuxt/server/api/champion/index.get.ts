@@ -5,7 +5,7 @@ import { championPick } from '../../../db/schema'
 import { resolveCompetition } from '../../utils/competitions/store'
 import { getChampionLockTime, getMyChampionPick, listCompetitionTeams } from '../../utils/champion/service'
 import { getSecondChanceWindow, isSecondChanceOpen } from '../../utils/picks/window'
-import { getFifaRanks } from '../../utils/champion/ranking'
+import { getRanksForCompetition } from '../../utils/champion/ranking'
 import { defineReadHandler } from '../../utils/read-handler'
 import { championPointsForRank } from '../../utils/scoring/config'
 import { getScoringConfigFor } from '../../utils/scoring/store'
@@ -28,7 +28,7 @@ export default defineReadHandler({ response: responseSchema, auth: 'user', query
     getMyChampionPick(db, user.id, competition.id),
     getChampionLockTime(db, competition.id),
     getSecondChanceWindow(db, competition.id),
-    getFifaRanks(),
+    getRanksForCompetition(competition),
     getScoringConfigFor(db, competition.id),
   ])
 

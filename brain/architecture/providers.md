@@ -280,10 +280,16 @@ typed bronze final, and the World Rugby rankings that will drive champion tiers.
   tagged with a sport code (`mru` men's union, `wru` women's, `jmu`/`jwu` U20,
   `mrs`/`wrs` sevens). The adapter filters to its own sport and stops after five
   pages - an admin is choosing a season to run, not browsing an archive.
-- **Not wired yet:** `/rankings/{sport}` (World Rugby rankings, for champion
-  tiers instead of FIFA's) and `/match/{id}/timeline` (typed `T5` try, `C2`
-  conversion, `P3` penalty, `Miss Con`, `Miss Pen`, `Yellow`) are both live and
-  keyless; they belong with the rugby scoring preset, not with the adapter.
+- **Rankings:** `/rankings/{sport}` gives the World Rugby table (114 men's
+  sides, 70 women's) as `{team: {abbreviation}, pos}` - the same three-letter
+  alphabet the match feed uses, so a champion pick's code looks up directly.
+  `champion/ranking.ts` picks the table from the competition's sport and caches
+  per source key, since men's and women's are different tables under codes of
+  the same shape. The sevens feeds answer 400; that surfaces as null ranks,
+  which the champion routes already treat as "use the flat bonus".
+- **Not wired yet:** `/match/{id}/timeline` (typed `T5` try, `C2` conversion,
+  `P3` penalty, `Miss Con`, `Miss Pen`, `Yellow`) is live and keyless; it
+  belongs with tries-through-`goal_event`, not with the adapter.
 
 A competition names its sport twice for different reasons: `competition.sport`
 (the `sport` pg enum, `FOOTBALL` / `RUGBY_UNION`) is looked up from the provider
@@ -355,6 +361,8 @@ container, check that binary is present before blaming the provider.
 
 - `apps/web-nuxt/server/utils/providers/**` (FIFA, UEFA, ESPN, football-data, World Rugby adapters, `cycle-tls.ts`)
 - `apps/web-nuxt/shared/sport.ts` (sport enum mirror, per-provider sub-feeds)
+- `apps/web-nuxt/server/utils/providers/worldrugby-ranking.ts`, `apps/web-nuxt/server/utils/champion/ranking.ts` (per-sport ranking source)
+- `apps/web-nuxt/app/components/LogoMark.vue`, `apps/web-nuxt/app/components/logos/LogoRugby.vue` (the mark follows skin, then sport)
 - `apps/web-nuxt/server/utils/competitions/discovery.ts` (catalog, cached per provider and sub-feed)
 - `apps/web-nuxt/server/utils/odds/providers/sofascore.ts`, `apps/web-nuxt/server/utils/odds/{sync,provider-config}.ts` (odds provider registry)
 - `apps/web-nuxt/server/utils/champion/ranking.ts`

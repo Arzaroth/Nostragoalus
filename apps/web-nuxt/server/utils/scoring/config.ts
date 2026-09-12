@@ -150,10 +150,16 @@ export const RUGBY_CROWD_TIERS: CrowdTier[] = [
   { maxShareExclusive: 0.6, bonus: 1 },
 ]
 
-// Flat until World Rugby rankings are wired: every side is absent from the FIFA
-// table, so the rank tiers would hand every rugby champion pick the long-shot
-// payout.
-export const RUGBY_CHAMPION_TIERS: ChampionTier[] = [{ maxRank: null, points: 10 }]
+// Against the World Rugby table (114 men's sides), not FIFA's. Tighter at the
+// top than football's because rugby's is: the same four or five teams hold the
+// leading places for years, so a top-4 pick is close to no call at all, while
+// football's top 8 is genuinely contested.
+export const RUGBY_CHAMPION_TIERS: ChampionTier[] = [
+  { maxRank: 4, points: 10 },
+  { maxRank: 10, points: 15 },
+  { maxRank: 20, points: 25 },
+  { maxRank: null, points: 40 },
+]
 
 export const RUGBY_UNION_RULES: ScoringRules = {
   ...DEFAULT_RULES,

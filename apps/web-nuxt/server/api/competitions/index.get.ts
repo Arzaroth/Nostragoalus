@@ -1,15 +1,15 @@
 import { z } from 'zod'
 import { db } from '../../../db'
-import { competitionRefSchema } from '../../schemas/competition'
+import { competitionListItemSchema } from '../../schemas/competition'
 import { getDefaultCompetitionSlug, listActiveCompetitions } from '../../utils/competitions/store'
 import { defineReadHandler } from '../../utils/read-handler'
 
-const responseSchema = z.object({ competitions: z.array(competitionRefSchema), defaultSlug: z.string() })
+const responseSchema = z.object({ competitions: z.array(competitionListItemSchema), defaultSlug: z.string() })
 
 export default defineReadHandler({ response: responseSchema }, async () => {
   const competitions = await listActiveCompetitions(db)
   const defaultSlug = await getDefaultCompetitionSlug(db, competitions)
-  return { competitions: competitions.map((c) => ({ id: c.id, slug: c.slug, name: c.name })), defaultSlug }
+  return { competitions: competitions.map((c) => ({ id: c.id, slug: c.slug, name: c.name, sport: c.sport })), defaultSlug }
 })
 
 defineRouteMeta({
@@ -21,7 +21,7 @@ defineRouteMeta({
     "description": "All active competitions, newest season first, plus the slug a slug-less context should land on (admin-set, falling back to the newest active season).",
     "responses": {
       "200": {
-        "description": "{ competitions: [{ id, slug, name }], defaultSlug }."
+        "description": "{ competitions: [{ id, slug, name, sport }], defaultSlug }."
       }
     }
   },

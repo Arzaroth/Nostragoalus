@@ -5,11 +5,15 @@ export interface Competition {
   id: string
   slug: string
   name: string
+  sport: string
 }
 
 export interface CompetitionMeta {
   slugs: string[]
   defaultSlug: string
+  // slug -> sport, so the header can dress itself for the competition in the
+  // URL without waiting on a per-competition request.
+  sportBySlug: Record<string, string>
 }
 
 // Slug set + admin-set default, fetched once and carried into the payload by
@@ -19,6 +23,17 @@ export function useCompetitionMeta() {
   return useState<CompetitionMeta | null>('competition-meta', () => null)
 }
 
+// Shared by the boot resolve and the admin section's post-create refresh, which
+// both write the same state - when they drifted, one of them silently dropped a
+// field the other had just added.
+export function toCompetitionMeta(res: { competitions: Competition[]; defaultSlug: string }): CompetitionMeta {
+  return {
+    slugs: res.competitions.map((c) => c.slug),
+    defaultSlug: res.defaultSlug,
+    sportBySlug: Object.fromEntries(res.competitions.map((c) => [c.slug, c.sport])),
+  }
+}
+
 // Resolves the meta once per request/session. Returns null when the API is
 // unreachable, so callers fall back rather than block navigation.
 export async function ensureCompetitionMeta(): Promise<CompetitionMeta | null> {
@@ -26,7 +41,7 @@ export async function ensureCompetitionMeta(): Promise<CompetitionMeta | null> {
   if (meta.value) return meta.value
   try {
     const res = await $fetch<{ competitions: Competition[]; defaultSlug: string }>('/api/competitions')
-    meta.value = { slugs: res.competitions.map((c) => c.slug), defaultSlug: res.defaultSlug }
+    meta.value = toCompetitionMeta(res)
   } catch {
     return null
   }
@@ -48,6 +63,15 @@ export function useSelectedCompetition() {
   const last = useLastCompetition()
   const fallback = useDefaultCompetition()
   return computed(() => (route.params.competition as string) || last.value || fallback.value)
+}
+
+// The sport the active competition is played at, defaulting to football until
+// the meta resolves (and for any slug the meta does not carry). Drives the
+// header mark; a competition is football unless it says otherwise.
+export function useSelectedSport() {
+  const meta = useCompetitionMeta()
+  const slug = useSelectedCompetition()
+  return computed(() => meta.value?.sportBySlug?.[slug.value] ?? 'FOOTBALL')
 }
 
 // Remembered across navigations so "/" and legacy links land on a sensible
