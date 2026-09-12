@@ -71,7 +71,7 @@ stored full-time result, keyed on `resultHash` + config `version`, so a re-run
 with unchanged inputs is a no-op and a rescore after a correction lands the same
 numbers.
 
-A single scheduled task, `matches:finalize` (cron `*/5 * * * *`), runs the whole
+A single scheduled task, `matches:finalize` (cron `* * * * *`), runs the whole
 tick. `finalizeMatches(db)` wraps lock/unlock, scoring, champion awards and voids
 in one transaction; the task then syncs per-match detail and awards the
 best-scorer bonus.

@@ -25,8 +25,9 @@ describe('buildCronTaskRows', () => {
   it('computes the next run for a scheduled task and null for a manual one', () => {
     const rows = buildCronTaskRows([], NOW)
     const poll = rows.find((r) => r.name === 'scores:poll')!
-    // */2 from 12:01:30 -> 12:02:00
-    expect(poll.schedule).toBe('*/2 * * * *')
+    // Six fields (seconds first), which croner parses here exactly as nitro does
+    // when it schedules the task: */30s from 12:01:30 -> 12:02:00.
+    expect(poll.schedule).toBe('*/30 * * * * *')
     expect(poll.nextRunAt).toBe('2026-06-13T12:02:00.000Z')
     const backfill = rows.find((r) => r.name === 'odds:backfill')!
     expect(backfill.schedule).toBeNull()

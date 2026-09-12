@@ -136,9 +136,9 @@ admin Background-tasks page via `apps/web-nuxt/server/api/admin/run-task.post.ts
 
 | Task | Cron | Purpose |
 |---|---|---|
-| `scores:poll` | every 2 min (live-gated) | poll live scores, publish changes, fire live push |
+| `scores:poll` | every 30s (live-gated) | poll live scores, publish changes, fire live push |
 | `fixtures:refresh` | hourly | refresh fixtures from the provider |
-| `matches:finalize` | every 5 min | lock predictions at kickoff, score finished matches |
+| `matches:finalize` | every 1 min | lock predictions at kickoff, score finished matches |
 | `odds:refresh` | every 30 min (fire-and-forget) | refresh odds snapshots |
 | `notifications:pick-reminders` | every 15 min | PICK_REMINDER scheduling |
 | `users:prune-unverified` | daily | drop never-verified signups |

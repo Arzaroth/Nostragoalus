@@ -10,12 +10,23 @@ export interface TaskDef {
 }
 
 export const TASKS: TaskDef[] = [
-  // Live score polling self-gates on the live window, so off-window ticks make no API calls.
-  { name: 'scores:poll', cron: '*/2 * * * *', fireAndForget: false },
+  // Live score polling self-gates on the live window (one indexed query), so
+  // off-window ticks make no API calls and the short interval costs nothing
+  // outside a match. Six fields: nitro hands the expression straight to croner,
+  // which takes an optional leading seconds field, so this is every 30s.
+  // Guarded by withoutOverlap - nitro does not set croner's `protect`, and at
+  // this interval a slow tick would otherwise run concurrently with the next,
+  // doubling provider requests and duplicating goal pushes.
+  { name: 'scores:poll', cron: '*/30 * * * * *', fireAndForget: false },
   // Hourly fixture/bracket refresh.
   { name: 'fixtures:refresh', cron: '0 * * * *', fireAndForget: false },
-  // Lock predictions at kickoff and score finished matches.
-  { name: 'matches:finalize', cron: '*/5 * * * *', fireAndForget: false },
+  // Lock predictions at kickoff and score finished matches. Every minute rather
+  // than every five so points and result notifications land soon after the final
+  // whistle; the detail sync self-gates on FINISHED + detailsFetchedAt IS NULL,
+  // so an idle tick makes no provider calls. Locking is bookkeeping either way -
+  // the save path rejects a post-kickoff edit on its own. Also guarded, since a
+  // tick that fetches a batch of details can outlast the interval.
+  { name: 'matches:finalize', cron: '* * * * *', fireAndForget: false },
   // Odds snapshots self-gate on per-match staleness, so most ticks are no-ops.
   { name: 'odds:refresh', cron: '*/30 * * * *', fireAndForget: true },
   // Daily cleanup of never-confirmed accounts (self-gates: no-op unless email

@@ -3,7 +3,7 @@ import { TASKS, findTask, scheduledTasksMap } from './registry'
 
 describe('task registry', () => {
   it('finds tasks by name', () => {
-    expect(findTask('scores:poll')?.cron).toBe('*/2 * * * *')
+    expect(findTask('scores:poll')?.cron).toBe('*/30 * * * * *')
     expect(findTask('odds:backfill')?.cron).toBeNull()
     expect(findTask('nope')).toBeUndefined()
   })
@@ -14,7 +14,7 @@ describe('task registry', () => {
     const scheduled = TASKS.filter((t) => t.cron)
     expect(Object.values(map).flat().sort()).toEqual(scheduled.map((t) => t.name).sort())
     expect(Object.values(map).flat()).not.toContain('odds:backfill')
-    expect(map['*/2 * * * *']).toEqual(['scores:poll'])
+    expect(map['*/30 * * * * *']).toEqual(['scores:poll'])
   })
 
   it('groups tasks that share a cron expression', () => {

@@ -1,5 +1,6 @@
 import { db } from '../../../db'
 import { recordTaskRun } from '../../utils/tasks/recorder'
+import { withoutOverlap } from '../../utils/tasks/no-overlap'
 import { finalizeMatches } from '../../utils/sync/finalize'
 import { listActiveCompetitions } from '../../utils/competitions/store'
 import { providerForCompetition } from '../../utils/providers'
@@ -16,7 +17,11 @@ import { publishMatchUpdates } from '../../utils/live/hub'
 export default defineTask({
   meta: { name: 'matches:finalize', description: 'Lock due predictions, score finished matches, fetch match details' },
   async run() {
-    return recordTaskRun(db, 'matches:finalize', async () => {
+    // Guarded: this one awards trophies, grants achievements and sends result
+    // notifications. Overlapping runs are idempotent per award but would still
+    // duplicate the notifications, and a tick that fetches a batch of match
+    // details can outlast a one-minute schedule.
+    return recordTaskRun(db, 'matches:finalize', async () => withoutOverlap('matches:finalize', async () => {
     const result = await finalizeMatches(db)
 
     const details: Record<string, unknown> = {}
@@ -80,6 +85,6 @@ export default defineTask({
     await publishMatchUpdates(db, result.changedMatchIds)
 
     return { result: { ...result, details } }
-    })
+    }))
   },
 })
