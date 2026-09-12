@@ -5,6 +5,22 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+
+- Android app: calls now appear in the conversation, the way they do on the website - who started one and how long it ran, and a missed call you would otherwise never have seen.
+- Android app: a call button in league chat, so a league call can be started from the room itself.
+
+### Changed
+
+- Android app: it now has its own version number, separate from the website's. A release of one no longer implies a release of the other, so what the changelog says about the app is about the app.
+- Android app: the call bar at the bottom of a conversation now appears only while a call is actually running. It used to sit there permanently, which in a direct message meant two competing call buttons on one screen.
+
+### Fixed
+
+- Android app: a password manager now fills the email and the password together on the sign-in screen instead of only the field you tapped, and offers to save a new one.
+- Android app: messages were listed newest first. They read in the order they were sent again, with anything still sending at the bottom.
+- Android app: moving between screens no longer flashes dark before the new screen settles.
+
 ## [4.10.0] - 2026-09-11
 
 ### Changed

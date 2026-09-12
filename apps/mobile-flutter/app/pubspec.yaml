@@ -1,7 +1,17 @@
 name: nostragoalus
 description: Nostragoalus native mobile client (Flutter).
 publish_to: none
-version: 0.1.0+1
+# The app's OWN version, independent of the website's. `name+code`, the Flutter
+# convention: the name is what people see, the code is what Android orders
+# upgrades by and can only ever increase.
+#
+# The name restarts at 1.0.0 because the app had never been released on its own
+# line - it wore the site's number, so 4.9.0 described a build whose app-side
+# changes were nil. The code does NOT restart: 40900 is already installed (the
+# last site-numbered build), and Android refuses a lower code, so anyone holding
+# that build could only move forward by uninstalling - which throws away the
+# E2EE chat identity in the keystore. Continuing the counter upgrades in place.
+version: 1.0.0+40901
 
 environment:
   sdk: ^3.5.0

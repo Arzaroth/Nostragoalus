@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
+import '../../api/models.gen.dart' show Call;
+import '../../chat/call_log.dart';
 import '../../chat/chat_providers.dart' show ChatLine;
 import '../../chat/outbox.dart';
+import 'call_line_tile.dart';
 import 'empty_state.dart';
 import 'outbox_tile.dart';
 
@@ -12,8 +15,20 @@ List<Object> chatItems(
   List<ChatLine> lines,
   List<OutboxEntry> outbox, {
   bool reverse = false,
+  List<Call> calls = const [],
 }) {
-  final items = <Object>[...lines, ...outbox];
+  final anchored = anchorCalls(
+    calls,
+    [for (final l in lines) (id: l.id, createdAt: l.createdAt)],
+  );
+  final items = <Object>[];
+  for (final line in lines) {
+    items.addAll(anchored.before[line.id] ?? const []);
+    items.add(line);
+  }
+  // Calls newer than every message, then the sends still in flight, which are
+  // newer than anything the server has confirmed.
+  items..addAll(anchored.tail)..addAll(outbox);
   return reverse ? items.reversed.toList() : items;
 }
 
@@ -27,6 +42,7 @@ class ChatMessageList extends StatelessWidget {
     required this.tile,
     required this.emptyMessage,
     this.reverse = false,
+    this.calls = const [],
   });
 
   final List<ChatLine> lines;
@@ -35,9 +51,12 @@ class ChatMessageList extends StatelessWidget {
   final String emptyMessage;
   final bool reverse;
 
+  /// The room's call log, interleaved into the timeline by start time.
+  final List<Call> calls;
+
   @override
   Widget build(BuildContext context) {
-    final items = chatItems(lines, outbox, reverse: reverse);
+    final items = chatItems(lines, outbox, reverse: reverse, calls: calls);
     if (items.isEmpty) return EmptyState(message: emptyMessage, icon: Icons.forum_outlined);
     return ListView.builder(
       reverse: reverse,
@@ -45,7 +64,11 @@ class ChatMessageList extends StatelessWidget {
       itemCount: items.length,
       itemBuilder: (context, i) {
         final item = items[i];
-        return item is ChatLine ? tile(item) : OutboxTile(entry: item as OutboxEntry);
+        return switch (item) {
+          ChatLine() => tile(item),
+          Call() => CallLineTile(call: item),
+          _ => OutboxTile(entry: item as OutboxEntry),
+        };
       },
     );
   }

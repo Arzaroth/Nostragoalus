@@ -5,6 +5,22 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### chelpu'
+
+- Android De'wI'Hom: DaH ja'chuqDaq rI'mey 'anglu', Sar rur: 'Iv rI'taH, 'ej nuq poH. rI'mey lajbe'bogh je 'angl u', not legh vaj.
+- Android De'wI'Hom: ghom ja'chuqDaq rI'meH Do'Ha'wI'. pa'vo' rI' tagh laH.
+
+### choHpu'
+
+- Android De'wI'Hom: DaH mI' ngo'lIj ghaj, Sar mI' pIm. wa' ngeHlu'chugh, latlh ngeHbe'lu'; vaj De'wI'Hom qonta' 'oH De'wI'Hom qonta'.
+- Android De'wI'Hom: ja'chuq bIng rI' 'ay' 'angtaH rI'taHvIS neH. reH 'angtaH, vaj QIn peghDaq cha' rI' Do'Ha'wI' HaStaDaq wa'.
+
+### tI'pu'
+
+- Android De'wI'Hom: DaH mu'naQ polwI' 'el mu'naQ je De'wI' ghomHa'meH teywI' cha' naQ, wa' neH ghobe'; 'ej chu' polmeH chID.
+- Android De'wI'Hom: QInmey chu' wa'DIch tetlh. DaH ngeH poH tetlh, 'ej ngeHtaHbogh bIngDaq.
+- Android De'wI'Hom: HaSta choHDI', wovbe' qaSbe'law' wa'.
+
 ## [4.10.0] - 2026-09-11
 
 ### choHpu'

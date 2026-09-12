@@ -30,6 +30,19 @@ enum BonusSourceValue {
       values.firstWhere((e) => e.wire == v, orElse: () => unknown);
 }
 
+enum CallStatusValue {
+  ongoing('ONGOING'),
+  ended('ENDED'),
+  missed('MISSED'),
+  unknown('');
+
+  const CallStatusValue(this.wire);
+  final String wire;
+
+  static CallStatusValue from(Object? v) =>
+      values.firstWhere((e) => e.wire == v, orElse: () => unknown);
+}
+
 enum CardValue {
   yellow('YELLOW'),
   secondYellow('SECOND_YELLOW'),
@@ -1326,6 +1339,67 @@ class CabinetResponseShowcase {
   Map<String, dynamic> toJson() => {
         'slot': slot,
         'achievementKey': achievementKey,
+      };
+}
+
+class Call {
+  final String id;
+
+  /// One of: ONGOING, ENDED, MISSED.
+  final CallStatusValue status;
+  final String? initiatorId;
+  final String? initiatorName;
+  final double participantCount;
+  final String startedAt;
+  final String? endedAt;
+
+  const Call({
+    required this.id,
+    required this.status,
+    this.initiatorId,
+    this.initiatorName,
+    required this.participantCount,
+    required this.startedAt,
+    this.endedAt,
+  });
+
+  factory Call.fromJson(Map<String, dynamic> json) => Call(
+        id: json['id'] as String,
+        status: CallStatusValue.from(json['status']),
+        initiatorId: json['initiatorId'] as String?,
+        initiatorName: json['initiatorName'] as String?,
+        participantCount: (json['participantCount'] as num).toDouble(),
+        startedAt: json['startedAt'] as String,
+        endedAt: json['endedAt'] as String?,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'status': status.wire,
+        'initiatorId': initiatorId,
+        'initiatorName': initiatorName,
+        'participantCount': participantCount,
+        'startedAt': startedAt,
+        'endedAt': endedAt,
+      };
+}
+
+class CallLogResponse {
+  final List<Call> calls;
+
+  const CallLogResponse({
+    required this.calls,
+  });
+
+  factory CallLogResponse.fromJson(Map<String, dynamic> json) =>
+      CallLogResponse(
+        calls: (json['calls'] as List)
+            .map((e) => Call.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
+
+  Map<String, dynamic> toJson() => {
+        'calls': calls.map((e) => e.toJson()).toList(),
       };
 }
 

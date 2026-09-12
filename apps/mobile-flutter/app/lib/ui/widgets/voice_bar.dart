@@ -10,9 +10,13 @@ import '../../voice/voice_mesh.dart';
 import '../../voice/voice_service.dart';
 import 'panel.dart';
 
-/// Join / in-call controls for one voice room. Audio-only WebRTC mesh over the
-/// signaling hub. Only the bar of the room the user is actually in shows the
-/// in-call controls; every other bar keeps offering its own join.
+/// In-call controls for one voice room. Audio-only WebRTC mesh over the
+/// signaling hub.
+///
+/// Shows ONLY while the call it belongs to is running. Starting a call is the
+/// app-bar action on the room; a bar standing there permanently offering to join
+/// was a second call control competing with that button, and in a DM the two sat
+/// on the same screen.
 class VoiceBar extends ConsumerStatefulWidget {
   const VoiceBar({super.key, required this.scope});
   final VoiceScope scope;
@@ -40,17 +44,6 @@ class _VoiceBarState extends ConsumerState<VoiceBar> {
         : null;
   }
 
-  Future<void> _join(VoiceService voice) async {
-    try {
-      await voice.join(widget.scope);
-    } on VoiceJoinException catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(context.tr(e.micDenied ? 'voice.error.micDenied' : 'err.serverError')),
-      ));
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final voice = ref.watch(voiceServiceProvider);
@@ -60,31 +53,7 @@ class _VoiceBarState extends ConsumerState<VoiceBar> {
       builder: (context, state, _) {
         final ours = state.scope == widget.scope;
         _syncTicker(ours && state is VoiceInCall);
-        if (!ours) {
-          return ColoredBox(
-            color: t.board,
-            child: SafeArea(
-              top: false,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Hairline(),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                    child: Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: OutlinedButton.icon(
-                        onPressed: () => _join(voice),
-                        icon: const Icon(Icons.call_outlined, size: 18),
-                        label: Text(context.tr('voice.join')),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        }
+        if (!ours) return const SizedBox.shrink();
         final live = state is VoiceInCall && state.established;
         final accent = live ? t.emerald : t.amber;
         return ColoredBox(

@@ -40,12 +40,22 @@ Inside `app/lib/`:
 
 ## Versions, and the floor under them
 
-There is ONE version line. `apps/web-nuxt/package.json` is it: the release task
-bumps it, `apk-publish` reads it for the APK's `versionName`, derives
-`versionCode` as `major*10000 + minor*100 + patch`, and stamps it into the build
-as `--dart-define=APP_VERSION`. `pubspec.yaml`'s own `version:` is vestigial and
-ignored. So the app on the site and the site serving it carry the same number by
-construction.
+The app has its **own** version line: `apps/mobile-flutter/app/pubspec.yaml`,
+Flutter's `name+code`. `apk-publish` reads both from there - the name becomes the
+`versionName` and `--dart-define=APP_VERSION`, the code becomes the
+`versionCode`. `apps/web-nuxt/package.json` is the SITE's version and no longer
+touches the app.
+
+They were one line until 4.10.0, which meant a site-only release minted an APK
+whose app-side changes were nil, and every release told half its audience about
+work it had not done. The name restarted at 1.0.0 when they split; the code did
+NOT, because 40900 was already installed and Android refuses a lower code - an
+installed build could then only move forward by uninstalling, which throws away
+the E2EE chat identity held in the keystore.
+
+One artifact of the restart: a build from before the split reports 4.x, which
+compares as newer than any 1.x release, so the floor below cannot hold it back.
+Exactly one device ever ran one, and it stops reporting 4.x once it updates.
 
 A sideloaded APK never auto-updates, which is the whole problem: an install from
 any past release can still be talking to today's server. Two things address that,
@@ -147,6 +157,16 @@ not survive: in French `nav.standings` ("Classement") and `nav.leaderboard`
 Both app-bar pickers are one widget, `ui/widgets/app_bar_picker.dart` - they sit
 in the same app bar, and writing the second by copying the first is how their
 tooltips drifted apart the first time.
+
+A room's calls are part of its story, so the chat interleaves them: "started a
+call", "call by X, 2:30", "missed call from X", anchored before the first message
+newer than each, the way the web's ChatPanel does. `chat/call_log.dart` holds the
+pure part (the anchoring merge, the duration format the website also uses, and
+the i18n key per status - an unknown status renders nothing rather than an
+invented sentence). Starting a call is the app-bar button on the room;
+`widgets/voice_bar.dart` is call STATE and shows only while a call is running,
+because a bar permanently offering to join was a second call control competing
+with that button, and in a DM both sat on one screen.
 
 Chat is a tab because mobile has no dock. The web keeps `ChatDock.vue` on every
 page; here `ui/chat_rooms_screen.dart` is the way in - direct messages, badged

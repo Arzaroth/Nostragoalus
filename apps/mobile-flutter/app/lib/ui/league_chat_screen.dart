@@ -7,6 +7,7 @@ import '../chat/chat_providers.dart';
 import '../chat/outbox.dart';
 import '../i18n/i18n_scope.dart';
 import '../reactions.dart';
+import '../voice/voice_service.dart';
 import '../state/providers.dart';
 import 'feedback.dart';
 import 'thread_screen.dart';
@@ -18,6 +19,8 @@ import 'widgets/chat_message_list.dart';
 import 'widgets/chat_recovery_gate.dart';
 import 'widgets/empty_state.dart';
 import 'widgets/typing_indicator.dart';
+import 'widgets/voice_actions.dart';
+import 'widgets/voice_bar.dart';
 import 'widgets/user_avatar.dart';
 
 /// The league members named with a literal `@Name` in [text]. Derived at send
@@ -40,7 +43,11 @@ class LeagueChatScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final identity = ref.watch(chatIdentityProvider);
     return Scaffold(
-      appBar: AppBar(title: Text(name)),
+      appBar: AppBar(
+        title: Text(name),
+        actions: [VoiceCallButton(scope: VoiceScope.league(leagueId))],
+      ),
+      bottomNavigationBar: VoiceBar(scope: VoiceScope.league(leagueId)),
       body: identity.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (_, __) => EmptyState(message: context.tr('err.generic'), icon: Icons.error_outline),
@@ -277,6 +284,7 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
               ChatState.ready => ChatMessageList(
                   lines: view.lines,
                   outbox: outbox,
+                  calls: ref.watch(leagueCallLogProvider(widget.leagueId)).valueOrNull ?? const [],
                   reverse: true,
                   emptyMessage: context.tr('chat.empty'),
                   tile: (line) => _tile(line, members, selfId),

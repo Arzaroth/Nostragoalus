@@ -26,11 +26,17 @@ import { compareVersions } from '#shared/version'
 /// APK from the same package.json, so a floor above it refuses the build cut
 /// from that very release. `floor.test.ts` fails the gate if that happens.
 ///
-/// Starting at the release BEFORE the header existed is deliberate: no build
-/// older than that identifies itself, so this is inert until someone has a real
-/// reason to raise it, and the mechanism is proven by tests rather than by
-/// turning users away on day one.
-export const MIN_ANDROID_CLIENT = '4.8.0'
+/// This is a MOBILE app version (apps/mobile-flutter/app/pubspec.yaml), not a
+/// site version - the two lines were split, and the app restarted at 1.0.0.
+///
+/// Inert at the app's first version, which is the point: the mechanism is proven
+/// by tests rather than by turning anyone away on day one.
+///
+/// One artifact of the reset: builds from before the split report 4.x, which
+/// compares as NEWER than any 1.x app release, so they are served whatever the
+/// floor says. Only one device ever ran one, and it stops reporting 4.x the
+/// moment it updates.
+export const MIN_ANDROID_CLIENT = '1.0.0'
 
 export const CLIENT_HEADER = 'x-ng-client'
 

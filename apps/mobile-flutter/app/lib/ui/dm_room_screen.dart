@@ -191,6 +191,8 @@ class _DmRoomScreenState extends ConsumerState<DmRoomScreen> {
                   ChatState.ready => ChatMessageList(
                       lines: view.lines,
                       outbox: outbox,
+                      calls:
+                          ref.watch(dmCallLogProvider(widget.threadId)).valueOrNull ?? const [],
                       reverse: true,
                       emptyMessage: context.tr('chat.empty'),
                       tile: (line) => ChatLineTile(

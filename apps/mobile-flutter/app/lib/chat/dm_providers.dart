@@ -197,3 +197,13 @@ final dmAttachmentProvider =
     return null;
   }
 });
+
+/// The same for a DM thread. See [leagueCallLogProvider].
+final dmCallLogProvider =
+    FutureProvider.autoDispose.family<List<Call>, String>((ref, threadId) async {
+  try {
+    return (await ref.watch(apiProvider).voiceCalls(dmThreadId: threadId)).calls;
+  } catch (_) {
+    return const [];
+  }
+});

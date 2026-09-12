@@ -169,21 +169,21 @@ if [ ! -f android/key.properties ] && [ -z "${NG_ANDROID_KEYSTORE:-}" ]; then
 fi
 out="{{ config_root }}/../web-nuxt/downloads"
 mkdir -p "$out"
-# The site shows the release version, not the pubspec's own (vestigial) one, so
-# the APK on /about reads as the same release as the site serving it.
-version=$(sed -n 's/.*"version": "\\([^"]*\\)".*/\\1/p' "{{ config_root }}/../web-nuxt/package.json" | head -1)
-# versionName/versionCode come from the release too, so the APK's own metadata
-# agrees with what the site advertises. Android orders builds by versionCode
-# only, so x.y.z maps to x*10000 + y*100 + z (minor and patch stay under 100).
-# sed exits 0 on no match, so an unparsed version would otherwise ship as
-# versionCode 0 - which no already-installed build can ever be upgraded from.
+# The app's own version, from its own pubspec - NOT the website's. The two ship
+# on separate lines: a site-only release should not mint an APK, and an app-only
+# release should not need one. `name+code`, the Flutter convention.
+pubspec="{{ config_root }}/app/pubspec.yaml"
+version=$(sed -n 's/^version: *\\([0-9.]*\\)+.*/\\1/p' "$pubspec" | head -1)
+code=$(sed -n 's/^version: *[0-9.]*+\\([0-9]*\\).*/\\1/p' "$pubspec" | head -1)
+# sed exits 0 on no match, so an unparsed line would otherwise ship as an empty
+# name and versionCode 0 - which no already-installed build can upgrade from.
 case "$version" in
-  *[!0-9.]*|*..*|.*|*.) echo "apk-publish: '$version' is not a plain x.y.z release" >&2; exit 1 ;;
+  ''|*[!0-9.]*|*..*|.*|*.) echo "apk-publish: pubspec version '$version' is not a plain x.y.z" >&2; exit 1 ;;
 esac
-code=$(echo "$version" | awk -F. 'NF != 3 || $2 > 99 || $3 > 99 { exit 1 } { printf "%d", $1*10000 + $2*100 + $3 }') || {
-  echo "apk-publish: '$version' does not fit the versionCode scheme (x.y.z, minor/patch < 100)" >&2
-  exit 1
-}
+case "$code" in
+  ''|*[!0-9]*) echo "apk-publish: pubspec build number '$code' is not an integer" >&2; exit 1 ;;
+esac
+echo "apk-publish: app $version (versionCode $code)" 
 flutter build apk --release --dart-define=API_BASE="$api_base" --dart-define=WEB_BASE="$web_base" --dart-define=APP_VERSION="$version" --build-name="$version" --build-number="$code"
 apk=build/app/outputs/flutter-apk/app-release.apk
 name="nostragoalus-$version.apk"

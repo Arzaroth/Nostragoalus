@@ -11,6 +11,7 @@ import 'widgets/async_value_view.dart';
 import 'widgets/empty_state.dart';
 import 'widgets/movement_arrow.dart';
 import 'widgets/panel.dart';
+import 'widgets/voice_actions.dart';
 import 'widgets/voice_bar.dart';
 
 /// One board row of the points/survival union, read defensively: the endpoint
@@ -51,6 +52,7 @@ class LeagueBoardScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(name),
         actions: [
+          VoiceCallButton(scope: VoiceScope.league(leagueId)),
           IconButton(
             icon: const Icon(Icons.chat_bubble_outline),
             onPressed: () => Navigator.of(context).push(MaterialPageRoute(

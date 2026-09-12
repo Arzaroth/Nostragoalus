@@ -5,6 +5,22 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Ajouté
+
+- Application Android : les appels apparaissent desormais dans la conversation, comme sur le site : qui l'a lance et combien de temps il a dure, ainsi que les appels manques que vous n'auriez jamais vus autrement.
+- Application Android : un bouton d'appel dans la discussion de ligue, pour lancer un appel depuis la conversation elle-meme.
+
+### Modifié
+
+- Application Android : elle a desormais son propre numero de version, distinct de celui du site. Une version de l'un n'implique plus une version de l'autre, donc ce que le journal dit de l'application concerne bien l'application.
+- Application Android : la barre d'appel en bas d'une conversation n'apparait plus que pendant un appel. Elle restait affichee en permanence, ce qui donnait deux boutons d'appel concurrents sur le meme ecran dans un message prive.
+
+### Corrigé
+
+- Application Android : un gestionnaire de mots de passe remplit maintenant l'adresse et le mot de passe ensemble sur l'ecran de connexion, au lieu du seul champ touche, et propose d'enregistrer un nouvel identifiant.
+- Application Android : les messages etaient listes du plus recent au plus ancien. Ils se lisent de nouveau dans l'ordre d'envoi, avec les messages en cours d'envoi en bas.
+- Application Android : passer d'un ecran a l'autre ne provoque plus un bref fond noir avant l'affichage.
+
 ## [4.10.0] - 2026-09-11
 
 ### Modifié

@@ -379,3 +379,15 @@ final editChatProvider = Provider<Future<void> Function(String, String, String)>
     ref.invalidate(leagueChatProvider(leagueId));
   };
 });
+
+/// A league room's recent calls, for the chat's call lines. autoDispose so
+/// leaving the room drops them; the strip is decoration, and a failure renders
+/// nothing rather than taking the chat down with it.
+final leagueCallLogProvider =
+    FutureProvider.autoDispose.family<List<Call>, String>((ref, leagueId) async {
+  try {
+    return (await ref.watch(apiProvider).voiceCalls(leagueId: leagueId)).calls;
+  } catch (_) {
+    return const [];
+  }
+});

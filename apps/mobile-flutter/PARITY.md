@@ -126,6 +126,8 @@ with the data caveat noted per area.
   chat-enabled league, with the competition switcher since the rooms are
   competition-scoped. The web's dock has no mobile equivalent; before this,
   league chat was only reachable through a league
+- [x] Call lines in chat - "started a call" / "call by X, 2:30" / "missed call",
+  interleaved into the timeline by start time like the web's ChatPanel
 - [x] Chat rich: reactions + report + edit + moderator dashboard + @-mentions +
   E2EE image attachments + threads + presence dots + typing indicator + optimistic
   send (Sending/Not sent + Retry, master 4.4.2 parity); `[!]` delete (no own-message
@@ -167,6 +169,10 @@ with the data caveat noted per area.
 - [x] My rewards screen (`/api/me/rewards`)
 
 ## Versions & updates
+- [x] The app has its OWN version line (`apps/mobile-flutter/app/pubspec.yaml`,
+  `name+code`), independent of the website's. Restarted at 1.0.0; the build
+  number keeps counting from the site-numbered builds so an installed app
+  upgrades in place
 - [x] The build identifies itself (`x-ng-client: android/<version>`, stamped by
   `apk-publish`), and the server answers 426 for a build below
   `MIN_ANDROID_CLIENT`; the app swaps the whole tree for an update screen

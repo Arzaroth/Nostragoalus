@@ -72,6 +72,7 @@ const targets = <Target>[
   Target('get', '/api/teams/{code}', 'TeamDetailResponse'),
   Target('get', '/api/feed/subscription', 'FeedSubscriptionResponse'),
   Target('get', '/api/voice/ice-servers', 'IceServersResponse'),
+  Target('get', '/api/voice/calls', 'CallLogResponse'),
   Target('post', '/api/me/confirm-totp', 'ConfirmTotpResponse'),
   Target('post', '/api/share/analytics-mint', 'ShareMintResponse'),
   Target('post', '/api/share/profile-mint', 'ProfileMintResponse', aliasExpected: true),
