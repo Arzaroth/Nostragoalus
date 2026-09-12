@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [4.12.0] - 2026-09-12
+
 ### Ajouté
 
 - Administration : une section Compétitions qui définit le tournoi sur lequel le site s'ouvre. Il était jusqu'ici figé à la compilation, donc le changer imposait une nouvelle version. Seul un tournoi actif peut être choisi, et archiver celui qui est sélectionné confie le rôle à la saison active la plus récente plutôt que de laisser des liens morts.

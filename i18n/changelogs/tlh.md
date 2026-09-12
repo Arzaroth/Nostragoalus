@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [4.12.0] - 2026-09-12
+
 ### chelpu'
 
 - che'wI': QaD lI'wI'. QaD DevwI' ngu', 'ej De'wI'Hom poS. wa'DIch chenmoHDI' ngu'lu'pu', vaj choHmeH chu'wI' poQlu'pu'. QaD taHtaH neH wIvlu'laH. lI'be'choHDI', QaD chu' Dev, 'ej Heghpu'bogh rar tu'lu'be'.

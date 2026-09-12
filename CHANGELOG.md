@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [4.12.0] - 2026-09-12
+
 ### Added
 
 - Admin: a Competitions section that sets which tournament the site opens on. It used to be fixed at build time, so changing it meant a new release. Only an active tournament can be picked, and archiving the chosen one hands the role to the newest active season rather than leaving dead links behind.
