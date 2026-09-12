@@ -19,6 +19,9 @@
               }
             }
           }
+        },
+        "defaultSlug": {
+          "type": "string"
         }
       }
     },
@@ -34,7 +37,8 @@
           "slug": "euro-2024",
           "name": "UEFA Euro 2024"
         }
-      ]
+      ],
+      "defaultSlug": "world-cup-2026"
     }
   },
   "/api/roadmap": {
