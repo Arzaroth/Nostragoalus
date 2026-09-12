@@ -65,6 +65,45 @@ state instead of fetching the list again. Pure helpers that need it
 (`cabinetPath`, `notificationPushContent`) take it as an argument rather than
 importing a constant, since the value is not knowable at build time.
 
+## Adding a competition (admin)
+
+Which competitions exist is admin-managed, not a code constant. Two pieces:
+
+- **Discovery** - `discoverCompetitions()` is an optional method on
+  `MatchDataProvider` (`server/utils/providers/types.ts`), implemented for ESPN
+  against the core API's league catalog. The index carries `$ref` links only, so
+  each league's name, season and `isTournament` flag costs one hop; they go
+  through the tight ref limiter rather than the scoreboard's one-per-second. ~218
+  leagues, ~2s. Not every provider can enumerate (UEFA's ids are a curated
+  handful, the offline `fixture` provider has one), and that is a normal answer.
+- **The probe** - `summarizeFixtures()` in
+  `server/utils/competitions/probe.ts`. `isTournament` cannot gate anything (ESPN
+  marks the Champions League a tournament though its league phase is a single
+  table), so the gate is a dry run over real fixtures instead: normalize a season,
+  write nothing, and report what would land.
+
+The probe blocks on three things:
+
+- `no_fixtures` - the provider returned nothing.
+- `fixtures_dropped` - any fixture would be skipped at insert. This is the silent
+  failure the whole flow exists to catch: a GROUP fixture with no matchday is
+  filed under matchday 1 by `ensureRounds` and looked up as `IS NULL` by
+  `findRoundId`, so `upsertMatches` counts it in `skipped` and it never appears.
+  *Any* loss blocks, not just total loss - a partially ingested competition looks
+  like it works.
+- `two_legged_knockout` - the same pair meeting twice at one knockout stage. The
+  schema cannot hold it: `round` is unique on (competition, stage, matchday) and
+  knockout rounds carry a null matchday, so the second leg has nowhere to go, and
+  scoring has no notion of an aggregate winner.
+
+Measured against the live ESPN API: World Cup 2026 104/104 ingestible and Euro
+2024 51/51 (both supported); the Premier League 0/374 and the 2026 Champions
+League 29/189 with two legs at R16, QF and SF (both rejected).
+
+`isIngestible()` in `server/utils/sync/rounds.ts` derives the rule from
+`roundDefForMatch()` and `findRoundId()` rather than restating it, so the probe
+follows a change to either.
+
 ## The switcher
 
 `CompetitionPill.vue` sits next to each page's H1 (chosen over a header dropdown
@@ -92,5 +131,7 @@ competition id in the service layer.
 - `apps/web-nuxt/app/components/CompetitionPill.vue`
 - `apps/web-nuxt/server/api/competitions/index.get.ts`
 - `apps/web-nuxt/server/api/admin/competitions/default.put.ts`
+- `apps/web-nuxt/server/utils/competitions/probe.ts`
+- `apps/web-nuxt/server/utils/sync/rounds.ts` (`isIngestible`)
 - `apps/web-nuxt/app/components/AdminCompetitionsSection.vue`
 - `apps/web-nuxt/app/plugins/competition-meta.server.ts`

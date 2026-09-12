@@ -103,7 +103,13 @@ poll would return.
   to derive it. That helper keys off the group letter, so **a competition with no
   groups - a domestic league - cannot be synced today**: its fixtures are all
   GROUP-stage with no letter, get no matchday, and would be skipped. ESPN's league
-  coverage is therefore not yet usable; see TODO.md.
+  coverage is therefore not yet usable; see TODO.md. Measured against the live
+  API: the Premier League returns 374 fixtures of which **0** are ingestible,
+  and the new-format Champions League 189 of which 29 are (its league phase is a
+  single table with no letters, and R16/QF/SF are two-legged). The competition
+  probe (`server/utils/competitions/probe.ts`) reports exactly this before an
+  admin can add such a competition - see
+  [../features/competitions.md](../features/competitions.md).
 - **The group letter is not on the scoreboard.** It comes from a second call,
   `…/apis/v2/sports/soccer/{league}/standings` (**`apis/v2`, not `apis/site/v2`** -
   the site path also answers 200, with an almost-empty object), whose `children[]`
