@@ -117,8 +117,10 @@ what a real fix needs.
   `apps/web-nuxt/app/pages/[competition]/bot.vue`,
   `apps/web-nuxt/app/pages/[competition]/users/[id].vue` (Evil Twin toggle)
 - Live crowd totals: `apps/web-nuxt/server/utils/predictions/service.ts`
-  (`MIN_CROWD_COUNT`, `withCrowdFloor`), `apps/web-nuxt/server/utils/live/crowd-step.ts`
-  (the publish step), `apps/web-nuxt/server/utils/live/league-crowd.ts`
-  (`getCrowdTotals`, `getMatchCrowdTotal`), `apps/web-nuxt/server/api/predictions/index.put.ts`
+  (`MIN_CROWD_COUNT`, `withCrowdFloor`, `getCrowdTotals`, `getMatchCrowdTotal`),
+  `apps/web-nuxt/server/utils/live/league-crowd.ts` (`publishLeagueCrowdUpdates`),
+  `apps/web-nuxt/server/api/predictions/crowd.get.ts` (the on-demand read, which
+  is why a publish-side guard alone cannot close the delta gap),
+  `apps/web-nuxt/server/api/predictions/index.put.ts`
   (`publishCrowdUpdate`/`publishLeagueCrowdUpdates` on write; the publishers live
   in `apps/web-nuxt/server/utils/live/hub.ts`), `apps/web-nuxt/app/composables/useCrowdTotals.ts`

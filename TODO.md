@@ -3453,4 +3453,11 @@ Deferred by the review fix pass (each was a deliberate call, not an oversight):
       web `/about` is the canonical "what is live" surface and the mobile About
       is its mirror, so it should carry the version too - one PanelRow plus a
       key in five locales.
+- [ ] `brain/features/dms.md` cites two paths that no longer exist:
+      `app/components/DmDock.vue` and `app/composables/useDms.ts`. The DM
+      composables were split (`useDmDockOpen`, `useDmInbox`, `useDmOpen`,
+      `useDmRoom`) and the dock component renamed. Pre-existing, spotted by an
+      audit of every backticked `apps/...` path in `brain/` during the
+      false-green-guards treatment; those two are the only genuinely broken ones
+      (the rest of the misses are brace patterns and `<feature>` placeholders).
 
