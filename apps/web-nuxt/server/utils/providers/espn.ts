@@ -610,31 +610,47 @@ export function espnProvider(options: EspnOptions): MatchDataProvider {
       for (const item of index.items ?? []) {
         const ref = item?.$ref
         if (!ref) continue
-        const tail = decodeURIComponent(ref).split('/leagues/')[1]
+        // The $ref is upstream text: one stray percent-escape would otherwise
+        // throw out of the loop and cost the admin the whole catalog.
+        let tail: string | undefined
+        try {
+          tail = decodeURIComponent(ref).split('/leagues/')[1]
+        } catch {
+          continue
+        }
         const slug = tail?.split('?')[0]?.replace(/\/+$/, '')
         if (slug) slugs.push(slug)
         if (slugs.length >= MAX_DISCOVERED) break
       }
 
-      const found = await Promise.all(
-        slugs.map(async (slug) => {
-          try {
-            const doc = await getJson<EspnLeagueDoc>(`${coreBaseUrl}/${encodeURIComponent(slug)}`, refLimiter)
-            const name = doc.displayName ?? doc.name
-            if (!name) return null
-            return {
-              externalCompetitionId: doc.slug ?? slug,
-              name,
-              seasonHint: doc.season?.year != null ? String(doc.season.year) : null,
-              isTournament: doc.isTournament ?? null,
-            } satisfies DiscoveredCompetition
-          } catch {
-            return null
-          }
-        }),
-      )
+      // Walked in series, not Promise.all: RateLimiter spaces acquisitions off a
+      // single `lastAt` and has no queue, so a parallel map has every request
+      // read the same timestamp, sleep the same 60ms and then fire as one burst
+      // of 218 - which is what the limiter exists to prevent. Every other
+      // ref-limited read here is a serial loop for the same reason.
+      const found: DiscoveredCompetition[] = []
+      for (const slug of slugs) {
+        let doc: EspnLeagueDoc
+        try {
+          doc = await getJson<EspnLeagueDoc>(`${coreBaseUrl}/${encodeURIComponent(slug)}`, refLimiter)
+        } catch (e) {
+          // One dead league is dropped; being rate-limited is not "these
+          // competitions do not exist", and silently returning a short catalog
+          // would tell the admin exactly that.
+          if (e instanceof ProviderRateLimitError) throw e
+          continue
+        }
+        const name = doc.displayName ?? doc.name
+        if (!name) continue
+        found.push({
+          externalCompetitionId: doc.slug ?? slug,
+          name,
+          seasonHint: doc.season?.year != null ? String(doc.season.year) : null,
+          isTournament: doc.isTournament ?? null,
+        })
+      }
 
-      return found.filter((c): c is DiscoveredCompetition => c !== null).sort((a, b) => a.name.localeCompare(b.name))
+      return found.sort((a, b) => a.name.localeCompare(b.name))
     },
 
     listFixtures({ season }: ListFixturesOptions) {

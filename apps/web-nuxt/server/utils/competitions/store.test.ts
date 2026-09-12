@@ -88,6 +88,8 @@ describe('competition store', () => {
     const a = await makeCompetition(db, { slug: 'a' })
     const b = await makeCompetition(db, { slug: 'b' })
     expect((await resolveCompetition(db, 'b'))?.id).toBe(b)
+    // Same season, so the unique slug decides - deterministically, whatever
+    // order the two inserts happened to land in.
     expect((await resolveCompetition(db, null))?.id).toBe(a)
     await client.close()
   })
@@ -249,6 +251,29 @@ describe('setCompetitionActive', () => {
 
     await setCompetitionActive(db, 'old-cup', false)
     expect(await getDefaultCompetitionSlug(db)).toBe('new-cup')
+    await client.close()
+  })
+})
+
+describe('active competition ordering', () => {
+  // season_hint is nullable and Postgres sorts nulls FIRST on DESC, so without
+  // NULLS LAST a season-less competition would lead the switcher and quietly
+  // become the app-wide default.
+  it('sorts a season-less competition last, not first', async () => {
+    const { db, client } = await createTestDb()
+    await makeCompetition(db, { slug: 'no-season', seasonHint: null })
+    await makeCompetition(db, { slug: 'wc-2026', seasonHint: '2026' })
+    await makeCompetition(db, { slug: 'euro-2024', seasonHint: '2024' })
+
+    expect((await listActiveCompetitions(db)).map((c) => c.slug)).toEqual(['wc-2026', 'euro-2024', 'no-season'])
+    expect(await getDefaultCompetitionSlug(db)).toBe('wc-2026')
+    await client.close()
+  })
+
+  it('takes a caller-supplied active list rather than resolving it twice', async () => {
+    const { db, client } = await createTestDb()
+    await makeCompetition(db, { slug: 'wc-2026', seasonHint: '2026' })
+    expect(await getDefaultCompetitionSlug(db, [{ slug: 'handed-in' }])).toBe('handed-in')
     await client.close()
   })
 })

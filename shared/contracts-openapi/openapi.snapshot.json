@@ -511,16 +511,23 @@
                   },
                   "provider": {
                     "type": "string",
-                    "minLength": 1
+                    "enum": [
+                      "fifa",
+                      "uefa",
+                      "espn",
+                      "football-data"
+                    ]
                   },
                   "externalCompetitionId": {
                     "type": "string",
-                    "minLength": 1
+                    "minLength": 1,
+                    "maxLength": 64
                   },
                   "seasonHint": {
                     "nullable": true,
                     "type": "string",
-                    "minLength": 1
+                    "minLength": 1,
+                    "maxLength": 16
                   }
                 },
                 "required": [

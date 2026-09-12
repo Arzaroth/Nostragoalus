@@ -46,6 +46,17 @@ const { data, isPending } = useQuery({
 })
 const invalidate = () => queryClient.invalidateQueries({ queryKey: ['admin-competitions'] })
 
+// Adding or archiving moves the slug set that competition.global.ts 404s
+// against, and the list behind the public switcher. Both are cached for the
+// session - the meta once during SSR, the list by vue-query - so without this a
+// create followed by a click through to the new competition 404s until reload.
+async function refreshAll() {
+  await invalidate()
+  await queryClient.invalidateQueries({ queryKey: ['competitions'] })
+  const fresh = await $fetch<{ competitions: Competition[]; defaultSlug: string }>('/api/competitions')
+  meta.value = { slugs: fresh.competitions.map((c) => c.slug), defaultSlug: fresh.defaultSlug }
+}
+
 const err = ref('')
 const fail = (e: any, fallback: string) => {
   err.value = e?.data?.message || e?.statusMessage || e?.message || t(fallback)
@@ -57,7 +68,10 @@ const selectedDefault = ref('')
 watch(
   () => data.value,
   (cfg) => {
-    if (cfg) selectedDefault.value = cfg.defaultSlug
+    // Seeded once, not on every refetch: a background refetch (vue-query refetches
+    // on window focus, and every mutation invalidates) would otherwise discard a
+    // selection the admin had not saved yet.
+    if (cfg && !selectedDefault.value) selectedDefault.value = cfg.defaultSlug
   },
   { immediate: true },
 )
@@ -74,8 +88,7 @@ const saveDefault = useMutation({
     err.value = ''
     savedDefault.value = true
     // Every slug-less link in this session reads the SSR-seeded copy.
-    if (meta.value) meta.value = { ...meta.value, defaultSlug: res.defaultSlug }
-    await invalidate()
+    await refreshAll()
   },
   onError: (e) => {
     savedDefault.value = false
@@ -94,7 +107,7 @@ const setActive = useMutation({
   },
   onSuccess: async () => {
     err.value = ''
-    await invalidate()
+    await refreshAll()
   },
   onError: (e) => fail(e, 'admin.competitions.archiveFailed'),
 })
@@ -123,12 +136,7 @@ const takenSlugs = computed(() => new Set((data.value?.competitions ?? []).map((
 // A stable, URL-safe suggestion the admin can still overwrite. The slug is
 // permanent once created, so it is offered rather than imposed.
 function suggestSlug(name: string, season: string | null): string {
-  const base = name
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
+  const base = slugify(name)
   return season ? `${base}-${season}` : base
 }
 
@@ -185,7 +193,7 @@ const create = useMutation({
     catalog.value = null
     chosen.value = ''
     probe.value = null
-    await invalidate()
+    await refreshAll()
   },
   onError: (e) => fail(e, 'admin.competitions.createFailed'),
 })
@@ -254,13 +262,16 @@ const canCreate = computed(
                 <button
                   type="button"
                   :disabled="setActive.isPending.value || (c.isActive && c.slug === data.defaultSlug)"
-                  :title="c.isActive && c.slug === data.defaultSlug ? t('admin.competitions.cantArchiveDefault') : ''"
                   class="px-3 py-1.5 rounded-lg text-sm border disabled:opacity-50"
                   style="border-color: var(--p-content-border-color)"
                   @click="setActive.mutate({ slug: c.slug, isActive: !c.isActive })"
                 >
                   {{ c.isActive ? t('admin.competitions.archive') : t('admin.competitions.restore') }}
                 </button>
+                <!-- Spelled out, not a tooltip: a disabled button shows none. -->
+                <div v-if="c.isActive && c.slug === data.defaultSlug" class="text-xs mt-1" style="color: var(--p-text-muted-color)">
+                  {{ t('admin.competitions.cantArchiveDefault') }}
+                </div>
               </td>
             </tr>
           </tbody>

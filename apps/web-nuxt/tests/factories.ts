@@ -41,7 +41,9 @@ export async function makeCompetition(db: AppDatabase, over: CompetitionOptions 
       provider: over.provider ?? 'fifa',
       externalCompetitionId: over.externalCompetitionId ?? '17',
       externalSeasonId: over.externalSeasonId ?? null,
-      seasonHint: over.seasonHint ?? '2026',
+      // `in`, not ??: an explicit null is a season-less competition, which is a
+      // case worth testing (it decides the default-competition ordering).
+      seasonHint: 'seasonHint' in over ? (over.seasonHint ?? null) : '2026',
       oddsProvider: over.oddsProvider ?? null,
       oddsProviderRef: over.oddsProviderRef ?? null,
       isActive: over.isActive ?? true,

@@ -1705,9 +1705,11 @@ class Competition {
 
 class CompetitionsResponse {
   final List<Competition> competitions;
+  final String defaultSlug;
 
   const CompetitionsResponse({
     required this.competitions,
+    required this.defaultSlug,
   });
 
   factory CompetitionsResponse.fromJson(Map<String, dynamic> json) =>
@@ -1715,10 +1717,12 @@ class CompetitionsResponse {
         competitions: (json['competitions'] as List)
             .map((e) => Competition.fromJson(e as Map<String, dynamic>))
             .toList(),
+        defaultSlug: json['defaultSlug'] as String,
       );
 
   Map<String, dynamic> toJson() => {
         'competitions': competitions.map((e) => e.toJson()).toList(),
+        'defaultSlug': defaultSlug,
       };
 }
 

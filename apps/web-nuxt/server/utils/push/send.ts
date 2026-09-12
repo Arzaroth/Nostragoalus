@@ -95,6 +95,23 @@ export async function pushToUser(
 
 // Push for a stored notification (the createNotification hook): the category and
 // content derive from the notification type.
+// The default competition is the same for every recipient, but the push fan-out
+// calls pushNotification once per user (matches:finalize loops over everyone with
+// a scored pick), so resolving it per call would fire two detached queries per
+// recipient at the pool right after a big transaction commits. Memoized briefly
+// instead: an admin changing the default a few seconds before a finalize is not
+// a case worth two queries per user.
+const DEFAULT_SLUG_TTL_MS = 5_000
+let cachedDefaultSlug: { at: number; value: string } | null = null
+
+async function fallbackSlugFor(db: AppDatabase): Promise<string> {
+  const now = Date.now()
+  if (cachedDefaultSlug && now - cachedDefaultSlug.at < DEFAULT_SLUG_TTL_MS) return cachedDefaultSlug.value
+  const value = await getDefaultCompetitionSlug(db)
+  cachedDefaultSlug = { at: now, value }
+  return value
+}
+
 export async function pushNotification(db: AppDatabase, userId: string, data: NotificationData): Promise<number> {
   // Gated before the default-competition lookup, not after: createNotification
   // fires this and forgets it, so any query here outlives its caller. With push
@@ -102,6 +119,6 @@ export async function pushNotification(db: AppDatabase, userId: string, data: No
   // land after the caller was done with the connection - which in tests means a
   // pglite instance that has already been closed.
   if (!ensureConfigured()) return 0
-  const fallbackSlug = await getDefaultCompetitionSlug(db)
+  const fallbackSlug = await fallbackSlugFor(db)
   return pushToUser(db, userId, categoryForType(data.type), (locale) => notificationPushContent(data, locale, fallbackSlug))
 }

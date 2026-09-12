@@ -68,7 +68,23 @@ describe('discoverForProvider', () => {
     })
     const make = () => adapter({ discoverCompetitions: discover })
     await expect(discoverForProvider('espn', { makeProvider: make })).rejects.toThrow(ProviderError)
-    await expect(discoverForProvider('espn', { makeProvider: make })).rejects.toThrow(/403 Access Denied/)
+    // The upstream's own text stays on `cause`: it can be a WAF's HTML page, and
+    // the message ends up in the client-visible status line.
+    await expect(discoverForProvider('espn', { makeProvider: make })).rejects.toThrow(/could not read espn/)
+    await expect(discoverForProvider('espn', { makeProvider: make })).rejects.not.toThrow(/403 Access Denied/)
+    expect(discover).toHaveBeenCalledTimes(3)
+  })
+})
+
+describe('discovery cache', () => {
+  // A rate-limited walk still resolves, just short. Caching an empty catalog
+  // would wedge the admin's screen for the whole TTL with no error to act on.
+  it('does not cache an empty catalog', async () => {
+    clearDiscoveryCache()
+    const discover = vi.fn(async () => [] as DiscoveredCompetition[])
+    const make = () => adapter({ discoverCompetitions: discover })
+    await discoverForProvider('espn', { makeProvider: make })
+    await discoverForProvider('espn', { makeProvider: make })
     expect(discover).toHaveBeenCalledTimes(2)
   })
 })

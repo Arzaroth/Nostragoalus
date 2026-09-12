@@ -3383,4 +3383,14 @@ Deferred by the review fix pass (each was a deliberate call, not an oversight):
       Fine single-instance; revisit alongside anything else that assumes one node.
 - [ ] Archiving is the only removal. There is no hard delete even for a
       competition with zero predictions, which the roadmap floated as safe.
+- [ ] **`models.gen.dart` is formatted by an older Dart SDK than a current one
+      produces.** Regenerating it on a 2026 SDK reformats ~2100 lines (trailing
+      commas dropped, arrow-body indentation changed) with no semantic change,
+      so `mise run gate` in `apps/mobile-flutter` reports the file stale on any
+      machine with a newer formatter. Pre-existing, not caused by a feature
+      branch. The competition-admin pass hand-applied its one real change
+      (`CompetitionsResponse.defaultSlug`) in the committed style rather than
+      commit the churn; verified byte-identical to the generator ignoring
+      whitespace and trailing commas. Pin the SDK (or reformat once, on
+      purpose) before this bites someone mid-review.
 

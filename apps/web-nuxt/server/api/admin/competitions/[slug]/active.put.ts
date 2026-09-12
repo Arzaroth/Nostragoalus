@@ -2,13 +2,19 @@ import { z } from 'zod'
 import { db } from '../../../../../db'
 import { defineValidatedHandler } from '../../../../utils/validated-handler'
 import { setCompetitionActive } from '../../../../utils/competitions/store'
+import { NotFoundError } from '../../../../utils/errors'
 
 const bodySchema = z.object({ isActive: z.boolean() })
 const responseSchema = z.object({ slug: z.string(), isActive: z.boolean() })
+// Validated rather than cast: `as string` would hand an undefined straight to a
+// drizzle eq() if the route segment were ever renamed, which builds a malformed
+// condition instead of a clean 404.
+const slugSchema = z.string().min(1).max(64)
 
 export default defineValidatedHandler({ admin: true, body: bodySchema, response: responseSchema }, async ({ event, body }) => {
-  const slug = getRouterParam(event, 'slug') as string
-  const row = await setCompetitionActive(db, slug, body.isActive)
+  const parsed = slugSchema.safeParse(getRouterParam(event, 'slug'))
+  if (!parsed.success) throw new NotFoundError('competition not found')
+  const row = await setCompetitionActive(db, parsed.data, body.isActive)
   return { slug: row.slug, isActive: row.isActive }
 })
 

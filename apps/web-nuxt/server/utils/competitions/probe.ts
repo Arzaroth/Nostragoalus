@@ -1,6 +1,7 @@
 import type { AppStage, NormalizedMatch } from '../../../shared/types/match'
 import { isIngestible } from '../sync/rounds'
 import { providerForCompetition } from '../providers'
+import { ProviderError } from '../errors'
 import { resolveFifaSeasonId } from '../providers/fifa'
 import type { MatchDataProvider } from '../providers/types'
 
@@ -23,6 +24,11 @@ export type ProbeBlocker =
   // and knockout rounds carry a null matchday, so the second leg has nowhere to
   // go, and scoring has no notion of an aggregate winner.
   | 'two_legged_knockout'
+  // No season could be resolved. Reported rather than probed anyway: ESPN's
+  // scoreboard without a `dates` param serves the current day only, so probing
+  // season-less would summarize one day of fixtures and report a competition as
+  // empty or lossy when it is the season lookup that failed.
+  | 'no_season'
 
 export interface CompetitionProbe {
   fixtures: number
@@ -36,8 +42,20 @@ export interface CompetitionProbe {
   blockers: ProbeBlocker[]
 }
 
-// Same pair, same stage, twice. Ordered so a home-and-away tie is one key.
-function tieKey(m: NormalizedMatch): string {
+// A knockout slot with no team drawn yet. ESPN names an undrawn side 'TBD'
+// (toTeam's fallback), and a bracket published before its draw is all
+// placeholders - so pairing on those names would read every undrawn tie at a
+// stage as the same tie played twice.
+function isPlaceholder(name: string | null | undefined): boolean {
+  if (!name) return true
+  const n = name.trim().toUpperCase()
+  return n === 'TBD' || n === 'TBA' || n === '' || /^(W|RU|L)\d+$/.test(n)
+}
+
+// Same pair, same stage, twice. Ordered so a home-and-away tie is one key, and
+// null when either side is undrawn, because then there is no pair to compare.
+function tieKey(m: NormalizedMatch): string | null {
+  if (isPlaceholder(m.homeTeam.name) || isPlaceholder(m.awayTeam.name)) return null
   const pair = [m.homeTeam.name, m.awayTeam.name].sort()
   return `${m.stage}:${pair[0]}:${pair[1]}`
 }
@@ -56,6 +74,7 @@ export function summarizeFixtures(fixtures: NormalizedMatch[], hasBracket: boole
 
     if (m.stage !== 'GROUP') {
       const key = tieKey(m)
+      if (key === null) continue
       if (seenTies.has(key)) twoLegged.add(m.stage)
       else seenTies.add(key)
     }
@@ -113,8 +132,33 @@ export async function probeCompetition(target: ProbeTarget, deps: ProbeDeps = {}
   const resolveSeason = deps.resolveSeason ?? defaultResolveSeason
 
   const seasonId = await resolveSeason(target)
+  const season = seasonId ?? target.seasonHint
+  if (!season) {
+    return {
+      fixtures: 0,
+      ingestible: 0,
+      dropped: 0,
+      groups: [],
+      stages: [],
+      twoLeggedStages: [],
+      hasBracket: false,
+      supported: false,
+      blockers: ['no_season'],
+    }
+  }
+
   const provider = makeProvider(target, seasonId)
-  const fixtures = await provider.listFixtures({ season: seasonId ?? target.seasonHint ?? '' })
+
+  // Raised here, not in each route: an unreachable keyless upstream is a 502,
+  // and a caller that forgot to wrap this would leak it as a 500 instead. The
+  // provider's own message is not echoed on - ProviderUpstreamError carries the
+  // raw response body, which can be a Cloudflare HTML page.
+  let fixtures
+  try {
+    fixtures = await provider.listFixtures({ season })
+  } catch {
+    throw new ProviderError(`could not read that competition from ${target.provider}`)
+  }
 
   // A provider with no bracket endpoint, or one that has not published a bracket
   // yet, is information about the competition - not a reason to fail the probe.

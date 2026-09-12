@@ -1164,7 +1164,8 @@
       "createFailed": "Could not add that competition.",
       "slugTaken": "Another competition already uses that URL name.",
       "slugPermanent": "The URL name is permanent - it appears in every link.",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "blocker_no_season": "No season could be worked out for this competition, so there is nothing to check yet."
     },
     "odds": {
       "title": "Odds provider",

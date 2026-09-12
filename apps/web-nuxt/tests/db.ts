@@ -18,10 +18,16 @@ let snapshot: Promise<Blob | File> | null = null
 
 async function migratedSnapshot(): Promise<Blob | File> {
   const seed = new PGlite()
-  await migrate(drizzle(seed), { migrationsFolder: './drizzle' })
-  const dump = await seed.dumpDataDir('none')
-  await seed.close()
-  return dump
+  // finally, because a failing migration otherwise leaves this WASM Postgres
+  // resident - and createTestDb retries per test, so a few hundred DB tests
+  // would leak a few hundred instances and turn a clear migration error into an
+  // out-of-memory one.
+  try {
+    await migrate(drizzle(seed), { migrationsFolder: './drizzle' })
+    return await seed.dumpDataDir('none')
+  } finally {
+    await seed.close()
+  }
 }
 
 export async function createTestDb() {

@@ -1,16 +1,15 @@
 import { z } from 'zod'
 import { db } from '../../../../db'
 import { defineValidatedHandler } from '../../../utils/validated-handler'
-import { createCompetition } from '../../../utils/competitions/store'
-import { probeCompetition } from '../../../utils/competitions/probe'
-import { ProviderError, ValidationError } from '../../../utils/errors'
+import { addCompetition } from '../../../utils/competitions/service'
+import { MATCH_PROVIDERS } from '../../../utils/providers/factory'
 
 const bodySchema = z.object({
   slug: z.string().min(1).max(64),
   name: z.string().min(1).max(120),
-  provider: z.string().min(1),
-  externalCompetitionId: z.string().min(1),
-  seasonHint: z.string().min(1).nullable(),
+  provider: z.enum(MATCH_PROVIDERS),
+  externalCompetitionId: z.string().min(1).max(64),
+  seasonHint: z.string().min(1).max(16).nullable(),
 })
 
 const responseSchema = z.object({
@@ -24,30 +23,7 @@ const responseSchema = z.object({
 })
 
 export default defineValidatedHandler({ admin: true, body: bodySchema, response: responseSchema }, async ({ body }) => {
-  // Re-probed here rather than trusting a verdict the client says it got: the
-  // whole guarantee is that nothing unsupported reaches the competition table.
-  let probe
-  try {
-    probe = await probeCompetition({
-      provider: body.provider,
-      externalCompetitionId: body.externalCompetitionId,
-      seasonHint: body.seasonHint,
-    })
-  } catch (e) {
-    throw new ProviderError(`could not read that competition from ${body.provider}: ${(e as Error).message}`)
-  }
-
-  if (!probe.supported) {
-    throw new ValidationError(`this competition cannot be ingested yet (${probe.blockers.join(', ')})`)
-  }
-
-  const row = await createCompetition(db, {
-    slug: body.slug,
-    name: body.name,
-    provider: body.provider,
-    externalCompetitionId: body.externalCompetitionId,
-    seasonHint: body.seasonHint,
-  })
+  const row = await addCompetition(db, body)
   return {
     id: row.id,
     slug: row.slug,

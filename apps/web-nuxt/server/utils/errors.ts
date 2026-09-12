@@ -65,8 +65,12 @@ export class StorageError extends Error {
 // admin reading "could not read ESPN's catalog" knows to retry rather than to
 // file a bug.
 export class ProviderError extends Error {
-  constructor(message = 'provider unavailable') {
-    super(message)
+  // The upstream's own text is kept on `cause` (server-side) rather than in the
+  // message: ProviderUpstreamError carries the raw response body, which for a
+  // WAF-fronted provider is an HTML page, and toHttpError puts the message in
+  // the client-visible status line.
+  constructor(message = 'provider unavailable', options?: { cause?: unknown }) {
+    super(message, options)
     this.name = 'ProviderError'
   }
 }

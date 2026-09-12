@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { probeCompetition } from './probe'
+import { ProviderError } from '../errors'
 import type { AppStage, NormalizedMatch } from '../../../shared/types/match'
 import type { MatchDataProvider } from '../providers/types'
 
@@ -57,13 +58,33 @@ describe('probeCompetition', () => {
     expect(listFixtures).toHaveBeenCalledWith({ season: '255711' })
   })
 
-  it('falls back to an empty season when neither a resolved id nor a hint exists', async () => {
+  // Probing season-less would ask ESPN's scoreboard with no `dates` param, which
+  // serves the current day only - so the admin would be told the competition is
+  // empty when it is the season lookup that failed.
+  it('reports no_season instead of probing with an empty season', async () => {
     const listFixtures = vi.fn(async () => [fixture('FINAL')])
-    await probeCompetition(
+    const probe = await probeCompetition(
       { provider: 'espn', externalCompetitionId: 'x', seasonHint: null },
       { makeProvider: () => adapter({ listFixtures }), resolveSeason: async () => undefined },
     )
-    expect(listFixtures).toHaveBeenCalledWith({ season: '' })
+    expect(probe).toMatchObject({ fixtures: 0, supported: false, blockers: ['no_season'] })
+    expect(listFixtures).not.toHaveBeenCalled()
+  })
+
+  // An unreachable provider is not an unsupported competition, and the upstream's
+  // own body must not reach the client.
+  it('raises a ProviderError when the provider cannot be read', async () => {
+    await expect(
+      probeCompetition(target, {
+        makeProvider: () =>
+          adapter({
+            listFixtures: async () => {
+              throw new Error('<html>Access Denied</html>')
+            },
+          }),
+        resolveSeason: async () => undefined,
+      }),
+    ).rejects.toThrow(ProviderError)
   })
 
   // Only FIFA needs a season resolved to an id; everyone else takes the year, so

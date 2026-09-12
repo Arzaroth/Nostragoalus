@@ -1159,7 +1159,8 @@
       "createFailed": "QaD chellu'laHbe'.",
       "slugTaken": "URL pong lo'lu'bogh latlh QaD.",
       "slugPermanent": "taHtaH URL pong - Hoch rar tu'lu'.",
-      "cancel": "qIl"
+      "cancel": "qIl",
+      "blocker_no_season": "poH ngu'lu'laHbe'. vaj noHmeH pagh tu'lu'."
     },
     "odds": {
       "title": "qI' tlhe'wI'",

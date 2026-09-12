@@ -1,12 +1,12 @@
 import { z } from 'zod'
 import { defineReadHandler } from '../../../utils/read-handler'
 import { probeCompetition } from '../../../utils/competitions/probe'
-import { ProviderError } from '../../../utils/errors'
+import { MATCH_PROVIDERS } from '../../../utils/providers/factory'
 
 const querySchema = z.object({
-  provider: z.string().min(1),
-  externalCompetitionId: z.string().min(1),
-  seasonHint: z.string().min(1).optional(),
+  provider: z.enum(MATCH_PROVIDERS),
+  externalCompetitionId: z.string().min(1).max(64),
+  seasonHint: z.string().min(1).max(16).optional(),
 })
 
 const responseSchema = z.object({
@@ -22,17 +22,14 @@ const responseSchema = z.object({
 })
 
 export default defineReadHandler({ response: responseSchema, auth: 'admin', query: querySchema }, async ({ query }) => {
-  try {
-    return await probeCompetition({
-      provider: query.provider,
-      externalCompetitionId: query.externalCompetitionId,
-      seasonHint: query.seasonHint ?? null,
-    })
-  } catch (e) {
-    // An unreachable provider is not an unsupported competition: reporting it as
-    // `supported: false` would tell the admin the competition is the problem.
-    throw new ProviderError(`could not read that competition from ${query.provider}: ${(e as Error).message}`)
-  }
+  // probeCompetition raises ProviderError itself, so an unreachable provider
+  // surfaces as a 502 rather than as `supported: false`, which would tell the
+  // admin the competition is the problem.
+  return probeCompetition({
+    provider: query.provider,
+    externalCompetitionId: query.externalCompetitionId,
+    seasonHint: query.seasonHint ?? null,
+  })
 })
 
 defineRouteMeta({

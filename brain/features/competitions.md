@@ -82,7 +82,7 @@ Which competitions exist is admin-managed, not a code constant. Two pieces:
   table), so the gate is a dry run over real fixtures instead: normalize a season,
   write nothing, and report what would land.
 
-The probe blocks on three things:
+The probe blocks on four things:
 
 - `no_fixtures` - the provider returned nothing.
 - `fixtures_dropped` - any fixture would be skipped at insert. This is the silent
@@ -94,7 +94,15 @@ The probe blocks on three things:
 - `two_legged_knockout` - the same pair meeting twice at one knockout stage. The
   schema cannot hold it: `round` is unique on (competition, stage, matchday) and
   knockout rounds carry a null matchday, so the second leg has nowhere to go, and
-  scoring has no notion of an aggregate winner.
+  scoring has no notion of an aggregate winner. Ties are paired on team names,
+  so undrawn slots are skipped rather than compared: ESPN names an undrawn side
+  `TBD`, and a bracket published before its draw is all placeholders, which would
+  otherwise read every undrawn tie at a stage as one tie played twice and refuse
+  a perfectly ordinary tournament until the draw happened.
+- `no_season` - no season could be resolved. Reported rather than probed anyway,
+  because ESPN's scoreboard without a `dates` parameter serves the current day
+  only: probing season-less would summarize one day of fixtures and report the
+  competition as empty when it is the season lookup that failed.
 
 Measured against the live ESPN API: World Cup 2026 104/104 ingestible and Euro
 2024 51/51 (both supported); the Premier League 0/374 and the 2026 Champions
@@ -115,6 +123,14 @@ one legitimate case this shuts out, a competition whose fixtures are unpublished
 Slugs are suggested from the chosen name and season but validated hard
 (`^[a-z0-9]+(?:-[a-z0-9]+)*$`, unique) and are **permanent**: every URL, the
 `ng-competition` cookie, share images and push deep-links carry them.
+
+Ordering matters more than it looks: `listActiveCompetitions` is what leads the
+switcher *and* what `getDefaultCompetitionSlug` takes the head of when no default
+is set. `season_hint` is nullable and Postgres sorts nulls FIRST on `DESC`, so
+the query pins `NULLS LAST` and then breaks ties on `createdAt` and the unique
+slug - otherwise a season-less competition would quietly become the app-wide
+default, and two competitions sharing a season would resolve in heap order,
+differing between queries.
 
 ## Archiving, and why there is no delete
 
@@ -157,6 +173,7 @@ competition id in the service layer.
 - `apps/web-nuxt/server/api/competitions/index.get.ts`
 - `apps/web-nuxt/server/api/admin/competitions/default.put.ts`
 - `apps/web-nuxt/server/utils/competitions/probe.ts`
+- `apps/web-nuxt/server/utils/competitions/service.ts` (`addCompetition`: probe, then create)
 - `apps/web-nuxt/server/utils/competitions/discovery.ts`
 - `apps/web-nuxt/server/api/admin/competitions/` (list, create, discover, probe, `[slug]/active`)
 - `apps/web-nuxt/server/utils/sync/rounds.ts` (`isIngestible`)

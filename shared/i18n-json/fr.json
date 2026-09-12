@@ -1159,7 +1159,8 @@
       "createFailed": "Impossible d'ajouter cette compétition.",
       "slugTaken": "Une autre compétition utilise déjà ce nom d'URL.",
       "slugPermanent": "Le nom dans l'URL est définitif - il apparaît dans tous les liens.",
-      "cancel": "Annuler"
+      "cancel": "Annuler",
+      "blocker_no_season": "Aucune saison n'a pu être déterminée pour cette compétition, il n'y a donc rien à vérifier pour l'instant."
     },
     "odds": {
       "title": "Fournisseur de cotes",

@@ -7,7 +7,8 @@ import { defineReadHandler } from '../../utils/read-handler'
 const responseSchema = z.object({ competitions: z.array(competitionRefSchema), defaultSlug: z.string() })
 
 export default defineReadHandler({ response: responseSchema }, async () => {
-  const [competitions, defaultSlug] = await Promise.all([listActiveCompetitions(db), getDefaultCompetitionSlug(db)])
+  const competitions = await listActiveCompetitions(db)
+  const defaultSlug = await getDefaultCompetitionSlug(db, competitions)
   return { competitions: competitions.map((c) => ({ id: c.id, slug: c.slug, name: c.name })), defaultSlug }
 })
 

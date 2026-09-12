@@ -1,4 +1,4 @@
-import { eq, desc } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { competition } from '../../../db/schema'
 import { FALLBACK_COMPETITION } from '../../../shared/competition'
@@ -56,8 +56,20 @@ export async function listCompetitions(db: AppDatabase) {
 }
 
 export async function listActiveCompetitions(db: AppDatabase) {
-  // Newest season first - the picker leads with the current tournament.
-  return db.select().from(competition).where(eq(competition.isActive, true)).orderBy(desc(competition.seasonHint))
+  // Newest season first - the picker leads with the current tournament, and
+  // getDefaultCompetitionSlug takes the head of this list when no default is
+  // set. NULLS LAST is load-bearing: season_hint is nullable and Postgres sorts
+  // nulls FIRST on DESC, so a season-less competition would otherwise lead the
+  // switcher and quietly become the app-wide default. Ties break on the unique
+  // slug rather than createdAt: two competitions sharing a season are ordered
+  // the same way on every query, where createdAt would order them by however
+  // the inserts happened to land in time - which is not something the head of
+  // this list, and therefore the default competition, should depend on.
+  return db
+    .select()
+    .from(competition)
+    .where(eq(competition.isActive, true))
+    .orderBy(sql`${competition.seasonHint} desc nulls last`, competition.slug)
 }
 
 export async function getCompetitionBySlug(db: AppDatabase, slug: string) {
@@ -92,8 +104,13 @@ export const DEFAULT_COMPETITION_KEY = 'default_competition'
 // set as default would 404 every landing, so the stored slug only wins while it
 // names an active competition. Falls back to the newest active season, and to
 // the compiled-in constant only when there is no competition at all.
-export async function getDefaultCompetitionSlug(db: AppDatabase): Promise<string> {
-  const active = await listActiveCompetitions(db)
+export async function getDefaultCompetitionSlug(
+  db: AppDatabase,
+  // The caller often has this already (the competitions endpoint returns the
+  // same list); passing it in saves resolving the active set twice per request.
+  known?: { slug: string }[],
+): Promise<string> {
+  const active = known ?? (await listActiveCompetitions(db))
   if (active.length === 0) return FALLBACK_COMPETITION
 
   const configured = await getAppSetting(db, DEFAULT_COMPETITION_KEY)

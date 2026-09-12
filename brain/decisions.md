@@ -741,3 +741,27 @@ See [features/mobile-app.md](features/mobile-app.md).
   `bracket-order.ts` beside `orderBracketFeeders`, which it now delegates the
   feeder ordering to. UEFA's bracket tests passed unchanged against the shared
   version, which is what made the extraction safe to do inside this change.
+
+## The competition probe gates on what would land, not on what a provider claims
+
+A provider's own "is this a tournament" flag cannot decide whether the app can
+ingest a competition: ESPN marks the Champions League a tournament though its
+league phase is a single table. So `summarizeFixtures` dry-runs a real season and
+blocks on what would actually reach the `match` table, and `addCompetition`
+re-runs that probe server-side rather than trusting a verdict the client reports.
+Any loss blocks, not just total loss - a partially ingested competition looks
+like it works, which is worse than one that visibly does not.
+
+The same reasoning drives what the probe does *not* do: it refuses to guess. With
+no season resolvable it reports `no_season` instead of asking ESPN for an empty
+`dates` range, which would quietly return one day of fixtures and read as "this
+competition is empty".
+
+## The default competition is resolved, never trusted
+
+`app_setting.default_competition` holds a slug, and the slug wins only while it
+names an *active* competition. Archiving or deleting the chosen competition would
+otherwise 404 every slug-less landing (the "/" redirect, a first visit with no
+cookie, a global achievement's deep link), so the resolver falls back to the
+newest active season and the setter refuses to store a slug that does not qualify.
+A compiled-in constant survives only for an empty database.

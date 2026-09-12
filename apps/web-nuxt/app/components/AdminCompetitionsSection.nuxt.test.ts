@@ -192,3 +192,83 @@ describe('AdminCompetitionsSection', () => {
     expect(w.find('section').exists()).toBe(false)
   })
 })
+
+describe('AdminCompetitionsSection error paths', () => {
+  // A swallowed server refusal leaves the admin staring at a button that did
+  // nothing, which is exactly what the probe gate exists to avoid.
+  it('surfaces the server message when creating is refused', async () => {
+    fetchMock = vi.fn(async (url: string, opts?: Opts) => {
+      if (url === '/api/admin/competitions/discover') return CATALOG
+      if (url === '/api/admin/competitions/probe') return GOOD_PROBE
+      if (url === '/api/admin/competitions' && opts?.method === 'POST') {
+        throw Object.assign(new Error('bad'), { data: { message: 'a competition already uses that slug' } })
+      }
+      return LIST
+    })
+    vi.stubGlobal('$fetch', fetchMock)
+
+    const w = await setup(true)
+    await vi.waitFor(() => expect(w.text()).toContain('FIFA World Cup 2026'))
+    await buttonWith(w, 'Add a competition').trigger('click')
+    await buttonWith(w, 'List what it carries').trigger('click')
+    await vi.waitFor(() => expect(w.text()).toContain('European Championship'))
+    await catalogSelect(w).setValue('uefa.euro')
+    await buttonWith(w, 'Check it').trigger('click')
+    await vi.waitFor(() => expect(w.text()).toContain('This one works.'))
+
+    await buttonWith(w, 'Add it').trigger('click')
+    await vi.waitFor(() => expect(w.text()).toContain('a competition already uses that slug'))
+  })
+
+  it('surfaces a failed discovery', async () => {
+    fetchMock = vi.fn(async (url: string) => {
+      if (url === '/api/admin/competitions/discover') {
+        throw Object.assign(new Error('bad'), { statusMessage: "could not read espn's competition catalog" })
+      }
+      return LIST
+    })
+    vi.stubGlobal('$fetch', fetchMock)
+
+    const w = await setup(true)
+    await vi.waitFor(() => expect(w.text()).toContain('FIFA World Cup 2026'))
+    await buttonWith(w, 'Add a competition').trigger('click')
+    await buttonWith(w, 'List what it carries').trigger('click')
+    await vi.waitFor(() => expect(w.text()).toContain("could not read espn's competition catalog"))
+  })
+
+  // The slug is permanent, so a collision has to be caught before the click.
+  it('blocks create on a slug another competition already holds', async () => {
+    const w = await setup(true)
+    await vi.waitFor(() => expect(w.text()).toContain('FIFA World Cup 2026'))
+    await buttonWith(w, 'Add a competition').trigger('click')
+    await buttonWith(w, 'List what it carries').trigger('click')
+    await vi.waitFor(() => expect(w.text()).toContain('European Championship'))
+    await catalogSelect(w).setValue('uefa.euro')
+    await buttonWith(w, 'Check it').trigger('click')
+    await vi.waitFor(() => expect(w.text()).toContain('This one works.'))
+
+    const slugInput = w.findAll('input[type="text"]')[1]!
+    await slugInput.setValue('euro-2024')
+    await vi.waitFor(() => expect(w.text()).toContain('Another competition already uses that URL name.'))
+    expect((buttonWith(w, 'Add it').element as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  it('restores an archived competition', async () => {
+    const w = await setup(true)
+    await vi.waitFor(() => expect(w.text()).toContain('Old Cup'))
+    await buttonWith(w, 'Restore').trigger('click')
+    await vi.waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith('/api/admin/competitions/old-cup/active', {
+        method: 'PUT',
+        body: { isActive: true },
+      }),
+    )
+  })
+
+  // A disabled button shows no native tooltip, so the reason has to be on screen.
+  it('says why the current default cannot be archived', async () => {
+    const w = await setup(true)
+    await vi.waitFor(() => expect(w.text()).toContain('FIFA World Cup 2026'))
+    expect(w.text()).toContain('Pick a different default competition first.')
+  })
+})

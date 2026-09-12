@@ -15,6 +15,12 @@ export interface ProviderSelection {
   fetchImpl?: typeof fetch
 }
 
+// The providers a competition may be bound to, as an admin may name them.
+// 'fixture' is deliberately absent: it serves canned offline data for the e2e
+// stack, so binding a real competition to it would show invented matches.
+export const MATCH_PROVIDERS = ['fifa', 'uefa', 'espn', 'football-data'] as const
+export type MatchProviderKey = (typeof MATCH_PROVIDERS)[number]
+
 export function createProvider(selection: ProviderSelection): MatchDataProvider {
   if (selection.provider === 'fifa') {
     return fifaProvider({

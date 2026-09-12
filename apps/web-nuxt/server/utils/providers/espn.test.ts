@@ -1208,3 +1208,79 @@ describe('espnProvider.discoverCompetitions', () => {
     expect(found[0]).toMatchObject({ seasonHint: null, isTournament: false })
   })
 })
+
+describe('espnProvider.discoverCompetitions hardening', () => {
+  function stub(refs: string[], docs: Record<string, unknown>, index?: unknown) {
+    return vi.fn(async (url: string) => {
+      if (url.includes('?limit=')) return jsonResponse(index ?? { items: refs.map(($ref) => ({ $ref })) })
+      const slug = decodeURIComponent(url).split('/leagues/')[1]!
+      const doc = docs[slug]
+      if (!doc) return jsonResponse({ message: 'gone' }, 404)
+      return jsonResponse(doc)
+    })
+  }
+
+  const provider = (fetchImpl: typeof fetch) =>
+    espnProvider({ league: 'fifa.world', fetchImpl, rateLimiter: noWait(), refRateLimiter: noWait() })
+
+  const ref = (slug: string) => `http://sports.core.api.espn.com/v2/sports/soccer/leagues/${slug}`
+
+  // Being rate-limited is not "these competitions do not exist": swallowing it
+  // would hand the admin a short catalog on a 200 and no way to tell.
+  it('propagates a rate limit rather than returning a truncated catalog', async () => {
+    const fetchImpl = vi.fn(async (url: string) => {
+      if (url.includes('?limit=')) return jsonResponse({ items: [{ $ref: ref('eng.1') }, { $ref: ref('esp.1') }] })
+      if (url.includes('esp.1')) return jsonResponse({ message: 'slow down' }, 429)
+      return jsonResponse({ slug: 'eng.1', displayName: 'Premier League', isTournament: false, season: { year: 2026 } })
+    })
+    await expect(provider(fetchImpl).discoverCompetitions!()).rejects.toThrow(ProviderRateLimitError)
+  })
+
+  // The $ref is upstream text; one bad escape must not cost the whole catalog.
+  it('skips a malformed $ref instead of throwing out of the walk', async () => {
+    const fetchImpl = stub([`${ref('eng.1')}`, 'http://x/leagues/100%'], {
+      'eng.1': { slug: 'eng.1', displayName: 'Premier League', isTournament: false, season: { year: 2026 } },
+    })
+    const found = await provider(fetchImpl).discoverCompetitions!()
+    expect(found.map((c) => c.externalCompetitionId)).toEqual(['eng.1'])
+  })
+
+  it('reads a league that carries only `name`, and one with no tournament flag', async () => {
+    const fetchImpl = stub([ref('a.1'), ref('b.1')], {
+      'a.1': { slug: 'a.1', name: 'Only Name', isTournament: false, season: { year: 2026 } },
+      'b.1': { displayName: 'No Flag', season: { year: 2026 } },
+    })
+    const found = await provider(fetchImpl).discoverCompetitions!()
+    expect(found).toEqual([
+      // No `slug` on the doc, so the slug from the $ref is used.
+      { externalCompetitionId: 'b.1', name: 'No Flag', seasonHint: '2026', isTournament: null },
+      { externalCompetitionId: 'a.1', name: 'Only Name', seasonHint: '2026', isTournament: false },
+    ])
+  })
+
+  it('treats an index with no items as an empty catalog', async () => {
+    const fetchImpl = stub([], {}, {})
+    expect(await provider(fetchImpl).discoverCompetitions!()).toEqual([])
+  })
+
+  // Serial, not Promise.all: the shared RateLimiter paces off a single timestamp
+  // and has no queue, so a parallel map fires every request as one burst.
+  it('walks the catalog one request at a time', async () => {
+    let inFlight = 0
+    let peak = 0
+    const fetchImpl = vi.fn(async (url: string) => {
+      if (url.includes('?limit=')) {
+        return jsonResponse({ items: ['a.1', 'b.1', 'c.1'].map((s) => ({ $ref: ref(s) })) })
+      }
+      inFlight += 1
+      peak = Math.max(peak, inFlight)
+      await new Promise((r) => setTimeout(r, 5))
+      inFlight -= 1
+      const slug = decodeURIComponent(url).split('/leagues/')[1]!
+      return jsonResponse({ slug, displayName: slug, isTournament: true, season: { year: 2026 } })
+    })
+    const found = await provider(fetchImpl).discoverCompetitions!()
+    expect(found).toHaveLength(3)
+    expect(peak).toBe(1)
+  })
+})

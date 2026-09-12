@@ -86,3 +86,42 @@ describe('summarizeFixtures', () => {
     expect(probe.blockers).toEqual(['no_fixtures'])
   })
 })
+
+describe('summarizeFixtures placeholders', () => {
+  const undrawn = (stage: AppStage, home: string, away: string) =>
+    fixture({
+      stage,
+      homeTeam: { id: home, name: home, code: 'X' },
+      awayTeam: { id: away, name: away, code: 'Y' },
+    })
+
+  // ESPN names an undrawn knockout side 'TBD'. Pairing on those names would read
+  // every undrawn tie at a stage as one tie played twice, so a perfectly normal
+  // single-leg tournament could never be added before its draw.
+  it('does not read undrawn knockout slots as a two-legged tie', () => {
+    const probe = summarizeFixtures(
+      [undrawn('SF', 'TBD', 'TBD'), undrawn('SF', 'TBD', 'TBD'), undrawn('FINAL', 'TBD', 'TBD')],
+      true,
+    )
+    expect(probe.twoLeggedStages).toEqual([])
+    expect(probe.blockers).not.toContain('two_legged_knockout')
+    expect(probe.supported).toBe(true)
+  })
+
+  it('ignores bracket placeholder codes too', () => {
+    const probe = summarizeFixtures([undrawn('QF', 'W101', 'RU102'), undrawn('QF', 'W101', 'RU102')], true)
+    expect(probe.twoLeggedStages).toEqual([])
+  })
+
+  // A half-drawn tie is still not comparable: one real side against a placeholder
+  // says nothing about whether the tie is played twice.
+  it('ignores a tie with only one side drawn', () => {
+    const probe = summarizeFixtures([undrawn('SF', 'Ajax', 'TBD'), undrawn('SF', 'Ajax', 'TBD')], true)
+    expect(probe.twoLeggedStages).toEqual([])
+  })
+
+  it('still catches a real two-legged tie between drawn teams', () => {
+    const probe = summarizeFixtures([undrawn('SF', 'Ajax', 'Roma'), undrawn('SF', 'Roma', 'Ajax')], true)
+    expect(probe.twoLeggedStages).toEqual(['SF'])
+  })
+})
