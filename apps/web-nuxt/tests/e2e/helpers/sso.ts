@@ -26,14 +26,23 @@ export async function testConnectionWhenReady(
 
   for (;;) {
     const res = await admin.post(`/api/admin/sso/${providerId}/test-connection`)
-    if (res.ok()) return
-    last = `${res.status()} ${await res.text()}`
+    // The route answers 200 with `{ ok: false, checks: [...] }` when the IdP is
+    // unreachable - checkJwks catches the fetch error and folds it into the
+    // result - so polling on res.ok() would return on the first attempt and
+    // wait for nothing. The payload's own `ok` is the readiness signal.
+    if (res.ok()) {
+      const body = (await res.json()) as { ok?: boolean; checks?: { name: string; ok: boolean; detail?: string }[] }
+      if (body.ok) return
+      last = `200 but ok:false - ${(body.checks ?? []).filter((c) => !c.ok).map((c) => `${c.name}: ${c.detail ?? ''}`).join('; ')}`
+    } else {
+      last = `${res.status()} ${await res.text()}`
+    }
     if (Date.now() >= deadline) break
     await new Promise((resolve) => setTimeout(resolve, intervalMs))
   }
 
   throw new Error(
-    `sso test-connection never succeeded within ${timeoutMs}ms - Keycloak's realm import `
-    + `probably had not finished. Last response: ${last}`,
+    `sso test-connection never reported ok within ${timeoutMs}ms - Keycloak's realm import `
+    + `probably had not finished. Last result: ${last}`,
   )
 }

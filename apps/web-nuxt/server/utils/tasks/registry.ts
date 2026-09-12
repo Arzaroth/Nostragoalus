@@ -14,18 +14,18 @@ export const TASKS: TaskDef[] = [
   // off-window ticks make no API calls and the short interval costs nothing
   // outside a match. Six fields: nitro hands the expression straight to croner,
   // which takes an optional leading seconds field, so this is every 30s.
-  // Guarded by withoutOverlap - nitro does not set croner's `protect`, and at
-  // this interval a slow tick would otherwise run concurrently with the next,
-  // doubling provider requests and duplicating goal pushes.
+  // A tick that outlasts the interval does not stack up: nitro's runTask keeps
+  // an in-flight map per task name and returns the running promise rather than
+  // starting a second run, so the short interval cannot overlap itself.
   { name: 'scores:poll', cron: '*/30 * * * * *', fireAndForget: false },
   // Hourly fixture/bracket refresh.
   { name: 'fixtures:refresh', cron: '0 * * * *', fireAndForget: false },
   // Lock predictions at kickoff and score finished matches. Every minute rather
   // than every five so points and result notifications land soon after the final
   // whistle; the detail sync self-gates on FINISHED + detailsFetchedAt IS NULL,
-  // so an idle tick makes no provider calls. Locking is bookkeeping either way -
-  // the save path rejects a post-kickoff edit on its own. Also guarded, since a
-  // tick that fetches a batch of details can outlast the interval.
+  // so an idle tick makes no provider calls, and finalizeMatches only loads
+  // matches that are not already settled. Locking is bookkeeping either way -
+  // the save path rejects a post-kickoff edit on its own.
   { name: 'matches:finalize', cron: '* * * * *', fireAndForget: false },
   // Odds snapshots self-gate on per-match staleness, so most ticks are no-ops.
   { name: 'odds:refresh', cron: '*/30 * * * *', fireAndForget: true },

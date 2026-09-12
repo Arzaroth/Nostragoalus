@@ -2,6 +2,7 @@ import { randomBytes, randomUUID } from 'node:crypto'
 import { Pool } from 'pg'
 import { expect, test } from '@playwright/test'
 import { dismissOnboarding, freshUser, signUp, typeInto } from './helpers/auth'
+import { requireE2eDatabaseUrl } from './helpers/db'
 
 // The send path needs no recipient private key: user A generates the thread key,
 // seals it to B's public key, and encrypts locally - so we can seed B as a bare
@@ -9,7 +10,7 @@ import { dismissOnboarding, freshUser, signUp, typeInto } from './helpers/auth'
 // validate the point, and this spec never decrypts as B). A shares no league with
 // B, so B is found via the global discoverable-stranger search by name.
 const CONNECTION =
-  process.env.E2E_DATABASE_URL ?? 'postgres://nostragoalus:nostragoalus@localhost:5432/nostragoalus'
+  requireE2eDatabaseUrl()
 let pool: Pool | null = null
 function db(): Pool {
   if (!pool) pool = new Pool({ connectionString: CONNECTION })

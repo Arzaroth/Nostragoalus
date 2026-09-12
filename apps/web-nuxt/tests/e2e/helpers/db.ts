@@ -11,7 +11,7 @@ import { Pool } from 'pg'
 // :5433. Under Playwright the variable always arrives via `.env.e2e`; anything
 // importing these helpers outside it (a scratch script, a unit test, an editor
 // task runner) would silently have been writing to dev data.
-function requireE2eTarget(): string {
+export function requireE2eDatabaseUrl(): string {
   const url = process.env.E2E_DATABASE_URL
   if (!url) {
     throw new Error(
@@ -28,7 +28,7 @@ export const E2E_BRACKET_SLUG = 'e2e-bracket'
 
 let pool: Pool | null = null
 function db(): Pool {
-  if (!pool) pool = new Pool({ connectionString: requireE2eTarget() })
+  if (!pool) pool = new Pool({ connectionString: requireE2eDatabaseUrl() })
   return pool
 }
 

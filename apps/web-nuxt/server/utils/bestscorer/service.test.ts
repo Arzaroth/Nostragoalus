@@ -126,14 +126,14 @@ describe('awardBestScorerBonuses', () => {
     const m = await makeMatch(db, { competitionId, roundId, kickoffTime: PAST })
     await makeGoal(db, { matchId: m, competitionId, playerId: 'p-mbappe' })
 
-    expect(await awardBestScorerBonuses(db, competitionId, 10)).toBe(1)
+    expect(await awardBestScorerBonuses(db, competitionId, 10)).toEqual({ awarded: 1, changed: true })
     let byUser = Object.fromEntries((await db.select().from(bestScorerPick)).map((p) => [p.userId, p.awardedPoints]))
     expect(byUser[userId]).toBe(10)
     expect(byUser[other]).toBe(0)
 
     // Messi catches up to a tie: both picks now win.
     await makeGoal(db, { matchId: m, competitionId, playerId: 'p-messi', playerName: 'Lionel MESSI' })
-    expect(await awardBestScorerBonuses(db, competitionId, 10)).toBe(2)
+    expect(await awardBestScorerBonuses(db, competitionId, 10)).toEqual({ awarded: 2, changed: true })
     byUser = Object.fromEntries((await db.select().from(bestScorerPick)).map((p) => [p.userId, p.awardedPoints]))
     expect(byUser[userId]).toBe(10)
     expect(byUser[other]).toBe(10)
@@ -165,7 +165,7 @@ describe('awardBestScorerBonuses', () => {
     const m = await makeMatch(db, { competitionId, roundId, kickoffTime: PAST })
     await makeGoal(db, { matchId: m, competitionId, playerId: 'p-mbappe' })
     // No decided final yet: the Golden Boot tally is incomplete, so no bonus.
-    expect(await awardBestScorerBonuses(db, competitionId, 10)).toBe(0)
+    expect((await awardBestScorerBonuses(db, competitionId, 10)).awarded).toBe(0)
     const [pick] = await db.select().from(bestScorerPick)
     expect(pick.awardedPoints).toBe(0)
     await client.close()
@@ -178,8 +178,29 @@ describe('awardBestScorerBonuses', () => {
     // Decided final (away win) but zero goal_event rows -> no Golden Boot winner.
     const finalRound = (await findRoundId(db, competitionId, 'FINAL', null)) as string
     await makeMatch(db, { competitionId, roundId: finalRound, stage: 'FINAL', kickoffTime: PAST, status: 'FINISHED', winner: 'AWAY' })
-    expect(await awardBestScorerBonuses(db, competitionId, 10)).toBe(0)
+    expect((await awardBestScorerBonuses(db, competitionId, 10)).awarded).toBe(0)
     expect((await db.select().from(bestScorerPick))[0].awardedPoints).toBe(0)
+    await client.close()
+  })
+})
+
+describe('awardBestScorerBonuses change signal', () => {
+  // `awarded` is the same on every tick once the final is decided - the same
+  // winners are re-awarded - so it cannot say whether anything moved. The
+  // finalize task gates the expensive trophy recompute on `changed`, so that is
+  // the property worth pinning.
+  it('reports changed once, then false while the same winner holds', async () => {
+    const { db, client, competitionId, roundId, userId } = await setup()
+    await setBestScorerPick(db, { userId, competitionId, ...MBAPPE })
+    await seedDecidedFinal(db, competitionId)
+    const m = await makeMatch(db, { competitionId, roundId, kickoffTime: PAST })
+    await makeGoal(db, { matchId: m, competitionId, playerId: 'p-mbappe' })
+
+    expect(await awardBestScorerBonuses(db, competitionId, 10)).toEqual({ awarded: 1, changed: true })
+
+    // Nothing moved: same winner, same rows, so the trophy recompute stays off.
+    const second = await awardBestScorerBonuses(db, competitionId, 10)
+    expect(second).toEqual({ awarded: 1, changed: false })
     await client.close()
   })
 })

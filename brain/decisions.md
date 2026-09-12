@@ -766,19 +766,20 @@ cookie, a global achievement's deep link), so the resolver falls back to the
 newest active season and the setter refuses to store a slug that does not qualify.
 A compiled-in constant survives only for an empty database.
 
-## Scheduled tasks are guarded against overlapping themselves
+## Scheduled tasks cannot overlap themselves, and nitro is why
 
-Nitro schedules with `new Cron(expr, fn)` and never passes croner's `protect`
-option, whose default is off - so a run that outlasts its interval does not
-delay the next tick, it runs alongside it. That was harmless while the live poll
-was every two minutes. It is not at 30 seconds: two concurrent `scores:poll`
-runs double the provider requests, race the per-match read-then-write in
-`upsertMatches`, and hand `notifyLiveMatchEvents` the same goal twice, which
-reaches users as duplicate push notifications. `matches:finalize` is worse
-again, since it awards trophies and grants achievements.
+Nitro keeps an in-flight map keyed by task name: `runTask` returns the running
+promise instead of starting a second run
+(`nitropack/dist/runtime/internal/task.mjs`, `__runningTasks__`). Both entry
+points go through it - the cron scheduler and the admin run-task route - so a
+tick that outlasts its interval is dropped rather than run alongside its
+predecessor. That is what makes a 30-second `scores:poll` safe.
 
-`withoutOverlap` (`server/utils/tasks/no-overlap.ts`) skips a tick whose
-predecessor is still running, and reports `busy` rather than swallowing it, so a
-task persistently too slow for its schedule shows up in the run history instead
-of looking healthy. Shortening any schedule further should mean checking the
-task is guarded first.
+Recorded because the opposite was briefly believed and written into this file:
+croner's `protect` option is indeed left unset, which looks like it permits
+overlap, and a `withoutOverlap` wrapper was added on that basis. It was dead
+code - the de-dupe happens above the task handler, so the wrapper's skip branch
+could never be reached. Removed. The real consequence of nitro's behaviour is
+the opposite worry: a dropped tick leaves no `task_run` row at all, so a task
+persistently too slow for its schedule shows a healthy `lastRunAt` in the admin
+cron view rather than any sign of saturation.

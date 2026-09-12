@@ -363,12 +363,11 @@ export async function setJoker(db: AppDatabase, input: SetJokerInput, now: Date 
 // "wisdom of the crowd" display shown while predicting, so this hides the
 // deanonymizing tail without disabling the pre-kickoff feature itself.
 //
-// The floor only covers the standing TOTAL. It says nothing about the delta
-// between two totals, and these are pushed live on every save - so on its own it
-// left consecutive pushes differing by exactly one pick. The matching guard is
-// the publish step in ../live/crowd-step.ts, which is what makes any observable
-// delta the blend of at least this many predictions. Changing one without the
-// other reopens the leak.
+// KNOWN GAP: the floor only covers the standing TOTAL, never the delta between
+// two of them. Totals are published live on every save AND served on demand by
+// GET /api/predictions/crowd, so differencing two observations still recovers a
+// single still-secret pick. See TODO.md - a publish-side step was tried and
+// removed, because gating the WS push leaves the read endpoint wide open.
 export const MIN_CROWD_COUNT = 3
 
 const EMPTY_CROWD = { home: 0, away: 0, count: 0 }

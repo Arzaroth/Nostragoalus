@@ -90,21 +90,17 @@ the totals move live for subscribers (see
 [../architecture/realtime.md](../architecture/realtime.md)). This powers the
 score-input crowd line, not the bots' own consensus.
 
-Two guards keep a pre-kickoff pick secret, and they only work together:
+`MIN_CROWD_COUNT` (3) blanks the standing total until enough predictions blur
+any single one.
 
-- `MIN_CROWD_COUNT` (3) blanks the standing total until enough predictions blur
-  any single one.
-- The publish step (`server/utils/live/crowd-step.ts`) gates the push itself, so
-  a published total never advances by fewer than that many predictions.
-
-The floor alone was not enough, because it constrains the total and not the
-delta. Totals were pushed on every save, so two consecutive pushes differed by
-exactly one prediction: `(home2 - home1, away2 - away1)` was that pick's
-scoreline, and `count + 1` confirmed it came from one person. An edit leaked
-more cleanly still - the count does not move at all, so the delta was purely
-that user's change. The step covers both, per stream (global and each league
-separately, since a small league is where one save moves the total visibly).
-The cost is that the crowd line steps rather than ticks.
+That covers the total but **not the delta between two of them**, which is a known
+open gap rather than a solved problem. Totals move on every save, and the same
+values are served on demand by `GET /api/predictions/crowd`, so differencing two
+observations recovers a single still-secret pick - `(home2 - home1, away2 -
+away1)` with `count + 1`. An edit leaks more cleanly still: the count does not
+move at all. A publish-side step was tried and reverted, because gating the
+WebSocket push leaves the read endpoint serving the same thing. See TODO.md for
+what a real fix needs.
 
 ## Sources
 

@@ -209,20 +209,27 @@ export function buildAuthOptions(database: AuthDb) {
     // from ever landing in the column for any other reader.
     databaseHooks: {
       user: {
+        // lastSeenChangelogVersion is user-writable (the client stamps it) and
+        // backed by a plain text column, so nothing stopped a client storing
+        // megabytes there and carrying it in every session payload. Bounded
+        // rather than pinned to today's numbering: the point is the size, and a
+        // future scheme (a -rc suffix, say) should not be silently dropped. It
+        // must still start like a version so it is not free text by another name.
+        //
+        // Applied on create as well as update: better-auth's sign-up route feeds
+        // every additionalField that is not `input: false` through
+        // parseUserInput, and this one cannot be `input: false` because the
+        // client legitimately writes it via updateUser.
+        create: {
+          before: async (data: Record<string, unknown>) => {
+            boundChangelogVersion(data)
+            return { data }
+          },
+        },
         update: {
           before: async (data: Record<string, unknown>) => {
             if (typeof data.skin === 'string' && data.skin !== '' && !isSkinId(data.skin)) data.skin = null
-            // lastSeenChangelogVersion is user-writable (the client stamps it)
-            // and backed by a plain text column, so nothing stopped a client
-            // storing megabytes there and carrying it in every session payload.
-            // Bounded rather than pinned to today's exact numbering: the point is
-            // the size, and a future scheme (a -rc suffix, say) should not be
-            // silently dropped. Must still start like a version, so it is not a
-            // free-text field by another name.
-            if (data.lastSeenChangelogVersion !== undefined && data.lastSeenChangelogVersion !== null) {
-              const v = data.lastSeenChangelogVersion
-              data.lastSeenChangelogVersion = typeof v === 'string' && /^\d[0-9A-Za-z.+-]{0,31}$/.test(v) ? v : null
-            }
+            boundChangelogVersion(data)
             // A client avatar upload arrives as a data: URL on user.image; move the
             // bytes into object storage and swap in the serving URL before the write,
             // so the blob never lands in Postgres. External CDN/https images pass
@@ -412,6 +419,12 @@ export function buildAuthOptions(database: AuthDb) {
       ? { trustedOrigins: process.env.NUXT_SSO_TRUSTED_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean) }
       : {}),
   }
+}
+
+function boundChangelogVersion(data: Record<string, unknown>): void {
+  if (data.lastSeenChangelogVersion === undefined || data.lastSeenChangelogVersion === null) return
+  const v = data.lastSeenChangelogVersion
+  data.lastSeenChangelogVersion = typeof v === 'string' && /^\d[0-9A-Za-z.+-]{0,31}$/.test(v) ? v : null
 }
 
 export const auth = betterAuth(buildAuthOptions(db))

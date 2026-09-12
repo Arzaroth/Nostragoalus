@@ -1,7 +1,6 @@
 import { db } from '../../../db'
 import { recordTaskRun } from '../../utils/tasks/recorder'
 import { cronDisabled } from '../../utils/tasks/cron-gate'
-import { withoutOverlap } from '../../utils/tasks/no-overlap'
 import { providerForCompetition } from '../../utils/providers'
 import { listActiveCompetitions } from '../../utils/competitions/store'
 import { resolveCompetitionSeason, syncLive } from '../../utils/sync/competition'
@@ -14,7 +13,7 @@ import { isKnockout } from '../../../shared/types/match'
 export default defineTask({
   meta: { name: 'scores:poll', description: 'Poll live scores for active competitions while matches are live' },
   async run({ payload }) {
-    return recordTaskRun(db, 'scores:poll', async () => withoutOverlap('scores:poll', async () => {
+    return recordTaskRun(db, 'scores:poll', async () => {
     if (cronDisabled(useRuntimeConfig().cronEnabled, payload)) return { result: 'disabled' }
     if (!(await hasLiveWindow(db))) return { result: 'idle' }
 
@@ -44,6 +43,6 @@ export default defineTask({
 
     await publishMatchUpdates(db, changed)
     return { result: { changed: changed.length } }
-    }))
+    })
   },
 })

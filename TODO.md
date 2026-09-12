@@ -657,6 +657,14 @@ one messaging dock. Still open:
       but the other three still hardcode `LIVE`/`PAUSED` and so disagree on
       SUSPENDED/INTERRUPTED. Extract one shared `currentMatchForTeam` /
       live-else-next helper so the in-play set lives in one place.
+      MOSTLY STALE as written: `map.vue` and `NextMatchCta.vue` both call the
+      shared `matchIsInPlay()` already. The one remaining site, the badge in
+      `matches/index.vue`, was aligned to it and then deliberately put back: that
+      badge reads the literal word LIVE, so widening it to SUSPENDED and
+      INTERRUPTED made a stopped match advertise itself as in progress. The
+      divergence there is correct and is now commented as such. What is left is
+      only the duplication, which is weaker than it reads: crowd-lean picks a
+      current match PER TEAM while map.vue picks one globally.
 - [ ] `WorldMap.client.vue` re-tints rings by writing `box-shadow` directly on each
       marker's `<img>` via `getElement()`. Works, but reaches around Leaflet's icon
       model; if marker rendering ever changes, prefer rebuilding the divIcon for the
@@ -788,6 +796,13 @@ landed alongside it (verified by running the stack):
       catastrophic wipe), but importing the helpers outside Playwright would
       seed/delete `e2e-cup` in the dev DB. Make the helpers refuse to run without
       an explicit e2e target.
+      DONE for the database and mail helpers, and for the three specs that built
+      their own pool (`dms`, `recovery`, `voice-chat`) - the ones that mattered
+      most, since they insert and delete real `user` rows. The maildev guard is
+      lazy rather than module-eval so importing the helper does not fail
+      collection for specs that never read mail. STILL OPEN: `E2E_APP_URL` falls
+      back to :3000 in about a dozen specs, and the guard only checks the
+      variable is set, not that it points at the e2e stack rather than dev.
 - [x] **`rewards.e2e.ts` "markdown description renders for viewers" is flaky/red**:
       the spec clicks the SSR-rendered "Add a description" button without the
       `expect(...).toPass()` interactivity gate the other specs use, so it fails
@@ -2801,7 +2816,7 @@ branch; the rest scored below the bar and are recorded here.
       head-to-head and bot views all 404. Fix is to key the subject with the
       existing HMAC secret derivation, which is a ledger-format boundary (old
       rows keep their subjects), so it wants its own pass.
-- [x] Crowd totals leak individual pre-kickoff picks by differencing:
+- [ ] Crowd totals leak individual pre-kickoff picks by differencing:
       `MIN_CROWD_COUNT = 3` masks the standing total but never the delta, so once
       `count >= 3` every `count + 1` transition publishes one exact scoreline,
       pushed live per save over the WS hub. Naming the predictor needs colluding
@@ -2809,11 +2824,26 @@ branch; the rest scored below the bar and are recorded here.
       but the floor's comment claims a protection it does not provide. Cheapest
       fixes: drop or bucket `count` on the wire, or debounce the publish until
       the count has advanced by >= 3.
-      DONE via the second option - `server/utils/live/crowd-step.ts` gates both
-      the global and the per-league push so a published total never advances by
-      fewer than MIN_CROWD_COUNT predictions, which also covers the edit case
-      (a re-save moves the scoreline without moving the count). Dropping `count`
-      alone would not have been enough: the home/away delta is the leak.
+      ATTEMPTED AND REVERTED. A publish-side step (`crowd-step.ts`) gated both
+      the global and per-league WS pushes so a published total never advanced by
+      fewer than MIN_CROWD_COUNT predictions. It does not close the leak: `GET
+      /api/predictions/crowd` is `auth: 'user'` and serves the same exact totals
+      on demand with only the floor applied, so an attacker polls instead of
+      subscribing. The gate bought nothing and cost real behaviour (after a
+      total dipped under the floor and recovered, clients stayed blanked for
+      three more saves), so it was removed rather than left as theatre.
+      What a real fix needs, from the review:
+      - Both paths must agree, so the quantisation belongs in the VALUE
+        (getCrowdTotals / getMatchCrowdTotal), not in the publisher.
+      - Summing only the first `floor(count/N)*N` predictions would do it, but
+        `prediction` has no insertion-ordered column (only a random uuid pk), so
+        "the first N" reshuffles when a row is inserted. That needs a createdAt
+        (or a sequence) first.
+      - Even then a count threshold is defeatable by an observer who controls
+        picks: 3 sockpuppet saves either side of a victim's save isolate it
+        again. Bucketing by count alone cannot fix that; it needs delay, noise,
+        or not publishing live per-match totals pre-kickoff at all. That is a
+        product decision, not a mechanical one.
 - [ ] Re-confirmed as still open, already tracked above: the link-unfurl
       DNS-rebinding TOCTOU. The audit's redirect-bypass theory was refuted -
       `disableRedirect: true` plus the re-entrant loop re-runs `assertPublicHost`

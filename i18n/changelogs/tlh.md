@@ -8,7 +8,6 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 ### tI'pu'
 
 - ghom rI'meH rar Dalo'DI' 'ej De'wI'Hom Dangu'DI', DaH rarDaq bIchegh; qaD HaSta Daq bIcheghbe'.
-- qaSpa' may', pegh noH. Hoch choqDI', ghom mI' choH, vaj cha' mI' chevlu'DI', noH chu' laDlu'laH. DaH tlhoch mI' vI'; reH law' noH ngaS.
 
 ## [4.12.0] - 2026-09-12
 

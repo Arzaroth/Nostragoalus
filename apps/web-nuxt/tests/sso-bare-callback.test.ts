@@ -23,14 +23,28 @@ const authSource = readFileSync(fileURLToPath(new URL('../lib/auth.ts', import.m
 function ssoPluginBlock(src: string): string {
   const start = src.indexOf('sso({')
   expect(start, 'the sso() plugin should be configured in lib/auth.ts').toBeGreaterThan(-1)
-  // Far enough to cover the option list without depending on exact formatting.
-  return src.slice(start, start + 4000)
+  // Brace-matched, not a fixed window. A 4000-char slice was shorter than the
+  // block (4259) and left its tail - the natural place to append an option -
+  // unscanned, so the option this test exists to catch could be added with the
+  // test still green.
+  const open = src.indexOf('{', start)
+  let depth = 0
+  for (let i = open; i < src.length; i++) {
+    if (src[i] === '{') depth += 1
+    else if (src[i] === '}') {
+      depth -= 1
+      if (depth === 0) return src.slice(start, i + 1)
+    }
+  }
+  throw new Error('could not find the end of the sso({ ... }) options block in lib/auth.ts')
 }
 
 describe('the bare SSO callback stays ungated-but-unreachable', () => {
   it('lib/auth.ts does not set redirectURI on the sso plugin', () => {
     const block = ssoPluginBlock(authSource)
-    const configured = /^\s*redirectURI\s*:/m.test(block)
+    // Not anchored to the line start: `sso({ redirectURI: x })` inline, or a
+    // quoted key, would slip past a /^\s*redirectURI/m form.
+    const configured = /(^|[{,\s])'?"?redirectURI'?"?\s*:/.test(block)
     expect(
       configured,
       'lib/auth.ts now sets `redirectURI` on the sso plugin. That makes @better-auth/sso put '

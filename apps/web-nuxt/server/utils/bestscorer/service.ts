@@ -119,22 +119,44 @@ export async function topScorerPlayerIds(db: AppDatabase, competitionId: string)
 // decided final: until the tournament is over the goal tally is incomplete, so
 // awarding early would crown a transient leader (and this runs AFTER the detail
 // sync that populates goal_event, not inside the scoring transaction).
-export async function awardBestScorerBonuses(db: AppDatabase, competitionId: string, bonus: number): Promise<number> {
+// Returns the row count and, separately, whether the bonus actually moved.
+// `awarded` is the same every tick once the final is decided (the same winners
+// are re-awarded), so it is not a "something changed" signal; `changed` is.
+export interface BestScorerAward {
+  awarded: number
+  changed: boolean
+}
+
+export async function awardBestScorerBonuses(
+  db: AppDatabase,
+  competitionId: string,
+  bonus: number,
+): Promise<BestScorerAward> {
   const before = await db
     .select({ id: bestScorerPick.id })
     .from(bestScorerPick)
     .where(and(eq(bestScorerPick.competitionId, competitionId), gt(bestScorerPick.awardedPoints, 0)))
-  await db.update(bestScorerPick).set({ awardedPoints: 0 }).where(eq(bestScorerPick.competitionId, competitionId))
+  // Only the rows that actually hold a bonus. The reset has to stay ahead of the
+  // decided-final gate below - if a final stops being decided, a previously
+  // awarded bonus must still be cleared - but zeroing rows that are already zero
+  // rewrote the whole competition's picks on every finalize tick, which at a
+  // one-minute cadence is a lot of dead tuples for no change.
+  if (before.length > 0) {
+    await db
+      .update(bestScorerPick)
+      .set({ awardedPoints: 0 })
+      .where(and(eq(bestScorerPick.competitionId, competitionId), gt(bestScorerPick.awardedPoints, 0)))
+  }
 
   const finals = await db
     .select({ winner: match.winner })
     .from(match)
     .where(and(eq(match.competitionId, competitionId), eq(match.stage, 'FINAL')))
   const decided = finals.some((m) => m.winner === 'HOME' || m.winner === 'AWAY')
-  if (!decided) return 0
+  if (!decided) return { awarded: 0, changed: before.length > 0 }
 
   const winners = await topScorerPlayerIds(db, competitionId)
-  if (winners.length === 0) return 0
+  if (winners.length === 0) return { awarded: 0, changed: before.length > 0 }
 
   const halved = Math.floor(bonus / 2)
   const updated = await db
@@ -153,8 +175,9 @@ export async function awardBestScorerBonuses(db: AppDatabase, competitionId: str
   // resurrects a dismissal.
   const held = new Set(before.map((r) => r.id))
   const awarded = updated.filter((r) => r.points > 0).map((r) => r.id)
-  if (awarded.length !== held.size || awarded.some((id) => !held.has(id))) {
+  const changed = awarded.length !== held.size || awarded.some((id) => !held.has(id))
+  if (changed) {
     await notifyBestScorerResult(db, competitionId, winners)
   }
-  return updated.length
+  return { awarded: updated.length, changed }
 }

@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto'
 import { Pool } from 'pg'
 import { expect, test } from '@playwright/test'
 import { freshUser, signUp, typeInto } from './helpers/auth'
+import { requireE2eDatabaseUrl } from './helpers/db'
 
 // Voice chat rides WebRTC. In the isolated stack there is no coturn, but two
 // browsers on the same host connect over loopback host candidates (STUN not even
@@ -17,7 +18,7 @@ test.use({
   },
 })
 
-const CONNECTION = process.env.E2E_DATABASE_URL ?? 'postgres://nostragoalus:nostragoalus@localhost:5432/nostragoalus'
+const CONNECTION = requireE2eDatabaseUrl()
 let pool: Pool | null = null
 function db(): Pool {
   if (!pool) pool = new Pool({ connectionString: CONNECTION })

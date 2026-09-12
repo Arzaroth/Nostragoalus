@@ -3,13 +3,16 @@
 // Required for the same reason as E2E_DATABASE_URL: the old default was the
 // dev stack's inbox on :1080, not the e2e stack's :1081, and these helpers
 // delete messages.
-const MAILDEV = (() => {
+// Lazy, like the db guard: throwing at module-evaluation would fail collection
+// of every spec that merely imports this file, including ones that never read
+// mail.
+function maildevUrl(): string {
   const url = process.env.E2E_MAILDEV_URL
   if (!url) {
     throw new Error('E2E_MAILDEV_URL is not set; the e2e mail helpers will not fall back to the dev inbox.')
   }
   return url
-})()
+}
 
 interface Mail {
   id: string
@@ -20,7 +23,7 @@ interface Mail {
 }
 
 export async function clearMail(): Promise<void> {
-  await fetch(`${MAILDEV}/email/all`, { method: 'DELETE' }).catch(() => {})
+  await fetch(`${maildevUrl()}/email/all`, { method: 'DELETE' }).catch(() => {})
 }
 
 // Poll the inbox until a mail to `toAddress` (optionally matching a subject
@@ -32,7 +35,7 @@ export async function waitForMail(
   const deadline = Date.now() + (opts.timeoutMs ?? 15_000)
   let last = ''
   while (Date.now() < deadline) {
-    const mails = (await (await fetch(`${MAILDEV}/email`)).json()) as Mail[]
+    const mails = (await (await fetch(`${maildevUrl()}/email`)).json()) as Mail[]
     const found = mails
       .filter((m) => m.to?.some((t) => t.address.toLowerCase() === toAddress.toLowerCase()))
       .filter((m) => !opts.subjectIncludes || m.subject?.includes(opts.subjectIncludes))

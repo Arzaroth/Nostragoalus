@@ -1,6 +1,5 @@
 import { db } from '../../../db'
 import { recordTaskRun } from '../../utils/tasks/recorder'
-import { withoutOverlap } from '../../utils/tasks/no-overlap'
 import { finalizeMatches } from '../../utils/sync/finalize'
 import { listActiveCompetitions } from '../../utils/competitions/store'
 import { providerForCompetition } from '../../utils/providers'
@@ -17,11 +16,7 @@ import { publishMatchUpdates } from '../../utils/live/hub'
 export default defineTask({
   meta: { name: 'matches:finalize', description: 'Lock due predictions, score finished matches, fetch match details' },
   async run() {
-    // Guarded: this one awards trophies, grants achievements and sends result
-    // notifications. Overlapping runs are idempotent per award but would still
-    // duplicate the notifications, and a tick that fetches a batch of match
-    // details can outlast a one-minute schedule.
-    return recordTaskRun(db, 'matches:finalize', async () => withoutOverlap('matches:finalize', async () => {
+    return recordTaskRun(db, 'matches:finalize', async () => {
     const result = await finalizeMatches(db)
 
     const details: Record<string, unknown> = {}
@@ -35,11 +30,12 @@ export default defineTask({
       } catch {
         // Skip competitions whose provider can't fetch details (e.g. missing token).
       }
+      let bestScorerChanged = false
       try {
         // After the detail sync (fresh goal_event) and before snapshots, so the
         // Golden Boot bonus reflects the final's goals and the rank movement
         // includes it. Self-gated on a decided final and idempotent.
-        await awardBestScorerBonuses(db, competition.id, rules.bestScorerBonus)
+        bestScorerChanged = (await awardBestScorerBonuses(db, competition.id, rules.bestScorerBonus)).changed
       } catch {
         // never fail the task over the best-scorer award
       }
@@ -47,8 +43,17 @@ export default defineTask({
         // After the best-scorer bonus so the OVERALL trophy reflects the final
         // leaderboard (which folds in that bonus). Self-gated on a decided final
         // and idempotent; only newly-awarded trophies notify.
-        const newTrophies = await awardCompetitionTrophies(db, competition.id)
-        await notifyTrophyAwarded(db, competition.id, newTrophies)
+        //
+        // Gated on something having actually moved, like the snapshots and
+        // achievements below. It looks idempotent-and-cheap but is not: it
+        // materialises the whole competition leaderboard (limit 100_000) plus
+        // three prediction aggregations, and it ran on every tick forever once a
+        // final was decided. The two things that can change a trophy are a match
+        // scoring and the Golden Boot changing hands, so those are the triggers.
+        if (result.scored > 0 || bestScorerChanged) {
+          const newTrophies = await awardCompetitionTrophies(db, competition.id)
+          await notifyTrophyAwarded(db, competition.id, newTrophies)
+        }
       } catch {
         // never fail the task over trophies
       }
@@ -85,6 +90,6 @@ export default defineTask({
     await publishMatchUpdates(db, result.changedMatchIds)
 
     return { result: { ...result, details } }
-    }))
+    })
   },
 })

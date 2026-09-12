@@ -2,13 +2,14 @@ import { randomBytes, randomUUID } from 'node:crypto'
 import { Pool } from 'pg'
 import { expect, test } from '@playwright/test'
 import { freshUser, signUp, typeInto } from './helpers/auth'
+import { requireE2eDatabaseUrl } from './helpers/db'
 
 // Chat identity recovery drives entirely off the shared E2EE identity, so we exercise
 // it through a DM panel (verify + recovery render there). We seed a bare recipient B
 // (a chat_identity with a random 32-byte pubkey) so user A can open a thread and land
 // in a ready DM ChatPanel - the send path never needs B's private key.
 const CONNECTION =
-  process.env.E2E_DATABASE_URL ?? 'postgres://nostragoalus:nostragoalus@localhost:5432/nostragoalus'
+  requireE2eDatabaseUrl()
 let pool: Pool | null = null
 function db(): Pool {
   if (!pool) pool = new Pool({ connectionString: CONNECTION })
