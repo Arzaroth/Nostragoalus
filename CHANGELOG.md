@@ -5,10 +5,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
-### Added
-
-- ESPN joins the match-data sources a competition can be pointed at. It is keyless, carries far more competitions than the current sources (every domestic league and cup ESPN covers, not just the international tournaments), and reads a whole season in one request.
-
 ## [4.11.1] - 2026-09-12
 
 ### Fixed

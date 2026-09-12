@@ -24,7 +24,7 @@ import type {
 } from '../../../shared/types/match'
 import { EXTRA_TIME_BREAK_MINUTE } from '../../../shared/types/match'
 import { RateLimiter } from './rate-limiter'
-import { mapStageFromName, parseGroupLetter } from './stage'
+import { assignGroupMatchdays, mapStageFromName, parseGroupLetter } from './stage'
 import { ProviderRateLimitError, ProviderUpstreamError, type ListFixturesOptions, type MatchDataProvider } from './types'
 import { minuteValue } from '../stats/insights'
 import { CHROME_JA3, CHROME_UA, cycleGet } from './cycle-tls'
@@ -128,25 +128,6 @@ export function normalizeFifaMatch(match: FifaMatch): NormalizedMatch {
   }
 }
 
-// FIFA does not expose a matchday number, so derive it for group matches by ordering
-// each group's six fixtures by kickoff (two per matchday).
-export function assignGroupMatchdays(matches: NormalizedMatch[]): NormalizedMatch[] {
-  const byGroup = new Map<string, NormalizedMatch[]>()
-  for (const m of matches) {
-    if (m.stage !== 'GROUP' || !m.group) continue
-    const bucket = byGroup.get(m.group) ?? []
-    bucket.push(m)
-    byGroup.set(m.group, bucket)
-  }
-
-  for (const groupMatches of byGroup.values()) {
-    groupMatches.sort((a, b) => a.kickoffTime.localeCompare(b.kickoffTime))
-    groupMatches.forEach((m, index) => {
-      m.matchday = Math.floor(index / 2) + 1
-    })
-  }
-  return matches
-}
 
 interface FifaDetailPlayer {
   IdPlayer: string

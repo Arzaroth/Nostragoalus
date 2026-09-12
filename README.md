@@ -232,7 +232,7 @@ See the in-app **About** page for the full annotated list with licenses. Highlig
 - **libsodium** for the end-to-end-encrypted league chat (client-side group-key crypto; the server stores only ciphertext)
 - **Drizzle ORM** + **PostgreSQL** (PGlite for hermetic tests)
 - Configurable **image storage** (avatars, chat images) - a filesystem path or any S3-compatible service (the Docker stack runs **rustfs**), signed with **aws4fetch**
-- Provider-agnostic match data: keyless **FIFA** and **UEFA** public APIs
+- Provider-agnostic match data: keyless **FIFA**, **UEFA** and **ESPN** public APIs
 - In-process scheduled tasks (Croner) for fixtures / live scores / finalize
 
 ## Scoring

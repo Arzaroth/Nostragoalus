@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { createProvider } from './factory'
 
 describe('createProvider', () => {
@@ -19,9 +19,22 @@ describe('createProvider', () => {
     expect(createProvider({ provider: 'fixture' }).meta.name).toBe('fixture')
   })
 
-  it('creates the espn provider with a default league and an explicit one', () => {
+  it('creates the espn provider with a default league', () => {
     expect(createProvider({ provider: 'espn' }).meta.name).toBe('espn')
-    expect(createProvider({ provider: 'espn', externalCompetitionId: 'eng.1', seasonHint: '2026' }).meta.name).toBe('espn')
+  })
+
+  it('plumbs the league and season into the espn provider', async () => {
+    const fetchImpl = vi.fn(async () => new Response(JSON.stringify({ events: [] }), { status: 200 }))
+    const provider = createProvider({
+      provider: 'espn',
+      externalCompetitionId: 'eng.1',
+      seasonHint: '2026',
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    })
+    await provider.listFixtures({ season: 'ignored' })
+    const url = fetchImpl.mock.calls[0][0] as unknown as string
+    expect(url).toContain('/soccer/eng.1/scoreboard?')
+    expect(url).toContain('dates=2026')
   })
 
   it('throws for the not-yet-implemented api-football provider', () => {

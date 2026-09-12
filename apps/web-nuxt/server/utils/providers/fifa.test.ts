@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
 import {
-  assignGroupMatchdays,
   fifaProvider,
   gamedayStoryUrl,
   mapFifaStage,
@@ -17,6 +16,7 @@ import {
   type GamedayStoriesResponse,
 } from './fifa'
 import { RateLimiter } from './rate-limiter'
+import { assignGroupMatchdays } from './stage'
 import { ProviderRateLimitError, ProviderUpstreamError } from './types'
 import { cycleGet } from './cycle-tls'
 

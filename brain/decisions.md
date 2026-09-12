@@ -679,25 +679,56 @@ See [features/mobile-app.md](features/mobile-app.md).
   construction, so the table loses its only upper bound. See
   [features/notifications.md](features/notifications.md).
 
-- **The ESPN adapter derives half-time rather than fetching it.** The scoreboard
-  publishes no half-time score, and the per-match `summary` endpoint that does
-  (`competitors[].linescores`, five periods) costs one request per match - 104 of
-  them for a World Cup, against the single request the whole season otherwise
-  takes. But the scoreboard already carries every goal in
-  `competitions[0].details[]` with its minute, so summing the goals up to 45'
-  gives the same number for free. Checked against all 64 matches of the 2022
-  World Cup: the full-time score derived the same way matched the published one
-  in every match that had details at all (63 of 64; the 64th publishes no
-  details, and its half-time is simply left unset). The adapter reads the
-  scoreline itself off `competitors[].score` regardless - a score that moved is a
-  goal even when `details` has not caught up, so a lagging play-by-play can never
-  cost a point.
+- **The ESPN adapter derives half-time rather than fetching it, and declines to
+  answer instead of guessing.** The scoreboard publishes no half-time score, and
+  the per-match `summary` endpoint that does (`competitors[].linescores`, five
+  periods) costs one request per match - 104 of them for a World Cup, against the
+  single request the whole season otherwise takes. But the scoreboard already
+  carries every goal in `competitions[0].details[]` with its minute, so summing
+  the goals up to 45' gives the same number for free. Checked against all 64
+  matches of the 2022 World Cup: the full-time score derived the same way matched
+  the published one in every match that had details at all. The important half of
+  the decision is the refusal: an empty `details` array is not the same fact as a
+  goalless first half, so the adapter returns null rather than a zeroed pair
+  whenever the answer would be invented (no details, a goal with no minute, a goal
+  whose team id matches neither side, a side with no team id). A stored 0-0 is
+  indistinguishable from a real one and nothing downstream re-derives it. On the
+  2026 edition that is 96 of 104 matches answered and 8 left unset. The adapter
+  reads the scoreline itself off `competitors[].score` regardless - a score that
+  moved is a goal even when `details` has not caught up, so a lagging play-by-play
+  can never cost a point.
+- **A standings failure fails the ESPN sync instead of degrading.** The group
+  letter comes from a second call, and the obvious shape is to swallow its error
+  and carry on with no letters. That is wrong here twice over: `groupName` is a
+  mutable field in `upsertMatches`, so a null would blank the stored letter of
+  every live match on the next poll, and the derived group matchday keys off the
+  letter, so a letter-less group match gets no matchday and is dropped at insert
+  (see below). One failed tick, retried two minutes later, is cheaper than a
+  corrupted group table. The memo is reset on an empty result as well as on an
+  error, so standings published before the draw are retried rather than pinned.
+- **A group match with no matchday is silently dropped, so every provider must
+  derive one.** `ensureRounds` files a group round under `matchday ?? 1`, while
+  `findRoundId` looks a null matchday up as `IS NULL` - the two disagree, so a
+  match arriving with `matchday: null` finds no round and `upsertMatches` counts
+  it in `skipped` and moves on. The sync then reports success having stored
+  nothing. FIFA and UEFA both derive a matchday and so never hit it; the first
+  draft of the ESPN adapter did not, and lost all 72 group fixtures of the 2026
+  World Cup while reporting a clean run. The derivation now lives once in
+  `stage.ts` as `assignGroupMatchdays`, shared by FIFA and ESPN. It keys off the
+  group letter, which is why a league (no groups, no letters) is not syncable
+  through this path yet.
+- **Two group-name parsers, on purpose.** `parseGroupLetter` matches a trailing
+  letter because FIFA hands us a localized label ("Groupe A"), and anchoring the
+  whole string would drop every non-English feed. `parseGroupNameStrict` anchors
+  it because ESPN's standings children are named after the competition for a
+  domestic league, and "Premier League" ends in a letter the loose parser reads as
+  group E. Tightening the shared one would have broken FIFA; they sit side by side
+  in `stage.ts` with names that say which is which.
 - **ESPN is a fixtures adapter only, by choice.** It implements `listFixtures`,
   `getMatchesByDate` and `getLiveMatches` and none of the optional methods
   (`getMatchDetail`, `getBracket`, `getTopScorers`, `getMatchTimeline`,
   lineups, per-team stats). Those exist on FIFA and UEFA because those feeds are
   the primary source for the tournament the app actually runs; ESPN's value is
-  breadth - it is the only source that covers a domestic league - and breadth is
-  bought with the scoreboard alone. Adding a detail method later means a
-  per-match `summary` call and the polling budget that implies, which is a
-  decision to take when a competition needs it, not up front.
+  breadth. Adding a detail method later means a per-match `summary` call and the
+  polling budget that implies, which is a decision to take when a competition
+  needs it, not up front.

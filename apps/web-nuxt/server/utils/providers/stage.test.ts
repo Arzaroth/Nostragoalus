@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { mapStageFromName, parseGroupLetter } from './stage'
+import { mapStageFromName, parseGroupLetter, parseGroupNameStrict } from './stage'
 
 describe('mapStageFromName', () => {
   it('maps each provider stage name to its app stage', () => {
@@ -31,5 +31,26 @@ describe('parseGroupLetter', () => {
     expect(parseGroupLetter('group a')).toBe('A')
     expect(parseGroupLetter('Group M')).toBeNull()
     expect(parseGroupLetter(null)).toBeNull()
+  })
+
+  it('accepts a localized group name, which is why the loose form exists', () => {
+    expect(parseGroupLetter('Groupe A')).toBe('A')
+    expect(parseGroupLetter('Gruppe B')).toBe('B')
+  })
+})
+
+describe('parseGroupNameStrict', () => {
+  it('reads a whole-string group name', () => {
+    expect(parseGroupNameStrict('Group F')).toBe('F')
+    expect(parseGroupNameStrict('group a')).toBe('A')
+    expect(parseGroupNameStrict('Group M')).toBeNull()
+    expect(parseGroupNameStrict(null)).toBeNull()
+  })
+
+  it('refuses a competition name that merely ends in a letter', () => {
+    // The loose parser reads this as group E, which is the whole point.
+    expect(parseGroupLetter('Premier League')).toBe('E')
+    expect(parseGroupNameStrict('Premier League')).toBeNull()
+    expect(parseGroupNameStrict('Bundesliga')).toBeNull()
   })
 })

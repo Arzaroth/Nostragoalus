@@ -53,7 +53,7 @@ are unofficial or undocumented endpoints), so the quirks below are load-bearing.
 `matches:finalize` fetches match details (bounded) into `goal_event` and
 `match.possession*`. A football-data.org adapter exists as a fallback (its
 `/scorers` needs a token; FIFA is keyless), and an [ESPN adapter](#match-data-espn-keyless-whole-season-in-one-call)
-covers fixtures for any competition ESPN carries. An api-football adapter is
+covers fixtures for the group-and-knockout competitions ESPN carries. An api-football adapter is
 mapped but not implemented.
 
 This feeds [../features/predictions-and-scoring.md](../features/predictions-and-scoring.md)
@@ -63,45 +63,85 @@ and [../features/best-scorer.md](../features/best-scorer.md).
 
 `server/utils/providers/espn.ts` reads ESPN's public site API - keyless,
 undocumented, no announced quota. `externalCompetitionId` is the ESPN league slug
-(`fifa.world`, `uefa.euro`, `eng.1`, `uefa.champions`), `seasonHint` the season
-year. Fixtures only: it implements `listFixtures` / `getMatchesByDate` /
-`getLiveMatches` and none of the optional detail methods.
+(`fifa.world`, `uefa.euro`, `uefa.champions`), `seasonHint` the season year.
+Fixtures only: it implements `listFixtures` / `getMatchesByDate` /
+`getLiveMatches` and none of the optional detail methods. All three read one
+season fetch, so the derived group matchdays always see a whole group rather than
+the slice one day or the live poll would return.
 
 - **One call per sync.** `…/site/v2/sports/soccer/{league}/scoreboard?dates=YYYY`
   returns the whole season (104 events for the 2026 World Cup). `dates` also takes
   `YYYYMMDD` and `YYYYMMDD-YYYYMMDD` (both bounds included); **without `dates` the
-  endpoint serves the current day only**, which is what `getLiveMatches` relies on.
-  `limit` defaults to 100 - we send 500, or a 104-match tournament loses its tail.
+  endpoint serves the current day only**. `limit` defaults to 100 - we send 500, or
+  a 104-match tournament loses its tail.
 - **The User-Agent is filtered, in HTML.** An Akamai in front of the API 403s on
   the agent and answers `<TITLE>Access Denied</TITLE>`, not an error JSON, so a
   reader expecting JSON sees a parse failure rather than a refusal. Branded and
   browser-shaped agents are refused; the adapter sends `curl/8.0`. If every ESPN
   call starts failing with a 403 carrying HTML, suspect this before the endpoint.
-- **A scheduled match reports `score: "0"`** on both sides, not null - writing it
-  through would stamp every unplayed fixture 0-0. The adapter nulls the scoreline
-  unless the match has left the `pre` state.
+- **A scheduled match reports `score: "0"`** on both sides, not null - and so does
+  a postponed or cancelled one. The adapter only reads the scoreline once
+  `matchHasStarted()` says the match was actually played, which is the same
+  predicate the rest of the app uses and which excludes the never-played
+  terminals (POSTPONED / CANCELLED / AWARDED).
 - **Postponed and abandoned arrive as `state: "post"`**, exactly like a finished
   match; only `status.type.name` separates them, so the state alone would show a
   full-time card for a match that never kicked off. Inside `post` the name decides,
-  and inside `in` an unknown name reads as LIVE, never as final.
+  and inside `in` an unknown name reads as LIVE, never as final. The name is an
+  upstream-controlled key, so the lookup is a `Map`: a plain object literal
+  resolves `constructor` or `toString` to an inherited function.
 - **The stage is `event.season.slug`** (`group-stage`, `round-of-32`,
   `quarterfinals`, `3rd-place-match`, `final`): hyphens out, then the shared ladder
   in [stage.ts](../../apps/web-nuxt/server/utils/providers/stage.ts) reads it.
+- **No feed publishes a matchday**, and a group match without one is *dropped*:
+  `ensureRounds` files group rounds under `matchday` 1..N while `findRoundId`
+  looks a null matchday up as `IS NULL`, so it never matches and every group
+  fixture is silently skipped at insert. The adapter runs the shared
+  `assignGroupMatchdays` (in `stage.ts`, also used by FIFA) over the whole season
+  to derive it. That helper keys off the group letter, so **a competition with no
+  groups - a domestic league - cannot be synced today**: its fixtures are all
+  GROUP-stage with no letter, get no matchday, and would be skipped. ESPN's league
+  coverage is therefore not yet usable; see TODO.md.
 - **The group letter is not on the scoreboard.** It comes from a second call,
   `…/apis/v2/sports/soccer/{league}/standings` (**`apis/v2`, not `apis/site/v2`** -
   the site path also answers 200, with an almost-empty object), whose `children[]`
-  are the groups; the adapter builds a team-id -> letter map, fetched once per
-  instance, skipped entirely when nothing is at the group stage, and degraded to
-  "no letters" rather than fatal when standings fail. Matching the group name is
-  strict (`^group [a-l]$`) because a domestic league's children are named after the
-  league, and `Premier League` ends in a letter that a loose match reads as group E.
+  are the groups; the adapter builds a team-id -> letter map, memoized per
+  instance and skipped entirely when nothing is at the group stage. A standings
+  failure **fails the whole run** on purpose rather than degrading to "no letters":
+  `groupName` is a mutable upsert field, so returning null would blank the stored
+  letter for every live match on the next poll, and a letter-less group match gets
+  no matchday and is skipped at insert. Losing one tick is cheaper than losing the
+  group table. Matching the group name uses the strict `parseGroupNameStrict`
+  (`^group [a-l]$`), not the loose `parseGroupLetter`, because a domestic league's
+  standings children are named after the league and `Premier League` ends in a
+  letter the loose parser reads as group E.
+- **The group letter is attached to group-stage matches only.** The map is keyed by
+  team and a team carries its letter into the knockouts, so an ungated join would
+  stamp "Group A" on a Round of 16 tie - and `server/api/teams/[code].get.ts`
+  selects group-table rows by `groupName` with no stage filter, which would pull
+  that knockout result into the group standings.
 - **Half-time is derived**, not served: `competitions[0].details[]` carries every
   goal with `clock.displayValue` and `scoreValue`, so goals up to 45' sum to the
   half-time pair (shootout entries carry `shootout: true` and are excluded). ESPN
-  credits an own goal to the side it benefits, so no side-swap is needed. Verified
-  against all 64 matches of the 2022 World Cup.
-- **Penalties** are `competitors[].shootoutScore`; `competitors[].score` is the
-  120-minute scoreline, which lands in `fullTime` as it does for FIFA and UEFA.
+  credits an own goal to the side it benefits, so no side-swap is needed. It is
+  left **unset, not zeroed**, whenever the answer would be a guess - no `details`
+  at all (routine for older or smaller competitions), a goal with no minute, or a
+  goal whose team id matches neither side - because a stored 0-0 is
+  indistinguishable from a real goalless half. Verified against all 64 matches of
+  the 2022 World Cup, and against the 2026 edition, where 96 of 104 matches yield
+  a half-time and the other 8 publish no details.
+- **Penalties** are `competitors[].shootoutScore`, stored only when the two sides
+  sum above zero: ESPN sends `shootoutScore: 0` on ordinary matches, and writing
+  that through marks every match as decided on penalties (the same trap FIFA and
+  UEFA already guard). `competitors[].score` is the 120-minute scoreline, which
+  lands in `fullTime` as it does for FIFA and UEFA.
+- **A draw is only a draw when the scoreline says so.** ESPN omits the `winner`
+  boolean on some events, so deriving DRAW from a FINISHED status alone records a
+  2-1 as a draw; the adapter requires the two full-time scores to be level.
+- **`getLiveMatches` keeps the matches that just finished**, not only the in-play
+  ones: a LIVE/PAUSED-only feed never carries the final whistle, so the row would
+  stay LIVE until the hourly fixtures refresh. Same 4h recent-kickoff window as
+  FIFA, which covers extra time plus penalties.
 
 ## Match data: fixture (offline, e2e only)
 
