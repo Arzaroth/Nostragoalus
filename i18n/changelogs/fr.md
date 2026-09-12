@@ -7,7 +7,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ### Corrigé
 
-- Après une inscription depuis une invitation de ligue, la confirmation de l'e-mail vous ramène désormais à cette invitation au lieu de vous déposer sur la page des matchs.
+- Après une inscription depuis une invitation de ligue, la confirmation de l'e-mail vous ramène désormais à cette invitation au lieu de vous déposer sur la page des matchs. L'invite de ligue des nouveaux comptes ne s'ouvre plus non plus par-dessus une invitation, ce qui vous emmenait sur la page des matchs dès que vous la fermiez.
 
 ## [4.12.0] - 2026-09-12
 

@@ -7,7 +7,7 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ### tI'pu'
 
-- ghom rI'meH rar Dalo'DI' 'ej De'wI'Hom Dangu'DI', DaH rarDaq bIchegh; qaD HaSta Daq bIcheghbe'.
+- ghom rI'meH rar Dalo'DI' 'ej De'wI'Hom Dangu'DI', DaH rarDaq bIchegh; qaD HaSta Daq bIcheghbe'. je rI'wI' HaSta SoQmoHlu'DI' qaD HaSta Daq bIjaHqa'pu'; DaH rI'meH HaSta poSbe'.
 
 ## [4.12.0] - 2026-09-12
 

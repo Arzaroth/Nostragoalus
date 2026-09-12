@@ -7,7 +7,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ### Fixed
 
-- Signing up from a league invite and confirming your email now lands you back on that invite, instead of dropping you on the matches page.
+- Signing up from a league invite and confirming your email now lands you back on that invite, instead of dropping you on the matches page. The new-account league prompt no longer opens on top of an invite either, which used to pull you away to the matches page the moment you dismissed it.
 
 ## [4.12.0] - 2026-09-12
 

@@ -17,9 +17,17 @@ const flagUnset = computed(() => {
   return !!user && (user.leaguePromptDismissedAt === null || user.leaguePromptDismissedAt === undefined)
 })
 
+// Never over an invite landing page. The prompt is modal and unclosable, so it
+// covers the one button the user came for, and every exit path hands off to the
+// onboarding tour, which navigates to /matches - losing the invite that signup
+// and email confirmation just carried all the way here.
+const route = useRoute()
+const onInviteLanding = computed(() => route.path.startsWith('/leagues/join/'))
+
 const visible = computed(
   () =>
     !dismissedLocally.value &&
+    !onInviteLanding.value &&
     flagUnset.value &&
     mine.isSuccess.value &&
     (mine.data.value?.length ?? 0) === 0,

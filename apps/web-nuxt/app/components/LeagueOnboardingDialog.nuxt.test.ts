@@ -5,6 +5,9 @@ import LeagueOnboardingDialog from './LeagueOnboardingDialog.vue'
 
 const sessionUser = ref<Record<string, unknown> | null>({ id: 'u1', leaguePromptDismissedAt: null })
 const myLeagues = ref<Array<{ id: string }>>([])
+const routePath = ref('/')
+
+mockNuxtImport('useRoute', () => () => ({ path: routePath.value }))
 
 mockNuxtImport('useAuth', () => () => ({
   session: ref({ data: sessionUser.value ? { user: sessionUser.value } : null }),
@@ -23,6 +26,7 @@ async function mount() {
 beforeEach(() => {
   sessionUser.value = { id: 'u1', leaguePromptDismissedAt: null }
   myLeagues.value = []
+  routePath.value = '/'
   fetchMock = vi.fn(async () => ({ ok: true, league: { id: 'l1' } }))
   vi.stubGlobal('$fetch', fetchMock)
 })
@@ -50,6 +54,13 @@ describe('LeagueOnboardingDialog', () => {
 
   it('stays hidden when the user already has a league', async () => {
     myLeagues.value = [{ id: 'l1' }]
+    await mount()
+    await nextTick()
+    expect(document.body.textContent).not.toContain('Got a league code?')
+  })
+
+  it('stays hidden on an invite landing page', async () => {
+    routePath.value = '/leagues/join/some-token'
     await mount()
     await nextTick()
     expect(document.body.textContent).not.toContain('Got a league code?')
