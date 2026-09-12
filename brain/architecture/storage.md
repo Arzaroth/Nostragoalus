@@ -86,6 +86,6 @@ Environment, read in `apps/web-nuxt/nuxt.config.ts` runtimeConfig:
 - `apps/web-nuxt/server/utils/storage/{driver,factory,service,index,keys,migrate}.ts`
 - `apps/web-nuxt/server/utils/storage/drivers/{fs,s3}.ts`
 - `apps/web-nuxt/server/tasks/media/migrate-blobs.ts` (the Nitro task wrapper)
-- `apps/web-nuxt/server/utils/auth/avatar.ts`, `apps/web-nuxt/server/api/media/avatar/[...key].get.ts`
+- `apps/web-nuxt/server/utils/auth/avatar.ts`, `apps/web-nuxt/server/api/media/avatar/[key].get.ts`
 - `apps/web-nuxt/db/app-schema.ts` (`chat_attachment`), `apps/web-nuxt/tests/storage.ts`
 - `apps/web-nuxt/compose.yaml` (rustfs, rustfs-init, mc), `mise-tasks/db-backup`
