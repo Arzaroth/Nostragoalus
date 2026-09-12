@@ -127,10 +127,12 @@ Slugs are suggested from the chosen name and season but validated hard
 Ordering matters more than it looks: `listActiveCompetitions` is what leads the
 switcher *and* what `getDefaultCompetitionSlug` takes the head of when no default
 is set. `season_hint` is nullable and Postgres sorts nulls FIRST on `DESC`, so
-the query pins `NULLS LAST` and then breaks ties on `createdAt` and the unique
-slug - otherwise a season-less competition would quietly become the app-wide
-default, and two competitions sharing a season would resolve in heap order,
-differing between queries.
+the query pins `NULLS LAST` and then breaks ties on the unique slug - otherwise a
+season-less competition would quietly become the app-wide default, and two
+competitions sharing a season would resolve in heap order, differing between
+queries. The tiebreak is the slug rather than `createdAt` on purpose: two rows
+inserted together share a timestamp, so ordering by it is decided by however the
+inserts happened to land in time.
 
 ## Archiving, and why there is no delete
 

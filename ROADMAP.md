@@ -735,26 +735,35 @@ effort buckets; order within a bucket is not priority.
     link/code the owner distributes; claiming binds a real account.
   - Imported standings are historical flavor (shown on the league), not
     points in our ladder - scoring systems don't translate.
-- [ ] **Competition admin (discovery + provider bindings)** - the prerequisite
+- [~] **Competition admin (discovery + provider bindings)** (shipped 4.12.0,
+      minus the bindings table - see below) - the prerequisite
       for "More competitions" below. Today the supported set is two dev-owned
       code constants (`DEFAULT_COMPETITIONS` in
       `apps/web-nuxt/server/utils/competitions/store.ts`, `DEFAULT_COMPETITION`
       in `apps/web-nuxt/shared/competition.ts`), so adding a tournament is a
       deploy. Make it an admin task:
   - **Default competition -> `appSetting`** (the KV store already exists).
-    Ships alone. Catch: `DEFAULT_COMPETITION` is a build-time import used by the
-    isomorphic deep-link builder (`shared/types/notifications.ts`), which has a
-    Dart twin, so it becomes a parameter and the parity vectors move with it.
+    Ships alone. `DEFAULT_COMPETITION` is a build-time import used by the
+    isomorphic deep-link builder (`shared/types/notifications.ts`); it becomes
+    a parameter. (An earlier note here claimed that helper has a Dart twin and
+    would drag the parity vectors with it - it does not, and the change cost
+    nothing cross-stack. What DID need syncing was the generated Dart model
+    and the i18n asset mirror, both drift-checked by the mobile gate.)
   - **`competition_provider` bindings table**, not a provider field on the row.
     The row already carries a second provider for odds, and coverage differs by
     competition rather than uniformly: ESPN now reaches FIFA/UEFA parity but
     carries competitions FIFA does not, football-data needs a token for
     `/scorers` while FIFA is keyless, and FIFA's gameday scorer stories 404 once
     an edition ends. Bindings also turn a mid-tournament provider outage into a
-    re-point of one capability rather than a competition-wide switch. Add the
-    table up front - one-provider-per-row is assumed at every `createProvider()`
-    call site. First cut uses one binding
-    for everything; per-capability routing later.
+    re-point of one capability rather than a competition-wide switch.
+    NOT built in 4.12.0, and the reason first given here for doing it up front
+    was wrong: one-provider-per-row is not assumed at every `createProvider()`
+    call site. Every consumer goes through the single
+    `providerForCompetition()` chokepoint, so the retrofit is concentrated and
+    cheap - and doing it properly means backfilling then dropping four columns
+    from `competition`, a destructive migration, which is a MAJOR trigger.
+    Build it when per-capability routing or provider failover is actually
+    wanted, not before.
   - **Optional `discoverCompetitions?()`** on `MatchDataProvider`, matching the
     existing optional-method style. FIFA / ESPN / football-data can enumerate;
     UEFA is a curated static id list; fixture has none.
