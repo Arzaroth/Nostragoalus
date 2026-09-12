@@ -5,6 +5,11 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Corrigé
+
+- Application Android : une mention @ dans la discussion affichait un identifiant brut au lieu du nom de la personne, et les mentions envoyees depuis l'application etaient ecrites comme un simple nom, que le site ne reconnaissait donc pas comme des mentions. Les deux clients ecrivent et lisent maintenant la meme chose, et une mention suit un changement de nom.
+- Un membre de ligue sans nom d'affichage corrompait toutes les mentions @ ecrites dans la discussion de cette ligue sur le site.
+
 ## [4.11.0] - 2026-09-12
 
 ### Ajouté

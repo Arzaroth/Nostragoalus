@@ -1,3 +1,4 @@
+import 'chat_content.dart' as cc;
 import 'commitment.dart' as c;
 import 'consensus.dart' as cons;
 import 'fergie.dart' as fg;
@@ -52,6 +53,22 @@ final Map<String, Map<String, Fn>> registry = {
   },
   'consensus': {
     'computeConsensus': (a) => cons.computeConsensus(a[0] as List, a[1] as String),
+  },
+  'chat-content': {
+    'parseChatContent': (a) => cc.parseChatContent(a[0] as String).map((t) => t.toJson()).toList(),
+    'extractMentions': (a) => cc.extractMentions(a[0] as String),
+    'encodeMentions': (a) => cc.encodeMentions(
+          a[0] as String,
+          [
+            for (final m in a[1] as List)
+              (userId: (m as Map)['userId'] as String, name: m['name'] as String),
+          ],
+        ),
+    'decodeMentions': (a) => cc.decodeMentions(
+          a[0] as String,
+          (a[1] as Map).map((k, v) => MapEntry(k as String, v as String)),
+          a[2] as String,
+        ),
   },
   'match-view': {
     'pbpTextSpec': (a) {

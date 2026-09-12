@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../api/models.gen.dart';
+import '../chat/chat_content.dart';
 import '../chat/chat_providers.dart';
 import '../chat/outbox.dart';
 import '../i18n/i18n_scope.dart';
@@ -23,13 +24,27 @@ import 'widgets/voice_actions.dart';
 import 'widgets/voice_bar.dart';
 import 'widgets/user_avatar.dart';
 
-/// The league members named with a literal `@Name` in [text]. Derived at send
-/// time so an edited-away or image-interrupted mention cannot ride along on a
-/// later message.
-List<String> mentionIdsIn(String text, List<Member> members) => [
+/// Composer text on the wire: `@Name` mapped onto the stored `@<id>` form, and
+/// the ids that survived. Both come from the ENCODED text, at send time, so an
+/// edited-away or image-interrupted mention cannot ride along on a later
+/// message, and so a rename still renders.
+///
+/// Writing the name instead of the id was the old shape. It notified the right
+/// person, but the website stores ids and renders them by looking the current
+/// name up, so the two clients did not write the same message.
+({String text, List<String> mentions}) encodeForWire(String text, List<Member> members) {
+  final encoded = encodeMentions(
+    text,
+    [for (final m in members) (userId: m.userId, name: m.name)],
+  );
+  return (text: encoded, mentions: extractMentions(encoded));
+}
+
+/// Display name per user id, for rendering the `@<id>` mentions back.
+Map<String, String> mentionNamesOf(List<Member> members) => {
       for (final m in members)
-        if (m.name.isNotEmpty && text.contains('@${m.name}')) m.userId,
-    ];
+        if (m.name.isNotEmpty) m.userId: m.name,
+    };
 
 /// End-to-end-encrypted league chat. The identity bootstraps automatically on a
 /// device that has never chatted; a fresh device with an escrowed identity is
@@ -92,12 +107,12 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
   // Optimistic send: the text shows immediately in the outbox ("Sending…"), then
   // either lands as the real message or stays as "Not sent" with Retry/Discard.
   void _send() {
-    final text = _input.text.trim();
-    if (text.isEmpty) return;
-    final mentions = mentionIdsIn(text, _members);
+    final raw = _input.text.trim();
+    if (raw.isEmpty) return;
+    final wire = encodeForWire(raw, _members);
     _input.clear();
-    ref.read(chatOutboxProvider.notifier).enqueue(_room, text,
-        () => ref.read(sendChatProvider)(widget.leagueId, text, mentions: mentions));
+    ref.read(chatOutboxProvider.notifier).enqueue(_room, wire.text,
+        () => ref.read(sendChatProvider)(widget.leagueId, wire.text, mentions: wire.mentions));
   }
 
   Future<void> _sendImage() async {
@@ -106,14 +121,14 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
     if (picked == null) return;
     final bytes = await picked.readAsBytes();
     final caption = _input.text.trim();
-    final text = caption.isEmpty ? '\u{1F5BC}' : caption;
-    final mentions = mentionIdsIn(caption, _members);
+    final wire = encodeForWire(caption, _members);
+    final text = wire.text.isEmpty ? '\u{1F5BC}' : wire.text;
     _input.clear();
     ref.read(chatOutboxProvider.notifier).enqueue(
         _room,
         text,
         () => ref.read(sendChatProvider)(widget.leagueId, text,
-            image: bytes, mentions: mentions));
+            image: bytes, mentions: wire.mentions));
   }
 
   Future<void> _pickMention() async {
@@ -234,6 +249,8 @@ class _ChatBodyState extends ConsumerState<_ChatBody> {
           author?.name ??
           (line.userId == null ? null : context.tr('chat.unknownUser')),
       authorImage: line.authorImage ?? author?.image,
+      mentionNames: mentionNamesOf(members),
+      unknownMentionLabel: context.tr('chat.unknownUser'),
       attachmentBuilder: (i) => ChatAttachment(
         provider: chatAttachmentProvider((widget.leagueId, line.id, i)),
       ),

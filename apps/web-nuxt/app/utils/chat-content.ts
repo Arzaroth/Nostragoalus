@@ -70,9 +70,14 @@ export function escapeRegExp(s: string): string {
 // Composer text is written/displayed with @DisplayName mentions; map each one back
 // to a stable @<id> token (rename-proof) for the wire/stored form. Longest names
 // first so "@John Doe" wins over "@John". The inverse of decodeMentions.
+//
+// A member with an EMPTY name is skipped, and not as tidiness: the pattern would
+// collapse to `@` followed by any non-word character, which matches the `@` of a
+// token an earlier iteration just wrote - turning every mention in the message
+// into `@<empty-id><real-id>`. One nameless member corrupted the whole room.
 export function encodeMentions(text: string, members: readonly { userId: string; name: string }[]): string {
   let out = text
-  for (const m of [...members].sort((a, b) => b.name.length - a.name.length)) {
+  for (const m of [...members].filter((m) => m.name !== '').sort((a, b) => b.name.length - a.name.length)) {
     out = out.replace(new RegExp(`(^|\\s)@${escapeRegExp(m.name)}(?=\\s|$|[^\\w])`, 'g'), `$1@<${m.userId}>`)
   }
   return out

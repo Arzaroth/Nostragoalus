@@ -5,6 +5,7 @@
 // both stacks must hit, and the TS replay here is the drift alarm on this side.
 import * as e2ee from '../../app/utils/e2ee'
 import { formatPlayerName } from '../../app/utils/format'
+import * as chatContent from '../../app/utils/chat-content'
 import * as matchView from '../../app/utils/match-view'
 import * as fergie from '../../server/utils/analytics/fergie'
 import * as consensus from '../../server/utils/bot/service'
@@ -57,6 +58,12 @@ const registry: Record<string, Record<string, (...args: never[]) => unknown>> = 
   },
   consensus: {
     computeConsensus: consensus.computeConsensus,
+  },
+  'chat-content': {
+    parseChatContent: chatContent.parseChatContent,
+    extractMentions: chatContent.extractMentions,
+    encodeMentions: chatContent.encodeMentions,
+    decodeMentions: chatContent.decodeMentions,
   },
   'match-view': {
     pbpTextSpec: matchView.pbpTextSpec,

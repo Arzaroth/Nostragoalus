@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../api/models.gen.dart' show MineValue, Total;
+import '../../chat/chat_content.dart';
 import '../../chat/chat_providers.dart' show ChatLine;
 import '../../reactions.dart';
 import '../../theme/app_theme.dart';
@@ -38,6 +39,8 @@ class ChatLineTile extends StatelessWidget {
     this.footer,
     this.trailing,
     this.onLongPress,
+    this.mentionNames = const {},
+    this.unknownMentionLabel = '?',
   });
 
   final ChatLine line;
@@ -49,6 +52,33 @@ class ChatLineTile extends StatelessWidget {
   final Widget? footer;
   final Widget? trailing;
   final VoidCallback? onLongPress;
+
+  /// Display name per user id, for the `@<id>` mentions the message is stored
+  /// with. An id missing from the map renders as [unknownMentionLabel]; without
+  /// a map at all the raw id would be what the reader sees.
+  final Map<String, String> mentionNames;
+  final String unknownMentionLabel;
+
+  /// The message body as spans, so a mention reads as a highlighted name rather
+  /// than as the id the wire format stores.
+  List<InlineSpan> _bodySpans(TextStyle? base, Color accent) => [
+        for (final token in parseChatContent(line.text!))
+          if (token is MentionToken)
+            TextSpan(
+              text: '@${mentionNames[token.userId] ?? unknownMentionLabel}',
+              style: base?.copyWith(color: accent, fontWeight: FontWeight.w600),
+            )
+          else
+            TextSpan(
+              text: switch (token) {
+                TextToken() => token.value,
+                LinkToken() => token.label,
+                ImageToken() => token.href,
+                MentionToken() => '',
+              },
+              style: base,
+            ),
+      ];
 
   @override
   Widget build(BuildContext context) {
@@ -80,12 +110,19 @@ class ChatLineTile extends StatelessWidget {
                         ?.copyWith(color: own ? scheme.onPrimaryContainer : scheme.primary)),
                 const SizedBox(height: 2),
               ],
-              Text(
-                line.text ?? undecryptableLabel,
-                style: line.text == null
-                    ? theme.textTheme.bodyMedium?.copyWith(fontStyle: FontStyle.italic, color: t.muted)
-                    : theme.textTheme.bodyMedium,
-              ),
+              if (line.text == null)
+                Text(
+                  undecryptableLabel,
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(fontStyle: FontStyle.italic, color: t.muted),
+                )
+              else
+                Text.rich(TextSpan(
+                  children: _bodySpans(
+                    theme.textTheme.bodyMedium,
+                    own ? scheme.onPrimaryContainer : scheme.primary,
+                  ),
+                )),
               if (attachmentBuilder != null)
                 for (var i = 0; i < line.attachmentCount; i++)
                   Padding(

@@ -195,6 +195,15 @@ sat on one screen. Every entry into a call goes through `runVoiceAction`, which
 is what makes a denied microphone say so; the three copies it replaced reported
 the same two failures three ways, one of them with no catch-all at all.
 
+Chat messages are stored with `@<userId>` mentions, never the display name, so a
+rename re-renders; `chat/chat_content.dart` re-exports the port of the web's
+`app/utils/chat-content.ts` that reads and writes that form, pinned by the
+`chat-content` vectors in `shared/parity-json/`. The app rendered the stored
+string raw for a while, which put a bare user id in the bubble where a name
+belonged, and wrote `@Name` on send, which the website could not recognise as a
+mention at all. The vectors exist because that is the failure mode of a wire
+format two clients hand-implement.
+
 Chat is a tab because mobile has no dock. The web keeps `ChatDock.vue` on every
 page; here `ui/chat_rooms_screen.dart` is the way in - direct messages, badged
 with the unread total across threads, then one row per league in the selected

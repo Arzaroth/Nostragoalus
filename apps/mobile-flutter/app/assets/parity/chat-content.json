@@ -1,0 +1,1235 @@
+{
+  "module": "chat-content",
+  "cases": [
+    {
+      "fn": "parseChatContent",
+      "args": [
+        ""
+      ],
+      "expected": []
+    },
+    {
+      "fn": "extractMentions",
+      "args": [
+        ""
+      ],
+      "expected": []
+    },
+    {
+      "fn": "decodeMentions",
+      "args": [
+        "",
+        {
+          "u-alice": "Alice",
+          "u-john": "John",
+          "u-john-doe": "John Doe"
+        },
+        "Someone"
+      ],
+      "expected": ""
+    },
+    {
+      "fn": "parseChatContent",
+      "args": [
+        "plain text, nothing to see"
+      ],
+      "expected": [
+        {
+          "type": "text",
+          "value": "plain text, nothing to see"
+        }
+      ]
+    },
+    {
+      "fn": "extractMentions",
+      "args": [
+        "plain text, nothing to see"
+      ],
+      "expected": []
+    },
+    {
+      "fn": "decodeMentions",
+      "args": [
+        "plain text, nothing to see",
+        {
+          "u-alice": "Alice",
+          "u-john": "John",
+          "u-john-doe": "John Doe"
+        },
+        "Someone"
+      ],
+      "expected": "plain text, nothing to see"
+    },
+    {
+      "fn": "parseChatContent",
+      "args": [
+        "@<u-alice> hello"
+      ],
+      "expected": [
+        {
+          "type": "mention",
+          "userId": "u-alice"
+        },
+        {
+          "type": "text",
+          "value": " hello"
+        }
+      ]
+    },
+    {
+      "fn": "extractMentions",
+      "args": [
+        "@<u-alice> hello"
+      ],
+      "expected": [
+        "u-alice"
+      ]
+    },
+    {
+      "fn": "decodeMentions",
+      "args": [
+        "@<u-alice> hello",
+        {
+          "u-alice": "Alice",
+          "u-john": "John",
+          "u-john-doe": "John Doe"
+        },
+        "Someone"
+      ],
+      "expected": "@Alice hello"
+    },
+    {
+      "fn": "parseChatContent",
+      "args": [
+        "hi @<u-alice>"
+      ],
+      "expected": [
+        {
+          "type": "text",
+          "value": "hi "
+        },
+        {
+          "type": "mention",
+          "userId": "u-alice"
+        }
+      ]
+    },
+    {
+      "fn": "extractMentions",
+      "args": [
+        "hi @<u-alice>"
+      ],
+      "expected": [
+        "u-alice"
+      ]
+    },
+    {
+      "fn": "decodeMentions",
+      "args": [
+        "hi @<u-alice>",
+        {
+          "u-alice": "Alice",
+          "u-john": "John",
+          "u-john-doe": "John Doe"
+        },
+        "Someone"
+      ],
+      "expected": "hi @Alice"
+    },
+    {
+      "fn": "parseChatContent",
+      "args": [
+        "hi @<u-alice> and @<u-john>!"
+      ],
+      "expected": [
+        {
+          "type": "text",
+          "value": "hi "
+        },
+        {
+          "type": "mention",
+          "userId": "u-alice"
+        },
+        {
+          "type": "text",
+          "value": " and "
+        },
+        {
+          "type": "mention",
+          "userId": "u-john"
+        },
+        {
+          "type": "text",
+          "value": "!"
+        }
+      ]
+    },
+    {
+      "fn": "extractMentions",
+      "args": [
+        "hi @<u-alice> and @<u-john>!"
+      ],
+      "expected": [
+        "u-alice",
+        "u-john"
+      ]
+    },
+    {
+      "fn": "decodeMentions",
+      "args": [
+        "hi @<u-alice> and @<u-john>!",
+        {
+          "u-alice": "Alice",
+          "u-john": "John",
+          "u-john-doe": "John Doe"
+        },
+        "Someone"
+      ],
+      "expected": "hi @Alice and @John!"
+    },
+    {
+      "fn": "parseChatContent",
+      "args": [
+        "@<u-alice>@<u-john>"
+      ],
+      "expected": [
+        {
+          "type": "mention",
+          "userId": "u-alice"
+        },
+        {
+          "type": "mention",
+          "userId": "u-john"
+        }
+      ]
+    },
+    {
+      "fn": "extractMentions",
+      "args": [
+        "@<u-alice>@<u-john>"
+      ],
+      "expected": [
+        "u-alice",
+        "u-john"
+      ]
+    },
+    {
+      "fn": "decodeMentions",
+      "args": [
+        "@<u-alice>@<u-john>",
+        {
+          "u-alice": "Alice",
+          "u-john": "John",
+          "u-john-doe": "John Doe"
+        },
+        "Someone"
+      ],
+      "expected": "@Alice@John"
+    },
+    {
+      "fn": "parseChatContent",
+      "args": [
+        "who is @<u-ghost>?"
+      ],
+      "expected": [
+        {
+          "type": "text",
+          "value": "who is "
+        },
+        {
+          "type": "mention",
+          "userId": "u-ghost"
+        },
+        {
+          "type": "text",
+          "value": "?"
+        }
+      ]
+    },
+    {
+      "fn": "extractMentions",
+      "args": [
+        "who is @<u-ghost>?"
+      ],
+      "expected": [
+        "u-ghost"
+      ]
+    },
+    {
+      "fn": "decodeMentions",
+      "args": [
+        "who is @<u-ghost>?",
+        {
+          "u-alice": "Alice",
+          "u-john": "John",
+          "u-john-doe": "John Doe"
+        },
+        "Someone"
+      ],
+      "expected": "who is @Someone?"
+    },
+    {
+      "fn": "parseChatContent",
+      "args": [
+        "email me @alice"
+      ],
+      "expected": [
+        {
+          "type": "text",
+          "value": "email me @alice"
+        }
+      ]
+    },
+    {
+      "fn": "extractMentions",
+      "args": [
+        "email me @alice"
+      ],
+      "expected": []
+    },
+    {
+      "fn": "decodeMentions",
+      "args": [
+        "email me @alice",
+        {
+          "u-alice": "Alice",
+          "u-john": "John",
+          "u-john-doe": "John Doe"
+        },
+        "Someone"
+      ],
+      "expected": "email me @alice"
+    },
+    {
+      "fn": "parseChatContent",
+      "args": [
+        "@<>"
+      ],
+      "expected": [
+        {
+          "type": "text",
+          "value": "@<>"
+        }
+      ]
+    },
+    {
+      "fn": "extractMentions",
+      "args": [
+        "@<>"
+      ],
+      "expected": []
+    },
+    {
+      "fn": "decodeMentions",
+      "args": [
+        "@<>",
+        {
+          "u-alice": "Alice",
+          "u-john": "John",
+          "u-john-doe": "John Doe"
+        },
+        "Someone"
+      ],
+      "expected": "@<>"
+    },
+    {
+      "fn": "parseChatContent",
+      "args": [
+        "@<a b>"
+      ],
+      "expected": [
+        {
+          "type": "text",
+          "value": "@<a b>"
+        }
+      ]
+    },
+    {
+      "fn": "extractMentions",
+      "args": [
+        "@<a b>"
+      ],
+      "expected": []
+    },
+    {
+      "fn": "decodeMentions",
+      "args": [
+        "@<a b>",
+        {
+          "u-alice": "Alice",
+          "u-john": "John",
+          "u-john-doe": "John Doe"
+        },
+        "Someone"
+      ],
+      "expected": "@<a b>"
+    },
+    {
+      "fn": "parseChatContent",
+      "args": [
+        "@<a@b>"
+      ],
+      "expected": [
+        {
+          "type": "text",
+          "value": "@<a@b>"
+        }
+      ]
+    },
+    {
+      "fn": "extractMentions",
+      "args": [
+        "@<a@b>"
+      ],
+      "expected": []
+    },
+    {
+      "fn": "decodeMentions",
+      "args": [
+        "@<a@b>",
+        {
+          "u-alice": "Alice",
+          "u-john": "John",
+          "u-john-doe": "John Doe"
+        },
+        "Someone"
+      ],
+      "expected": "@<a@b>"
+    },
+    {
+      "fn": "parseChatContent",
+      "args": [
+        "a @< b > c"
+      ],
+      "expected": [
+        {
+          "type": "text",
+          "value": "a @< b > c"
+        }
+      ]
+    },
+    {
+      "fn": "extractMentions",
+      "args": [
+        "a @< b > c"
+      ],
+      "expected": []
+    },
+    {
+      "fn": "decodeMentions",
+      "args": [
+        "a @< b > c",
+        {
+          "u-alice": "Alice",
+          "u-john": "John",
+          "u-john-doe": "John Doe"
+        },
+        "Someone"
+      ],
+      "expected": "a @< b > c"
+    },
+    {
+      "fn": "parseChatContent",
+      "args": [
+        "see https://example.com/page"
+      ],
+      "expected": [
+        {
+          "type": "text",
+          "value": "see "
+        },
+        {
+          "type": "link",
+          "href": "https://example.com/page",
+          "label": "https://example.com/page"
+        }
+      ]
+    },
+    {
+      "fn": "extractMentions",
+      "args": [
+        "see https://example.com/page"
+      ],
+      "expected": []
+    },
+    {
+      "fn": "decodeMentions",
+      "args": [
+        "see https://example.com/page",
+        {
+          "u-alice": "Alice",
+          "u-john": "John",
+          "u-john-doe": "John Doe"
+        },
+        "Someone"
+      ],
+      "expected": "see https://example.com/page"
+    },
+    {
+      "fn": "parseChatContent",
+      "args": [
+        "see https://example.com/page."
+      ],
+      "expected": [
+        {
+          "type": "text",
+          "value": "see "
+        },
+        {
+          "type": "link",
+          "href": "https://example.com/page",
+          "label": "https://example.com/page"
+        },
+        {
+          "type": "text",
+          "value": "."
+        }
+      ]
+    },
+    {
+      "fn": "extractMentions",
+      "args": [
+        "see https://example.com/page."
+      ],
+      "expected": []
+    },
+    {
+      "fn": "decodeMentions",
+      "args": [
+        "see https://example.com/page.",
+        {
+          "u-alice": "Alice",
+          "u-john": "John",
+          "u-john-doe": "John Doe"
+        },
+        "Someone"
+      ],
+      "expected": "see https://example.com/page."
+    },
+    {
+      "fn": "parseChatContent",
+      "args": [
+        "wrapped (https://example.com/a) here"
+      ],
+      "expected": [
+        {
+          "type": "text",
+          "value": "wrapped ("
+        },
+        {
+          "type": "link",
+          "href": "https://example.com/a",
+          "label": "https://example.com/a"
+        },
+        {
+          "type": "text",
+          "value": ")"
+        },
+        {
+          "type": "text",
+          "value": " here"
+        }
+      ]
+    },
+    {
+      "fn": "extractMentions",
+      "args": [
+        "wrapped (https://example.com/a) here"
+      ],
+      "expected": []
+    },
+    {
+      "fn": "decodeMentions",
+      "args": [
+        "wrapped (https://example.com/a) here",
+        {
+          "u-alice": "Alice",
+          "u-john": "John",
+          "u-john-doe": "John Doe"
+        },
+        "Someone"
+      ],
+      "expected": "wrapped (https://example.com/a) here"
+    },
+    {
+      "fn": "parseChatContent",
+      "args": [
+        "https://example.com/cat.png"
+      ],
+      "expected": [
+        {
+          "type": "image",
+          "href": "https://example.com/cat.png"
+        }
+      ]
+    },
+    {
+      "fn": "extractMentions",
+      "args": [
+        "https://example.com/cat.png"
+      ],
+      "expected": []
+    },
+    {
+      "fn": "decodeMentions",
+      "args": [
+        "https://example.com/cat.png",
+        {
+          "u-alice": "Alice",
+          "u-john": "John",
+          "u-john-doe": "John Doe"
+        },
+        "Someone"
+      ],
+      "expected": "https://example.com/cat.png"
+    },
+    {
+      "fn": "parseChatContent",
+      "args": [
+        "https://example.com/cat.PNG?size=2"
+      ],
+      "expected": [
+        {
+          "type": "image",
+          "href": "https://example.com/cat.PNG?size=2"
+        }
+      ]
+    },
+    {
+      "fn": "extractMentions",
+      "args": [
+        "https://example.com/cat.PNG?size=2"
+      ],
+      "expected": []
+    },
+    {
+      "fn": "decodeMentions",
+      "args": [
+        "https://example.com/cat.PNG?size=2",
+        {
+          "u-alice": "Alice",
+          "u-john": "John",
+          "u-john-doe": "John Doe"
+        },
+        "Someone"
+      ],
+      "expected": "https://example.com/cat.PNG?size=2"
+    },
+    {
+      "fn": "parseChatContent",
+      "args": [
+        "https://example.com/not-an-image?x=.png"
+      ],
+      "expected": [
+        {
+          "type": "link",
+          "href": "https://example.com/not-an-image?x=.png",
+          "label": "https://example.com/not-an-image?x=.png"
+        }
+      ]
+    },
+    {
+      "fn": "extractMentions",
+      "args": [
+        "https://example.com/not-an-image?x=.png"
+      ],
+      "expected": []
+    },
+    {
+      "fn": "decodeMentions",
+      "args": [
+        "https://example.com/not-an-image?x=.png",
+        {
+          "u-alice": "Alice",
+          "u-john": "John",
+          "u-john-doe": "John Doe"
+        },
+        "Someone"
+      ],
+      "expected": "https://example.com/not-an-image?x=.png"
+    },
+    {
+      "fn": "parseChatContent",
+      "args": [
+        "HTTPS://EXAMPLE.COM/UP"
+      ],
+      "expected": [
+        {
+          "type": "link",
+          "href": "HTTPS://EXAMPLE.COM/UP",
+          "label": "HTTPS://EXAMPLE.COM/UP"
+        }
+      ]
+    },
+    {
+      "fn": "extractMentions",
+      "args": [
+        "HTTPS://EXAMPLE.COM/UP"
+      ],
+      "expected": []
+    },
+    {
+      "fn": "decodeMentions",
+      "args": [
+        "HTTPS://EXAMPLE.COM/UP",
+        {
+          "u-alice": "Alice",
+          "u-john": "John",
+          "u-john-doe": "John Doe"
+        },
+        "Someone"
+      ],
+      "expected": "HTTPS://EXAMPLE.COM/UP"
+    },
+    {
+      "fn": "parseChatContent",
+      "args": [
+        "ftp://example.com/nope"
+      ],
+      "expected": [
+        {
+          "type": "text",
+          "value": "ftp://example.com/nope"
+        }
+      ]
+    },
+    {
+      "fn": "extractMentions",
+      "args": [
+        "ftp://example.com/nope"
+      ],
+      "expected": []
+    },
+    {
+      "fn": "decodeMentions",
+      "args": [
+        "ftp://example.com/nope",
+        {
+          "u-alice": "Alice",
+          "u-john": "John",
+          "u-john-doe": "John Doe"
+        },
+        "Someone"
+      ],
+      "expected": "ftp://example.com/nope"
+    },
+    {
+      "fn": "parseChatContent",
+      "args": [
+        "@<u-alice> look at https://example.com/x.jpg and @<u-john>"
+      ],
+      "expected": [
+        {
+          "type": "mention",
+          "userId": "u-alice"
+        },
+        {
+          "type": "text",
+          "value": " look at "
+        },
+        {
+          "type": "image",
+          "href": "https://example.com/x.jpg"
+        },
+        {
+          "type": "text",
+          "value": " and "
+        },
+        {
+          "type": "mention",
+          "userId": "u-john"
+        }
+      ]
+    },
+    {
+      "fn": "extractMentions",
+      "args": [
+        "@<u-alice> look at https://example.com/x.jpg and @<u-john>"
+      ],
+      "expected": [
+        "u-alice",
+        "u-john"
+      ]
+    },
+    {
+      "fn": "decodeMentions",
+      "args": [
+        "@<u-alice> look at https://example.com/x.jpg and @<u-john>",
+        {
+          "u-alice": "Alice",
+          "u-john": "John",
+          "u-john-doe": "John Doe"
+        },
+        "Someone"
+      ],
+      "expected": "@Alice look at https://example.com/x.jpg and @John"
+    },
+    {
+      "fn": "parseChatContent",
+      "args": [
+        "<script>alert(1)</script> @<u-alice>"
+      ],
+      "expected": [
+        {
+          "type": "text",
+          "value": "<script>alert(1)</script> "
+        },
+        {
+          "type": "mention",
+          "userId": "u-alice"
+        }
+      ]
+    },
+    {
+      "fn": "extractMentions",
+      "args": [
+        "<script>alert(1)</script> @<u-alice>"
+      ],
+      "expected": [
+        "u-alice"
+      ]
+    },
+    {
+      "fn": "decodeMentions",
+      "args": [
+        "<script>alert(1)</script> @<u-alice>",
+        {
+          "u-alice": "Alice",
+          "u-john": "John",
+          "u-john-doe": "John Doe"
+        },
+        "Someone"
+      ],
+      "expected": "<script>alert(1)</script> @Alice"
+    },
+    {
+      "fn": "encodeMentions",
+      "args": [
+        "",
+        [
+          {
+            "userId": "u-alice",
+            "name": "Alice"
+          },
+          {
+            "userId": "u-john",
+            "name": "John"
+          },
+          {
+            "userId": "u-john-doe",
+            "name": "John Doe"
+          },
+          {
+            "userId": "u-accent",
+            "name": "Zoé"
+          },
+          {
+            "userId": "u-dot",
+            "name": "A.B."
+          },
+          {
+            "userId": "u-empty",
+            "name": ""
+          }
+        ]
+      ],
+      "expected": ""
+    },
+    {
+      "fn": "encodeMentions",
+      "args": [
+        "@Alice hi",
+        [
+          {
+            "userId": "u-alice",
+            "name": "Alice"
+          },
+          {
+            "userId": "u-john",
+            "name": "John"
+          },
+          {
+            "userId": "u-john-doe",
+            "name": "John Doe"
+          },
+          {
+            "userId": "u-accent",
+            "name": "Zoé"
+          },
+          {
+            "userId": "u-dot",
+            "name": "A.B."
+          },
+          {
+            "userId": "u-empty",
+            "name": ""
+          }
+        ]
+      ],
+      "expected": "@<u-alice> hi"
+    },
+    {
+      "fn": "encodeMentions",
+      "args": [
+        "hi @Alice",
+        [
+          {
+            "userId": "u-alice",
+            "name": "Alice"
+          },
+          {
+            "userId": "u-john",
+            "name": "John"
+          },
+          {
+            "userId": "u-john-doe",
+            "name": "John Doe"
+          },
+          {
+            "userId": "u-accent",
+            "name": "Zoé"
+          },
+          {
+            "userId": "u-dot",
+            "name": "A.B."
+          },
+          {
+            "userId": "u-empty",
+            "name": ""
+          }
+        ]
+      ],
+      "expected": "hi @<u-alice>"
+    },
+    {
+      "fn": "encodeMentions",
+      "args": [
+        "@John Doe and @John",
+        [
+          {
+            "userId": "u-alice",
+            "name": "Alice"
+          },
+          {
+            "userId": "u-john",
+            "name": "John"
+          },
+          {
+            "userId": "u-john-doe",
+            "name": "John Doe"
+          },
+          {
+            "userId": "u-accent",
+            "name": "Zoé"
+          },
+          {
+            "userId": "u-dot",
+            "name": "A.B."
+          },
+          {
+            "userId": "u-empty",
+            "name": ""
+          }
+        ]
+      ],
+      "expected": "@<u-john-doe> and @<u-john>"
+    },
+    {
+      "fn": "encodeMentions",
+      "args": [
+        "@John,@Alice",
+        [
+          {
+            "userId": "u-alice",
+            "name": "Alice"
+          },
+          {
+            "userId": "u-john",
+            "name": "John"
+          },
+          {
+            "userId": "u-john-doe",
+            "name": "John Doe"
+          },
+          {
+            "userId": "u-accent",
+            "name": "Zoé"
+          },
+          {
+            "userId": "u-dot",
+            "name": "A.B."
+          },
+          {
+            "userId": "u-empty",
+            "name": ""
+          }
+        ]
+      ],
+      "expected": "@<u-john>,@Alice"
+    },
+    {
+      "fn": "encodeMentions",
+      "args": [
+        "@Alice@John",
+        [
+          {
+            "userId": "u-alice",
+            "name": "Alice"
+          },
+          {
+            "userId": "u-john",
+            "name": "John"
+          },
+          {
+            "userId": "u-john-doe",
+            "name": "John Doe"
+          },
+          {
+            "userId": "u-accent",
+            "name": "Zoé"
+          },
+          {
+            "userId": "u-dot",
+            "name": "A.B."
+          },
+          {
+            "userId": "u-empty",
+            "name": ""
+          }
+        ]
+      ],
+      "expected": "@<u-alice>@John"
+    },
+    {
+      "fn": "encodeMentions",
+      "args": [
+        "@Alicia",
+        [
+          {
+            "userId": "u-alice",
+            "name": "Alice"
+          },
+          {
+            "userId": "u-john",
+            "name": "John"
+          },
+          {
+            "userId": "u-john-doe",
+            "name": "John Doe"
+          },
+          {
+            "userId": "u-accent",
+            "name": "Zoé"
+          },
+          {
+            "userId": "u-dot",
+            "name": "A.B."
+          },
+          {
+            "userId": "u-empty",
+            "name": ""
+          }
+        ]
+      ],
+      "expected": "@Alicia"
+    },
+    {
+      "fn": "encodeMentions",
+      "args": [
+        "mid@Alice word",
+        [
+          {
+            "userId": "u-alice",
+            "name": "Alice"
+          },
+          {
+            "userId": "u-john",
+            "name": "John"
+          },
+          {
+            "userId": "u-john-doe",
+            "name": "John Doe"
+          },
+          {
+            "userId": "u-accent",
+            "name": "Zoé"
+          },
+          {
+            "userId": "u-dot",
+            "name": "A.B."
+          },
+          {
+            "userId": "u-empty",
+            "name": ""
+          }
+        ]
+      ],
+      "expected": "mid@Alice word"
+    },
+    {
+      "fn": "encodeMentions",
+      "args": [
+        "@Zoé ok",
+        [
+          {
+            "userId": "u-alice",
+            "name": "Alice"
+          },
+          {
+            "userId": "u-john",
+            "name": "John"
+          },
+          {
+            "userId": "u-john-doe",
+            "name": "John Doe"
+          },
+          {
+            "userId": "u-accent",
+            "name": "Zoé"
+          },
+          {
+            "userId": "u-dot",
+            "name": "A.B."
+          },
+          {
+            "userId": "u-empty",
+            "name": ""
+          }
+        ]
+      ],
+      "expected": "@<u-accent> ok"
+    },
+    {
+      "fn": "encodeMentions",
+      "args": [
+        "@A.B. ok",
+        [
+          {
+            "userId": "u-alice",
+            "name": "Alice"
+          },
+          {
+            "userId": "u-john",
+            "name": "John"
+          },
+          {
+            "userId": "u-john-doe",
+            "name": "John Doe"
+          },
+          {
+            "userId": "u-accent",
+            "name": "Zoé"
+          },
+          {
+            "userId": "u-dot",
+            "name": "A.B."
+          },
+          {
+            "userId": "u-empty",
+            "name": ""
+          }
+        ]
+      ],
+      "expected": "@<u-dot> ok"
+    },
+    {
+      "fn": "encodeMentions",
+      "args": [
+        "nothing @ here",
+        [
+          {
+            "userId": "u-alice",
+            "name": "Alice"
+          },
+          {
+            "userId": "u-john",
+            "name": "John"
+          },
+          {
+            "userId": "u-john-doe",
+            "name": "John Doe"
+          },
+          {
+            "userId": "u-accent",
+            "name": "Zoé"
+          },
+          {
+            "userId": "u-dot",
+            "name": "A.B."
+          },
+          {
+            "userId": "u-empty",
+            "name": ""
+          }
+        ]
+      ],
+      "expected": "nothing @ here"
+    },
+    {
+      "fn": "encodeMentions",
+      "args": [
+        "@A.B.",
+        [
+          {
+            "userId": "u-alice",
+            "name": "Alice"
+          },
+          {
+            "userId": "u-john",
+            "name": "John"
+          },
+          {
+            "userId": "u-john-doe",
+            "name": "John Doe"
+          },
+          {
+            "userId": "u-accent",
+            "name": "Zoé"
+          },
+          {
+            "userId": "u-dot",
+            "name": "A.B."
+          },
+          {
+            "userId": "u-empty",
+            "name": ""
+          }
+        ]
+      ],
+      "expected": "@<u-dot>"
+    },
+    {
+      "fn": "encodeMentions",
+      "args": [
+        "@<u-alice> hi",
+        [
+          {
+            "userId": "u-alice",
+            "name": "Alice"
+          },
+          {
+            "userId": "u-john",
+            "name": "John"
+          },
+          {
+            "userId": "u-john-doe",
+            "name": "John Doe"
+          },
+          {
+            "userId": "u-accent",
+            "name": "Zoé"
+          },
+          {
+            "userId": "u-dot",
+            "name": "A.B."
+          },
+          {
+            "userId": "u-empty",
+            "name": ""
+          }
+        ]
+      ],
+      "expected": "@<u-alice> hi"
+    }
+  ]
+}

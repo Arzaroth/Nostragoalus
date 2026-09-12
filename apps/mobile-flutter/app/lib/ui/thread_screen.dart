@@ -6,6 +6,7 @@ import '../chat/chat_providers.dart';
 import '../chat/outbox.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
+import 'league_chat_screen.dart' show mentionNamesOf;
 import 'widgets/async_value_view.dart';
 import 'widgets/chat_attachment.dart';
 import 'widgets/chat_composer.dart';
@@ -74,6 +75,8 @@ class _ThreadScreenState extends ConsumerState<ThreadScreen> {
                         author?.name ??
                         (line.userId == null ? null : context.tr('chat.unknownUser')),
                     authorImage: line.authorImage ?? author?.image,
+                    mentionNames: mentionNamesOf(members),
+                    unknownMentionLabel: context.tr('chat.unknownUser'),
                     attachmentBuilder: (i) => ChatAttachment(
                       provider: chatAttachmentProvider((widget.leagueId, line.id, i)),
                     ),

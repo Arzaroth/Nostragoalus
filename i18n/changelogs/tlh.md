@@ -5,6 +5,11 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### tI'pu'
+
+- Android De'wI'Hom: ja'chuqDaq @ ponglu'DI', pong 'anglu'be'; mI' Hutlh 'anglu'. 'ej De'wI'Hom ngeHbogh @ pong neH ghItlhlu', vaj Sar tu'be'. DaH rap ghItlh rap laD je cha'. 'ej pong chu'DI', mu' chu' 'anglu'.
+- ghom lut pong Hutlhbogh nuvpu' tu'lu'chugh, Sar ja'chuqDaq @ ponglu'bogh Hoch QaWlu'.
+
 ## [4.11.0] - 2026-09-12
 
 ### chelpu'

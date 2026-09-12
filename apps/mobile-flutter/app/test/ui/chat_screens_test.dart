@@ -324,19 +324,41 @@ void main() {
     });
   });
 
-  group('mentionIdsIn', () {
+  group('encodeForWire', () {
     final members = [
       Member.fromJson(_member('u1', 'Alice')),
       Member.fromJson(_member('u2', 'Bob')),
     ];
 
-    test('matches only the names actually written in the text', () {
-      expect(mentionIdsIn('hey @Alice look', members), ['u1']);
-      expect(mentionIdsIn('hey @Alice and @Bob', members), ['u1', 'u2']);
+    // The website stores the id, not the name, and renders the CURRENT name from
+    // it. Sending the name instead notified the right person but left the other
+    // client with nothing to look up.
+    test('writes the id into the text, not the display name', () {
+      final wire = encodeForWire('hey @Alice look', members);
+      expect(wire.text, 'hey @<u1> look');
+      expect(wire.mentions, ['u1']);
+    });
+
+    test('carries every mention in the message', () {
+      final wire = encodeForWire('hey @Alice and @Bob', members);
+      expect(wire.text, 'hey @<u1> and @<u2>');
+      expect(wire.mentions, ['u1', 'u2']);
     });
 
     test('a deleted mention is not sent', () {
-      expect(mentionIdsIn('hey look', members), isEmpty);
+      final wire = encodeForWire('hey look', members);
+      expect(wire.text, 'hey look');
+      expect(wire.mentions, isEmpty);
+    });
+  });
+
+  group('mentionNamesOf', () {
+    test('maps id to name, skipping a member with no name to show', () {
+      final names = mentionNamesOf([
+        Member.fromJson(_member('u1', 'Alice')),
+        Member.fromJson(_member('u2', '')),
+      ]);
+      expect(names, {'u1': 'Alice'});
     });
   });
 

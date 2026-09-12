@@ -188,6 +188,10 @@ class _DmRoomScreenState extends ConsumerState<DmRoomScreen> {
                         line: line,
                         own: line.userId != null && line.userId == self,
                         undecryptableLabel: context.tr('chat.undecryptable'),
+                        // A DM has no member roster to pick from, but a message
+                        // forwarded out of a league room can still carry one.
+                        mentionNames: {if (view.otherId.isNotEmpty) view.otherId: view.otherName},
+                        unknownMentionLabel: context.tr('chat.unknownUser'),
                         attachmentBuilder: (i) => ChatAttachment(
                           provider: dmAttachmentProvider((widget.threadId, line.id, i)),
                         ),
