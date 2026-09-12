@@ -90,6 +90,22 @@ the totals move live for subscribers (see
 [../architecture/realtime.md](../architecture/realtime.md)). This powers the
 score-input crowd line, not the bots' own consensus.
 
+Two guards keep a pre-kickoff pick secret, and they only work together:
+
+- `MIN_CROWD_COUNT` (3) blanks the standing total until enough predictions blur
+  any single one.
+- The publish step (`server/utils/live/crowd-step.ts`) gates the push itself, so
+  a published total never advances by fewer than that many predictions.
+
+The floor alone was not enough, because it constrains the total and not the
+delta. Totals were pushed on every save, so two consecutive pushes differed by
+exactly one prediction: `(home2 - home1, away2 - away1)` was that pick's
+scoreline, and `count + 1` confirmed it came from one person. An edit leaked
+more cleanly still - the count does not move at all, so the delta was purely
+that user's change. The step covers both, per stream (global and each league
+separately, since a small league is where one save moves the total visibly).
+The cost is that the crowd line steps rather than ticks.
+
 ## Sources
 
 - `apps/web-nuxt/shared/types/bot.ts` (`BotPersona`, `botUserId`, `parseBotPersona`,
@@ -105,6 +121,8 @@ score-input crowd line, not the bots' own consensus.
   `apps/web-nuxt/app/pages/[competition]/bot.vue`,
   `apps/web-nuxt/app/pages/[competition]/users/[id].vue` (Evil Twin toggle)
 - Live crowd totals: `apps/web-nuxt/server/utils/predictions/service.ts`
+  (`MIN_CROWD_COUNT`, `withCrowdFloor`), `apps/web-nuxt/server/utils/live/crowd-step.ts`
+  (the publish step), `apps/web-nuxt/server/utils/live/league-crowd.ts`
   (`getCrowdTotals`, `getMatchCrowdTotal`), `apps/web-nuxt/server/api/predictions/index.put.ts`
   (`publishCrowdUpdate`/`publishLeagueCrowdUpdates` on write; the publishers live
   in `apps/web-nuxt/server/utils/live/hub.ts`), `apps/web-nuxt/app/composables/useCrowdTotals.ts`

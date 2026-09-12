@@ -5,6 +5,10 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### tI'pu'
+
+- qaSpa' may', pegh noH. Hoch choqDI', ghom mI' choH, vaj cha' mI' chevlu'DI', noH chu' laDlu'laH. DaH tlhoch mI' vI'; reH law' noH ngaS.
+
 ## [4.12.0] - 2026-09-12
 
 ### chelpu'

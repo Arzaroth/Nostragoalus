@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { db } from '../../../db'
 import { getMatchCrowdTotal, upsertPrediction } from '../../utils/predictions/service'
+import { crowdStepKey, shouldPublishCrowd } from '../../utils/live/crowd-step'
 import { publishCrowdUpdate } from '../../utils/live/hub'
 import { publishLeagueCrowdUpdates } from '../../utils/live/league-crowd'
 import { defineValidatedHandler } from '../../utils/validated-handler'
@@ -27,8 +28,13 @@ export default defineValidatedHandler({ body: bodySchema, response: responseSche
     isOutcomeOnly: body.isOutcomeOnly,
     wager: body.wager,
   })
-  // live crowd totals for everyone with the preference on
-  publishCrowdUpdate(body.matchId, await getMatchCrowdTotal(db, body.matchId))
+  // Live crowd totals for everyone with the preference on, but only once the
+  // field has moved by a whole step: pushing every save would make consecutive
+  // totals differ by exactly this user's pick. See utils/live/crowd-step.ts.
+  const crowd = await getMatchCrowdTotal(db, body.matchId)
+  if (shouldPublishCrowd(crowdStepKey(body.matchId), crowd.count)) {
+    publishCrowdUpdate(body.matchId, crowd)
+  }
   // and the league-scoped totals to the predictor's league mates - fire and
   // forget: it is a per-league fan-out of queries that must not add latency to
   // (or fail) the save itself.

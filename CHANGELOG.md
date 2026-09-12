@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+
+- Your score prediction stays private until kick-off. The live "crowd" total shown while predicting used to update on every save, so anyone watching it could subtract one update from the next and read the pick that had just been made - including an edit to an existing one. The total now moves in steps that always blend several predictions.
+
 ## [4.12.0] - 2026-09-12
 
 ### Added

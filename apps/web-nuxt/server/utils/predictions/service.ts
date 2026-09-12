@@ -362,6 +362,13 @@ export async function setJoker(db: AppDatabase, input: SetJokerInput, now: Date 
 // enough predictions blur any single one. Crowd totals are an opt-in, live
 // "wisdom of the crowd" display shown while predicting, so this hides the
 // deanonymizing tail without disabling the pre-kickoff feature itself.
+//
+// The floor only covers the standing TOTAL. It says nothing about the delta
+// between two totals, and these are pushed live on every save - so on its own it
+// left consecutive pushes differing by exactly one pick. The matching guard is
+// the publish step in ../live/crowd-step.ts, which is what makes any observable
+// delta the blend of at least this many predictions. Changing one without the
+// other reopens the leak.
 export const MIN_CROWD_COUNT = 3
 
 const EMPTY_CROWD = { home: 0, away: 0, count: 0 }

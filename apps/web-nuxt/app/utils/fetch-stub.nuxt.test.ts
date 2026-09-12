@@ -13,6 +13,15 @@ import { describe, it, expect, afterEach, vi } from 'vitest'
 // template disappears, but a change to the proxy body itself would be silent.
 // This spec is the other half of that guard.
 
+// The generated template ships no type declarations - resolving it at runtime is
+// the whole point of this spec, so the import is typed here rather than avoided.
+type AutoFetch = ((...args: unknown[]) => Promise<unknown>) & Record<string, unknown>
+async function autoImportedFetch(): Promise<AutoFetch> {
+  // @ts-expect-error - #build/fetch.mjs is a generated Nuxt template, no d.ts
+  const mod = await import('#build/fetch.mjs')
+  return (mod as { $fetch: AutoFetch }).$fetch
+}
+
 afterEach(() => {
   vi.unstubAllGlobals()
 })
@@ -26,7 +35,7 @@ describe('the $fetch auto-import under vitest', () => {
     })
 
     // Imported the way application code gets it - the auto-import, not globalThis.
-    const { $fetch } = await import('#build/fetch.mjs')
+    const $fetch = await autoImportedFetch()
     const res = await $fetch('/api/anything', { query: { a: 1 } })
 
     expect(res).toEqual({ stubbed: true })
@@ -36,11 +45,11 @@ describe('the $fetch auto-import under vitest', () => {
   // The proxy also forwards property access, which is what `$fetch.raw(...)`
   // and `$fetch.create(...)` rely on.
   it('forwards property access to the stubbed global', async () => {
-    const raw = vi.fn(async () => ({ _data: 'ok' }))
+    const raw = vi.fn(async (_url: string) => ({ _data: 'ok' }))
     vi.stubGlobal('$fetch', Object.assign(async () => ({}), { raw }))
 
-    const { $fetch } = await import('#build/fetch.mjs')
-    await ($fetch as unknown as { raw: typeof raw }).raw('/api/anything')
+    const $fetch = await autoImportedFetch()
+    await ($fetch.raw as typeof raw)('/api/anything')
 
     expect(raw).toHaveBeenCalledWith('/api/anything')
   })
@@ -48,7 +57,7 @@ describe('the $fetch auto-import under vitest', () => {
   // A later stub must win: the whole failure mode this guards against is a
   // value captured once at module-eval time.
   it('picks up a stub replaced between calls', async () => {
-    const { $fetch } = await import('#build/fetch.mjs')
+    const $fetch = await autoImportedFetch()
 
     vi.stubGlobal('$fetch', async () => 'first')
     expect(await $fetch('/api/x')).toBe('first')

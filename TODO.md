@@ -2796,7 +2796,7 @@ branch; the rest scored below the bar and are recorded here.
       head-to-head and bot views all 404. Fix is to key the subject with the
       existing HMAC secret derivation, which is a ledger-format boundary (old
       rows keep their subjects), so it wants its own pass.
-- [ ] Crowd totals leak individual pre-kickoff picks by differencing:
+- [x] Crowd totals leak individual pre-kickoff picks by differencing:
       `MIN_CROWD_COUNT = 3` masks the standing total but never the delta, so once
       `count >= 3` every `count + 1` transition publishes one exact scoreline,
       pushed live per save over the WS hub. Naming the predictor needs colluding
@@ -2804,6 +2804,11 @@ branch; the rest scored below the bar and are recorded here.
       but the floor's comment claims a protection it does not provide. Cheapest
       fixes: drop or bucket `count` on the wire, or debounce the publish until
       the count has advanced by >= 3.
+      DONE via the second option - `server/utils/live/crowd-step.ts` gates both
+      the global and the per-league push so a published total never advances by
+      fewer than MIN_CROWD_COUNT predictions, which also covers the edit case
+      (a re-save moves the scoreline without moving the count). Dropping `count`
+      alone would not have been enough: the home/away delta is the leak.
 - [ ] Re-confirmed as still open, already tracked above: the link-unfurl
       DNS-rebinding TOCTOU. The audit's redirect-bypass theory was refuted -
       `disableRedirect: true` plus the re-entrant loop re-runs `assertPublicHost`
@@ -2814,7 +2819,7 @@ branch; the rest scored below the bar and are recorded here.
 From the feature-treatment review of the guard-normalization fix. The confirmed
 correctness and security findings were fixed on the branch; these are the rest.
 
-- [ ] `@better-auth/sso` also registers a BARE `/sso/callback` that resolves the
+- [x] `@better-auth/sso` also registers a BARE `/sso/callback` that resolves the
       provider from the OAuth state rather than the path, and
       `SSO_CALLBACK_PREFIXES` cannot match it, so the draft/disabled-provider gate
       never fires there. It is inert only by configuration accident: the plugin
@@ -2840,13 +2845,13 @@ correctness and security findings were fixed on the branch; these are the rest.
       the bypass with a fully green unit suite. Partly mitigated on this branch by
       an e2e case sending the crafted targets raw; a guard-level integration test
       would be stronger.
-- [ ] The VITEST-only `fetch.mjs` template override in `nuxt.config.ts` fails
+- [x] The VITEST-only `fetch.mjs` template override in `nuxt.config.ts` fails
       silently if Nuxt renames the template (`if (template)` with no else), and
       the nuxt test env sets `win.$fetch` itself - so the 62 component tests that
       stub `$fetch` would go on passing while no longer testing the stub. Worth an
       explicit throw when the template is missing, plus one spec asserting the
       stub is actually reached.
-- [ ] `isUnusableAvatarUrl` is the SSRF allow-list but `fetchAvatarDataUrl` is what
+- [x] `isUnusableAvatarUrl` is the SSRF allow-list but `fetchAvatarDataUrl` is what
       carries the bearer and validates nothing itself; the pairing is enforced only
       at an uncovered `lib/` call site. Moving the check into the function that
       makes the request would make it structurally safe.
@@ -3074,7 +3079,7 @@ blocking):
 
 ## Release flakes
 
-- [ ] `pnpm test:components` can fail a release with every test green.
+- [x] `pnpm test:components` can fail a release with every test green.
       PrimeVue's tooltip removal is a `setTimeout` (`src/tooltip/Tooltip.js:271`)
       that calls `getTooltipElement` -> `document`; when it fires after vitest
       has torn the JSDOM environment down it surfaces as an uncaught
@@ -3086,6 +3091,12 @@ blocking):
       tooltip-bearing components (or `vi.useFakeTimers()` and flush) so no
       removal timer outlives the environment. Retrying the release is the
       current workaround.
+      DONE, but not the way this entry proposed: unmounting does not avoid the
+      timer, unmounting *schedules* it. `unmounted()` calls `hide(el, 0)`, and
+      because hideDelay is defined (0, not undefined) that takes the setTimeout
+      branch instead of removing synchronously. `tests/setup-nuxt.ts` drains the
+      macrotask queue between tests so the removal runs while `document` still
+      exists. Load-dependent, so a green run is not proof of elimination.
 
 ## Mobile app (apps/mobile-flutter) - tech debt from the gaps review
 
