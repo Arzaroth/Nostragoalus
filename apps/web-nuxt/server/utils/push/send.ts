@@ -6,6 +6,7 @@ import type { NotificationData } from '../../../shared/types/notifications'
 import { categoryForType, isPushEnabled, type PushCategory, type PushPrefs } from './prefs'
 import { notificationPushContent, type PushContent } from './content'
 import { deleteSubscriptionByEndpoint, listSubscriptions } from './service'
+import { getDefaultCompetitionSlug } from '../competitions/store'
 
 let configured = false
 
@@ -94,6 +95,7 @@ export async function pushToUser(
 
 // Push for a stored notification (the createNotification hook): the category and
 // content derive from the notification type.
-export function pushNotification(db: AppDatabase, userId: string, data: NotificationData): Promise<number> {
-  return pushToUser(db, userId, categoryForType(data.type), (locale) => notificationPushContent(data, locale))
+export async function pushNotification(db: AppDatabase, userId: string, data: NotificationData): Promise<number> {
+  const fallbackSlug = await getDefaultCompetitionSlug(db)
+  return pushToUser(db, userId, categoryForType(data.type), (locale) => notificationPushContent(data, locale, fallbackSlug))
 }

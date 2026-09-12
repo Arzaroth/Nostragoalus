@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { cabinetPath, chatMentionPath, type NotificationDTO } from '#shared/types/notifications'
-import { DEFAULT_COMPETITION } from '#shared/competition'
 import { dmPath } from '#shared/types/dm'
 
 const { t, locale } = useI18n()
 const router = useRouter()
 const { notifications, unreadCount, isLoading, markRead, markAllRead, dismiss, deleteAll } = useNotifications()
 const dmDock = useDmDockOpen()
+const defaultCompetition = useDefaultCompetition()
 
 // One uniform row shape drives the panel, so the template is a single list with no
 // per-kind branch. Every notification maps to a row, except DM rows (already one
@@ -167,7 +167,7 @@ function linkFor(n: NotificationDTO): string {
       return `/${d.competitionSlug}/leaderboard`
     case 'TROPHY_AWARDED':
     case 'ACHIEVEMENT_UNLOCKED':
-      return cabinetPath(d)
+      return cabinetPath(d, defaultCompetition.value)
     case 'CHAT_MENTION':
       return chatMentionPath(d)
     case 'DM_MESSAGE':
@@ -176,7 +176,7 @@ function linkFor(n: NotificationDTO): string {
       return d.threadId
         ? dmPath(d.threadId)
         : chatMentionPath({
-            competitionSlug: d.competitionSlug ?? DEFAULT_COMPETITION,
+            competitionSlug: d.competitionSlug ?? defaultCompetition.value,
             leagueId: d.leagueId ?? '',
             matchId: d.matchId,
           })

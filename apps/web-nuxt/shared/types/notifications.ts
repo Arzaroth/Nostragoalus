@@ -1,4 +1,3 @@
-import { DEFAULT_COMPETITION } from '../competition'
 import type { AchievementTier, CompetitionAwardType } from './achievements'
 
 // In-app notification center. The `type` column on user_notification mirrors
@@ -132,12 +131,13 @@ export function chatMentionPath(d: {
 // Deep link for a trophy/achievement notification: the recipient's own trophy
 // cabinet, which lives on their competition-scoped profile below their picks.
 // Global achievements/trophies carry no competitionSlug, but the cabinet shows
-// global items under any competition, so fall back to the primary one rather
+// global items under any competition, so fall back to the default one rather
 // than dumping the click on the home page. The #cabinet hash scrolls past the
 // picks straight to the achievements. Shared so the server push builder and the
-// client bell agree.
-export function cabinetPath(d: { competitionSlug: string | null; userId: string }): string {
-  return `/${d.competitionSlug ?? DEFAULT_COMPETITION}/users/${d.userId}#cabinet`
+// client bell agree - both pass the competition the app resolved as default,
+// which is admin-set and therefore not knowable to this pure function.
+export function cabinetPath(d: { competitionSlug: string | null; userId: string }, fallbackSlug: string): string {
+  return `/${d.competitionSlug ?? fallbackSlug}/users/${d.userId}#cabinet`
 }
 
 // The shape the API and the WS `notification:new` push both carry; the client

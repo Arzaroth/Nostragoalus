@@ -1,6 +1,9 @@
 import { eq, desc } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { competition } from '../../../db/schema'
+import { FALLBACK_COMPETITION } from '../../../shared/competition'
+import { getAppSetting, setAppSetting } from '../settings/service'
+import { NotFoundError } from '../errors'
 
 export const DEFAULT_COMPETITIONS = [
   {
@@ -77,4 +80,33 @@ export async function resolveCompetition(db: AppDatabase, slug?: string | null) 
   if (slug) return getCompetitionBySlug(db, slug)
   const active = await listActiveCompetitions(db)
   return active[0] ?? null
+}
+
+// The competition a slug-less context lands on (the "/" redirect, a global
+// achievement's deep link, a first visit with no cookie). Admin-set, stored as
+// a slug rather than an id so it survives a reseed and reads plainly in the
+// settings table.
+export const DEFAULT_COMPETITION_KEY = 'default_competition'
+
+// Never trusted blindly: a competition that was archived or deleted after being
+// set as default would 404 every landing, so the stored slug only wins while it
+// names an active competition. Falls back to the newest active season, and to
+// the compiled-in constant only when there is no competition at all.
+export async function getDefaultCompetitionSlug(db: AppDatabase): Promise<string> {
+  const active = await listActiveCompetitions(db)
+  if (active.length === 0) return FALLBACK_COMPETITION
+
+  const configured = await getAppSetting(db, DEFAULT_COMPETITION_KEY)
+  if (configured && active.some((c) => c.slug === configured)) return configured
+
+  return active[0]!.slug
+}
+
+// Rejects an unknown or archived slug at write time too: storing one would be
+// silently ignored by the getter, which reads as "the setting did not save".
+export async function setDefaultCompetitionSlug(db: AppDatabase, slug: string): Promise<void> {
+  const target = await getCompetitionBySlug(db, slug)
+  if (!target) throw new NotFoundError('competition not found')
+  if (!target.isActive) throw new NotFoundError('competition is archived')
+  await setAppSetting(db, DEFAULT_COMPETITION_KEY, slug)
 }

@@ -1,14 +1,22 @@
 import { describe, it, expect } from 'vitest'
+import { eq } from 'drizzle-orm'
 import { createTestDb } from '../../../tests/db'
+import { competition } from '../../../db/schema'
 import {
+  DEFAULT_COMPETITION_KEY,
   ensureDefaultCompetition,
   getCompetitionById,
   getCompetitionBySlug,
+  getDefaultCompetitionSlug,
   listActiveCompetitions,
   listCompetitions,
   resolveCompetition,
+  setDefaultCompetitionSlug,
   setExternalSeasonId,
 } from './store'
+import { FALLBACK_COMPETITION } from '../../../shared/competition'
+import { getAppSetting, setAppSetting } from '../settings/service'
+import { NotFoundError } from '../errors'
 import { makeCompetition } from '../../../tests/factories'
 
 describe('competition store', () => {
@@ -89,4 +97,60 @@ it('lists competitions newest season first', async () => {
   const all = await listActiveCompetitions(db)
   expect(all.map((c) => c.slug)).toEqual(['world-cup-2026', 'euro-2024', 'world-cup-2022'])
   await client.close()
+})
+
+describe('default competition', () => {
+  it('falls back to the compiled-in constant when there is no competition at all', async () => {
+    const { db, client } = await createTestDb()
+    expect(await getDefaultCompetitionSlug(db)).toBe(FALLBACK_COMPETITION)
+    await client.close()
+  })
+
+  it('unset: picks the newest active season', async () => {
+    const { db, client } = await createTestDb()
+    await makeCompetition(db, { slug: 'old-cup', seasonHint: '2022' })
+    await makeCompetition(db, { slug: 'new-cup', seasonHint: '2026' })
+    expect(await getDefaultCompetitionSlug(db)).toBe('new-cup')
+    await client.close()
+  })
+
+  it('set: wins over the newest active season', async () => {
+    const { db, client } = await createTestDb()
+    await makeCompetition(db, { slug: 'old-cup', seasonHint: '2022' })
+    await makeCompetition(db, { slug: 'new-cup', seasonHint: '2026' })
+    await setDefaultCompetitionSlug(db, 'old-cup')
+    expect(await getDefaultCompetitionSlug(db)).toBe('old-cup')
+    expect(await getAppSetting(db, DEFAULT_COMPETITION_KEY)).toBe('old-cup')
+    await client.close()
+  })
+
+  // The guard that matters: archiving the default would otherwise 404 every
+  // slug-less landing, because the stored slug is no longer routable.
+  it('ignores a stored slug once that competition is archived', async () => {
+    const { db, client } = await createTestDb()
+    const archivedId = await makeCompetition(db, { slug: 'old-cup', seasonHint: '2022' })
+    await makeCompetition(db, { slug: 'new-cup', seasonHint: '2026' })
+    await setDefaultCompetitionSlug(db, 'old-cup')
+    await db.update(competition).set({ isActive: false }).where(eq(competition.id, archivedId))
+    expect(await getDefaultCompetitionSlug(db)).toBe('new-cup')
+    await client.close()
+  })
+
+  it('ignores a stored slug that no longer names any competition', async () => {
+    const { db, client } = await createTestDb()
+    await makeCompetition(db, { slug: 'new-cup', seasonHint: '2026' })
+    await setAppSetting(db, DEFAULT_COMPETITION_KEY, 'deleted-cup')
+    expect(await getDefaultCompetitionSlug(db)).toBe('new-cup')
+    await client.close()
+  })
+
+  it('refuses to store an unknown or archived slug', async () => {
+    const { db, client } = await createTestDb()
+    const archivedId = await makeCompetition(db, { slug: 'archived-cup', seasonHint: '2022' })
+    await db.update(competition).set({ isActive: false }).where(eq(competition.id, archivedId))
+    await expect(setDefaultCompetitionSlug(db, 'nope')).rejects.toThrow(NotFoundError)
+    await expect(setDefaultCompetitionSlug(db, 'archived-cup')).rejects.toThrow(NotFoundError)
+    expect(await getAppSetting(db, DEFAULT_COMPETITION_KEY)).toBeNull()
+    await client.close()
+  })
 })

@@ -1,5 +1,4 @@
 import { cabinetPath, chatMentionPath, type NotificationData } from '../../../shared/types/notifications'
-import { DEFAULT_COMPETITION } from '../../../shared/competition'
 import { dmPath } from '../../../shared/types/dm'
 import type { CompetitionAwardType } from '../../../shared/types/achievements'
 import en from '../../../i18n/locales/en.json'
@@ -105,7 +104,14 @@ export function goalPushContent(
 
 // Build the push title/body/url/tag for a stored notification, in the user's
 // locale. GOAL/MATCH_LIVE are push-only and built by their own triggers.
-export function notificationPushContent(data: NotificationData, locale: string | null | undefined): PushContent {
+// fallbackSlug is the app's resolved default competition: the notification types
+// that carry a null competitionSlug (global achievements/trophies, a DM-scoped
+// missed call) still need a competition-prefixed path to link into.
+export function notificationPushContent(
+  data: NotificationData,
+  locale: string | null | undefined,
+  fallbackSlug: string,
+): PushContent {
   const m = messagesFor(locale)
   switch (data.type) {
     case 'PICK_REMINDER':
@@ -144,13 +150,13 @@ export function notificationPushContent(data: NotificationData, locale: string |
           trophy: trophyName(locale, data.trophyType, data.teamName),
           competition: data.competitionName,
         }),
-        url: cabinetPath(data),
+        url: cabinetPath(data, fallbackSlug),
         tag: `trophy:${data.competitionSlug}:${data.trophyType}`,
       }
     case 'ACHIEVEMENT_UNLOCKED':
       return {
         ...render(m.achievement, { achievement: achievementName(locale, data.key) }),
-        url: cabinetPath(data),
+        url: cabinetPath(data, fallbackSlug),
         tag: `achv:${data.key}`,
       }
     case 'LEAGUE_JOIN':
@@ -198,7 +204,7 @@ export function notificationPushContent(data: NotificationData, locale: string |
         url: data.threadId
           ? dmPath(data.threadId)
           : chatMentionPath({
-              competitionSlug: data.competitionSlug ?? DEFAULT_COMPETITION,
+              competitionSlug: data.competitionSlug ?? fallbackSlug,
               leagueId: data.leagueId ?? '',
               matchId: data.matchId,
             }),

@@ -4,7 +4,6 @@ import { REACTION_EMOJIS, type ReactionEmoji } from '#shared/reactions'
 import { MAX_MESSAGE_TEXT_LENGTH } from '#shared/types/chat'
 import { decodeMentions, encodeMentions, extractMentions } from '~/utils/chat-content'
 import { ACCEPTED_IMAGE_TYPES, compressToWebp, imageMimeForBytes } from '~/composables/useChatImage'
-import { DEFAULT_COMPETITION } from '#shared/competition'
 import type { CallLogEntry } from '#shared/types/voice'
 import type { DecryptedMessage, PendingImage } from '~/composables/useLeagueChat'
 // End-to-end encrypted chat. Drives either a league room (the league-global room
@@ -28,13 +27,14 @@ const { t } = useI18n()
 const { session } = useAuth()
 const meId = computed(() => session.value?.data?.user?.id ?? null)
 const slug = useSelectedCompetition()
+const defaultCompetition = useDefaultCompetition()
 
 // A chat author's profile page (same destination as a leaderboard row), or null
 // when there is no competition context (the global dock with nothing selected). A
 // DM has no competition of its own, so fall back to the default one - the profile
 // page is the same person wherever it opens, and a dead link would be worse.
 function profileLink(uid: string | null): string | null {
-  const s = slug.value ?? (isDm.value ? DEFAULT_COMPETITION : null)
+  const s = slug.value ?? (isDm.value ? defaultCompetition.value : null)
   return uid && s ? `/${s}/users/${uid}` : null
 }
 
