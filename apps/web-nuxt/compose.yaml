@@ -41,8 +41,14 @@ services:
 
   # One-shot: rustfs does not auto-create buckets, so make the app's bucket once
   # it is reachable (idempotent: mc mb -p succeeds if it already exists).
+  #
+  # From quay.io, not Docker Hub: MinIO deleted the docker.io/minio/mc repository
+  # (a pull answers "repository does not exist", and hub's API 404s the whole
+  # repo), which broke every deploy that had to pull it. quay.io/minio/mc still
+  # publishes the same releases, and this exact tag resolves to the SAME digest,
+  # so nothing about the image changed - only where it is fetched from.
   rustfs-init:
-    image: minio/mc:RELEASE.2025-08-13T08-35-41Z@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727
+    image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727
     restart: 'no'
     depends_on:
       rustfs:
@@ -57,7 +63,7 @@ services:
   # Not started normally - run under the `tools` profile via `docker compose run`,
   # which mounts the backup dir at run time (-v) so media pairs with the dump.
   mc:
-    image: minio/mc:RELEASE.2025-08-13T08-35-41Z@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727
+    image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z@sha256:a7fe349ef4bd8521fb8497f55c6042871b2ae640607cf99d9bede5e9bdf11727
     profiles: ['tools']
     entrypoint: ['mc']
     environment:

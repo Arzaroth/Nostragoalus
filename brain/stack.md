@@ -58,7 +58,8 @@ Sources of truth: `package.json`, `pnpm-workspace.yaml`, `apps/web-nuxt/nuxt.con
 
 - Pluggable `StorageDriver`: `fs` (node:fs) or `s3`.
 - Production deploy uses **rustfs/rustfs** (S3-compatible) via `aws4fetch` SigV4,
-  path-style. `minio/mc` handles bucket-init and backup mirroring.
+  path-style. `quay.io/minio/mc` handles bucket-init and backup mirroring (from
+  quay because MinIO deleted the Docker Hub repository; same digest).
 - See [architecture/storage.md](architecture/storage.md) and
   [features/image-storage.md](features/image-storage.md).
 

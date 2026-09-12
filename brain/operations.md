@@ -62,8 +62,8 @@ otherwise viable here: its `child_process` honors `{shell:true}` so cycletls'
 |---|---|---|
 | `db` | postgres:17.10-alpine | Postgres (volume `nostragoalus_pgdata`) |
 | `rustfs` | rustfs/rustfs | S3-compatible object storage (volume `nostragoalus_media`) |
-| `rustfs-init` | minio/mc | one-shot bucket init (idempotent) |
-| `mc` | minio/mc | backup/restore client (profile `tools`) |
+| `rustfs-init` | quay.io/minio/mc | one-shot bucket init (idempotent) |
+| `mc` | quay.io/minio/mc | backup/restore client (profile `tools`) |
 | `app` | nostragoalus-app:${NG_APP_VERSION:-local} | built prod-target app; `mise run deploy` sets `NG_APP_VERSION` to the package.json version, otherwise `:local` |
 | `app-dev` | (same build) | HMR dev server (profile `dev`) |
 | `maildev` | - | dev email catcher |
