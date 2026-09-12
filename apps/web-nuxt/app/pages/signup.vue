@@ -39,7 +39,11 @@ async function submit() {
         return
       }
     }
-    const { data, error: err } = await signUp.email({ name: name.value, email: email.value, password: password.value, callbackURL: '/verify-email' })
+    // Carry `next` through the verification round-trip: the mailed link lands on
+    // /verify-email, which would otherwise drop wherever the user was heading
+    // (a league invite, most visibly) and send them to the default page.
+    const verifyCallback = next.value === '/matches' ? '/verify-email' : `/verify-email?next=${encodeURIComponent(next.value)}`
+    const { data, error: err } = await signUp.email({ name: name.value, email: email.value, password: password.value, callbackURL: verifyCallback })
     if (err) {
       error.value = err.message ?? 'Sign up failed'
       return

@@ -8,6 +8,7 @@ import {
   emailVerificationRequiredSync,
   isSmtpConfigured,
   loadEmailVerificationFlag,
+  resetEmailVerificationCache,
   setEmailVerificationRequired,
 } from './email-verification'
 import { getAppSetting } from '../settings/service'
@@ -20,7 +21,11 @@ describe('email-verification flag', () => {
     const t = await createTestDb()
     db = t.db
     client = t.client
-    // Reset the module cache to a known state between tests.
+    // Reset the module cache to a known state between tests. Synchronous, so it
+    // does not depend on this file's db being seeded first: the cache is
+    // process-wide and would otherwise carry another suite's value into any test
+    // that reads the sync getter before loading.
+    resetEmailVerificationCache()
     await loadEmailVerificationFlag(db)
   })
   afterEach(async () => {

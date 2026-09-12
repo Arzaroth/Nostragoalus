@@ -212,6 +212,17 @@ export function buildAuthOptions(database: AuthDb) {
         update: {
           before: async (data: Record<string, unknown>) => {
             if (typeof data.skin === 'string' && data.skin !== '' && !isSkinId(data.skin)) data.skin = null
+            // lastSeenChangelogVersion is user-writable (the client stamps it)
+            // and backed by a plain text column, so nothing stopped a client
+            // storing megabytes there and carrying it in every session payload.
+            // Bounded rather than pinned to today's exact numbering: the point is
+            // the size, and a future scheme (a -rc suffix, say) should not be
+            // silently dropped. Must still start like a version, so it is not a
+            // free-text field by another name.
+            if (data.lastSeenChangelogVersion !== undefined && data.lastSeenChangelogVersion !== null) {
+              const v = data.lastSeenChangelogVersion
+              data.lastSeenChangelogVersion = typeof v === 'string' && /^\d[0-9A-Za-z.+-]{0,31}$/.test(v) ? v : null
+            }
             // A client avatar upload arrives as a data: URL on user.image; move the
             // bytes into object storage and swap in the serving URL before the write,
             // so the blob never lands in Postgres. External CDN/https images pass

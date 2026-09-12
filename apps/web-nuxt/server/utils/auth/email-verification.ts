@@ -15,6 +15,15 @@ export const EMAIL_VERIFICATION_KEY = 'require_email_verification'
 const TTL_MS = 30_000
 let cached = { value: false, at: 0 }
 
+// Process-wide, so one suite's seeded value survives into the next unless the
+// reader happens to re-seed first. `emailVerificationRequiredSync` is
+// deliberately non-blocking, which means a test that reads it before seeding
+// gets whatever the previous test left - an order-dependent flake rather than a
+// failure. Tests call this in beforeEach instead of relying on that ordering.
+export function resetEmailVerificationCache(): void {
+  cached = { value: false, at: 0 }
+}
+
 export function isSmtpConfigured(): boolean {
   return !!process.env.NUXT_SMTP_URL
 }

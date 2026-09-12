@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { authClient } from '../../lib/auth-client'
+import { safeNext } from '../utils/post-auth-redirect'
 
 definePageMeta({ layout: 'auth' })
 
@@ -21,7 +22,10 @@ onMounted(async () => {
   }
   const { data } = await authClient.getSession()
   if (data) {
-    await router.replace('/matches')
+    // safeNext, not the raw query: this value came back through the mail client
+    // and the IdP round-trip, so it is treated as untrusted like every other
+    // post-auth redirect.
+    await router.replace(safeNext(route.query.next))
     return
   }
   state.value = 'verified'

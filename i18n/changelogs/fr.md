@@ -7,6 +7,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ### Corrigé
 
+- Après une inscription depuis une invitation de ligue, la confirmation de l'e-mail vous ramène désormais à cette invitation au lieu de vous déposer sur la page des matchs.
 - Votre pronostic reste secret jusqu'au coup d'envoi. Le total « de la foule » affiché pendant la saisie se mettait à jour à chaque enregistrement : en soustrayant une mise à jour de la suivante, on pouvait lire le pronostic qui venait d'être saisi, y compris une modification. Le total avance désormais par paliers qui mélangent toujours plusieurs pronostics.
 
 ## [4.12.0] - 2026-09-12
