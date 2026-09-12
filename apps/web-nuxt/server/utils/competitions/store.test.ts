@@ -7,16 +7,18 @@ import {
   ensureDefaultCompetition,
   getCompetitionById,
   getCompetitionBySlug,
+  createCompetition,
   getDefaultCompetitionSlug,
   listActiveCompetitions,
   listCompetitions,
   resolveCompetition,
+  setCompetitionActive,
   setDefaultCompetitionSlug,
   setExternalSeasonId,
 } from './store'
 import { FALLBACK_COMPETITION } from '../../../shared/competition'
 import { getAppSetting, setAppSetting } from '../settings/service'
-import { NotFoundError } from '../errors'
+import { ConflictError, NotFoundError, ValidationError } from '../errors'
 import { makeCompetition } from '../../../tests/factories'
 
 describe('competition store', () => {
@@ -151,6 +153,102 @@ describe('default competition', () => {
     await expect(setDefaultCompetitionSlug(db, 'nope')).rejects.toThrow(NotFoundError)
     await expect(setDefaultCompetitionSlug(db, 'archived-cup')).rejects.toThrow(NotFoundError)
     expect(await getAppSetting(db, DEFAULT_COMPETITION_KEY)).toBeNull()
+    await client.close()
+  })
+})
+
+describe('createCompetition', () => {
+  it('inserts an active competition with its provider binding', async () => {
+    const { db, client } = await createTestDb()
+    const row = await createCompetition(db, {
+      slug: 'euro-2028',
+      name: 'UEFA Euro 2028',
+      provider: 'espn',
+      externalCompetitionId: 'uefa.euro',
+      seasonHint: '2028',
+    })
+    expect(row).toMatchObject({
+      slug: 'euro-2028',
+      name: 'UEFA Euro 2028',
+      provider: 'espn',
+      externalCompetitionId: 'uefa.euro',
+      seasonHint: '2028',
+      isActive: true,
+      externalSeasonId: null,
+    })
+    expect((await listActiveCompetitions(db)).map((c) => c.slug)).toContain('euro-2028')
+    await client.close()
+  })
+
+  // The slug is permanent and lands in every URL, cookie and share link, so a
+  // malformed one is refused at creation rather than lived with forever.
+  it('refuses a slug that is not a clean URL segment', async () => {
+    const { db, client } = await createTestDb()
+    for (const bad of ['Euro 2028', 'euro_2028', 'euro--2028', '-euro', 'euro-', 'EURO', 'éuro', '']) {
+      await expect(
+        createCompetition(db, { slug: bad, name: 'x', provider: 'espn', externalCompetitionId: 'x', seasonHint: null }),
+      ).rejects.toThrow(ValidationError)
+    }
+    expect(await listCompetitions(db)).toHaveLength(0)
+    await client.close()
+  })
+
+  it('refuses a slug another competition already holds', async () => {
+    const { db, client } = await createTestDb()
+    await makeCompetition(db, { slug: 'euro-2028' })
+    await expect(
+      createCompetition(db, { slug: 'euro-2028', name: 'x', provider: 'espn', externalCompetitionId: 'x', seasonHint: null }),
+    ).rejects.toThrow(ConflictError)
+    await client.close()
+  })
+
+  it('accepts a null season hint', async () => {
+    const { db, client } = await createTestDb()
+    const row = await createCompetition(db, {
+      slug: 'some-cup',
+      name: 'Some Cup',
+      provider: 'espn',
+      externalCompetitionId: 'x',
+      seasonHint: null,
+    })
+    expect(row.seasonHint).toBeNull()
+    await client.close()
+  })
+})
+
+describe('setCompetitionActive', () => {
+  it('archives and restores, leaving the row and its history in place', async () => {
+    const { db, client } = await createTestDb()
+    await makeCompetition(db, { slug: 'old-cup', seasonHint: '2018' })
+
+    const archived = await setCompetitionActive(db, 'old-cup', false)
+    expect(archived.isActive).toBe(false)
+    expect((await listActiveCompetitions(db)).map((c) => c.slug)).not.toContain('old-cup')
+    // Archiving hides it, it does not delete it.
+    expect((await listCompetitions(db)).map((c) => c.slug)).toContain('old-cup')
+
+    const restored = await setCompetitionActive(db, 'old-cup', true)
+    expect(restored.isActive).toBe(true)
+    expect((await listActiveCompetitions(db)).map((c) => c.slug)).toContain('old-cup')
+    await client.close()
+  })
+
+  it('404s on an unknown slug', async () => {
+    const { db, client } = await createTestDb()
+    await expect(setCompetitionActive(db, 'nope', false)).rejects.toThrow(NotFoundError)
+    await client.close()
+  })
+
+  // Archiving the default must not strand slug-less links on a dead competition.
+  it('hands the default on when the current default is archived', async () => {
+    const { db, client } = await createTestDb()
+    await makeCompetition(db, { slug: 'old-cup', seasonHint: '2022' })
+    await makeCompetition(db, { slug: 'new-cup', seasonHint: '2026' })
+    await setDefaultCompetitionSlug(db, 'old-cup')
+    expect(await getDefaultCompetitionSlug(db)).toBe('old-cup')
+
+    await setCompetitionActive(db, 'old-cup', false)
+    expect(await getDefaultCompetitionSlug(db)).toBe('new-cup')
     await client.close()
   })
 })

@@ -81,9 +81,14 @@ async function setup(isAdmin = true) {
   return wrapper
 }
 
-const selects = (w: NonNullable<typeof wrapper>) => w.findAll('select')
-const buttonWith = (w: NonNullable<typeof wrapper>, text: string) =>
-  w.findAll('button').find((b) => b.text().includes(text))!
+type Wrapper = NonNullable<typeof wrapper>
+type Found = ReturnType<Wrapper['findAll']>[number]
+
+const selects = (w: Wrapper) => w.findAll('select')
+// Three selects once the add panel is open: default picker, provider, catalog.
+// The catalog is always the last one rendered, which survives layout tweaks.
+const catalogSelect = (w: Wrapper) => selects(w).at(-1)!
+const buttonWith = (w: Wrapper, text: string) => w.findAll('button').find((b: Found) => b.text().includes(text))!
 
 describe('AdminCompetitionsSection', () => {
   it('lists every competition including archived ones, and marks the default', async () => {
@@ -115,7 +120,7 @@ describe('AdminCompetitionsSection', () => {
   it('archives a competition, but never the current default', async () => {
     const w = await setup(true)
     await vi.waitFor(() => expect(w.text()).toContain('UEFA Euro 2024'))
-    const archiveButtons = w.findAll('button').filter((b) => b.text() === 'Archive')
+    const archiveButtons = w.findAll('button').filter((b: Found) => b.text() === 'Archive')
     // Two active competitions, but the default's own Archive is disabled.
     expect(archiveButtons).toHaveLength(2)
     expect((archiveButtons[0]!.element as HTMLButtonElement).disabled).toBe(true)
@@ -138,8 +143,7 @@ describe('AdminCompetitionsSection', () => {
     await vi.waitFor(() => expect(w.text()).toContain('European Championship'))
     expect(fetchMock).toHaveBeenCalledWith('/api/admin/competitions/discover', { params: { provider: 'espn' } })
 
-    // The catalog select is the second one on the page.
-    await selects(w)[1]!.setValue('uefa.euro')
+    await catalogSelect(w).setValue('uefa.euro')
     await buttonWith(w, 'Check it').trigger('click')
 
     await vi.waitFor(() => expect(w.text()).toContain('This one works.'))
@@ -174,13 +178,13 @@ describe('AdminCompetitionsSection', () => {
     await buttonWith(w, 'List what it carries').trigger('click')
     await vi.waitFor(() => expect(w.text()).toContain('Premier League'))
 
-    await selects(w)[1]!.setValue('eng.1')
+    await catalogSelect(w).setValue('eng.1')
     await buttonWith(w, 'Check it').trigger('click')
 
     await vi.waitFor(() => expect(w.text()).toContain("This one can't be added yet."))
     expect(w.text()).toContain('374 matches found, 0 usable')
     expect(w.text()).toContain('this tournament has no groups')
-    expect(w.findAll('button').some((b) => b.text() === 'Add it')).toBe(false)
+    expect(w.findAll('button').some((b: Found) => b.text() === 'Add it')).toBe(false)
   })
 
   it('renders nothing for a non-admin', async () => {

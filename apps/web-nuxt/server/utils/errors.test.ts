@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { JokerQuotaError, LockedError, NotFoundError, SsoNotReadyError, ValidationError } from './errors'
+import { JokerQuotaError, LockedError, NotFoundError, ProviderError, SsoNotReadyError, ValidationError } from './errors'
 
 describe('errors', () => {
   it('expose names and default + custom messages', () => {
@@ -8,11 +8,14 @@ describe('errors', () => {
     expect(new JokerQuotaError().name).toBe('JokerQuotaError')
     expect(new ValidationError().name).toBe('ValidationError')
     expect(new SsoNotReadyError().name).toBe('SsoNotReadyError')
+    expect(new ProviderError().name).toBe('ProviderError')
 
     expect(new NotFoundError('nope').message).toBe('nope')
     expect(new LockedError().message).toBe('match is locked')
     expect(new JokerQuotaError().message).toContain('joker')
     expect(new ValidationError().message).toBe('invalid input')
     expect(new SsoNotReadyError().message).toBe('provider is not ready to enable')
+    expect(new ProviderError().message).toBe('provider unavailable')
+    expect(new ProviderError('espn is down').message).toBe('espn is down')
   })
 })

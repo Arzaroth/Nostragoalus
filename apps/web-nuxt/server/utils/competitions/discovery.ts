@@ -1,5 +1,5 @@
 import { providerForCompetition } from '../providers'
-import type { DiscoveredCompetition } from '../providers/types'
+import type { DiscoveredCompetition, MatchDataProvider } from '../providers/types'
 import { ProviderError, ValidationError } from '../errors'
 
 // Providers that can enumerate what they carry. UEFA's ids are a curated handful
@@ -20,16 +20,27 @@ export function clearDiscoveryCache(): void {
   cache.clear()
 }
 
+export interface DiscoveryDeps {
+  // Injected so this is testable without a Nitro runtime: the real factory
+  // reads useRuntimeConfig() for the keyed providers' credentials.
+  makeProvider?: (provider: string) => MatchDataProvider
+  now?: () => number
+}
+
 export async function discoverForProvider(
   provider: DiscoverableProvider,
-  now: () => number = Date.now,
+  deps: DiscoveryDeps = {},
 ): Promise<DiscoveredCompetition[]> {
+  const now = deps.now ?? Date.now
+  // externalCompetitionId is irrelevant to discovery but the factory needs one
+  // to build an adapter; any value gives the same catalog.
+  const makeProvider =
+    deps.makeProvider ?? ((p: string) => providerForCompetition({ provider: p, externalCompetitionId: '', seasonHint: null }))
+
   const hit = cache.get(provider)
   if (hit && now() - hit.at < TTL_MS) return hit.value
 
-  // externalCompetitionId is irrelevant to discovery but the factory needs one
-  // to build an adapter; any value gives the same catalog.
-  const adapter = providerForCompetition({ provider, externalCompetitionId: '', seasonHint: null })
+  const adapter = makeProvider(provider)
   if (!adapter.discoverCompetitions) {
     throw new ValidationError(`provider ${provider} cannot list its competitions`)
   }
