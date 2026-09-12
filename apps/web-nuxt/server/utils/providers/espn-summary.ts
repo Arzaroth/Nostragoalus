@@ -64,7 +64,10 @@ export interface EspnSummary {
   gameInfo?: { venue?: { fullName?: string | null } | null; attendance?: number | null } | null
   header?: {
     competitions?: {
-      competitors?: { homeAway?: string | null; team?: { id?: string | number | null } | null }[] | null
+      competitors?: {
+        homeAway?: string | null
+        team?: { id?: string | number | null; displayName?: string | null; abbreviation?: string | null } | null
+      }[] | null
       status?: { displayClock?: string | null; type?: { name?: string | null } | null } | null
     }[]
     | null
@@ -93,14 +96,18 @@ const PENALTY_MISSED = '99'
 
 // Period markers. 85 (half-time of extra time) and 86 (start of its second half)
 // are dropped: the app has no kind for them and they only clutter the timeline.
-const PERIOD_KINDS: Record<string, PeriodKind> = {
-  '80': 'kickoff',
-  '81': 'half-time',
-  '82': 'second-half',
-  '83': 'second-half-end',
-  '84': 'extra-time',
-  '87': 'extra-time-end',
-}
+// A Map, not an object literal: the key is an upstream string, and a plain
+// object resolves "constructor" or "toString" to an inherited function, which is
+// truthy - an ordinary event would read as a period marker carrying a function
+// where the response schema wants a string.
+const PERIOD_KINDS = new Map<string, PeriodKind>([
+  ['80', 'kickoff'],
+  ['81', 'half-time'],
+  ['82', 'second-half'],
+  ['83', 'second-half-end'],
+  ['84', 'extra-time'],
+  ['87', 'extra-time-end'],
+])
 
 // Noise: a delay is opened and closed around every VAR check and injury, ~500
 // entries in a single match document, and none of it is worth a timeline row.
@@ -127,21 +134,46 @@ export function espnEventKind(event: EspnKeyEvent): TimelineEventKind | null {
   if (type === SECOND_YELLOW) return 'second-yellow'
   if (type === RED_CARD) return 'red'
   if (type === SUBSTITUTION) return 'sub'
-  if (PERIOD_KINDS[type]) return 'period'
+  if (PERIOD_KINDS.has(type)) return 'period'
   // The feed spells every review as "VAR - <decision>"; the decision itself only
   // exists as free text, so this is the one kind we cannot phrase ourselves.
   if (/^var\b/i.test(event.type?.text ?? '')) return 'var'
   return null
 }
 
-function actorNames(event: EspnKeyEvent): { main: string | null; second: string | null } {
-  const names = (event.participants ?? []).map((p) => p.athlete?.displayName ?? null).filter((n): n is string => !!n)
-  return { main: names[0] ?? null, second: names[1] ?? null }
+// Resolve an event onto a side, or nothing. Everything that is not the home
+// team used to read as away, which silently stamps both teams' cards on the
+// away side whenever the home id is unknown.
+function sideOf(teamId: string | null, homeId: string | null, awayId: string | null): 'HOME' | 'AWAY' | null {
+  if (teamId == null) return null
+  if (homeId != null && teamId === homeId) return 'HOME'
+  if (awayId != null && teamId === awayId) return 'AWAY'
+  return null
+}
+
+interface Actor {
+  id: string | null
+  name: string | null
+}
+
+// Id and name come from the SAME participant. Compacting the names while reading
+// the ids positionally desyncs the pair as soon as one participant carries an id
+// but no display name, which would name the assister as the scorer.
+function actors(event: EspnKeyEvent): { main: Actor; second: Actor } {
+  const list = (event.participants ?? []).map((p) => ({
+    id: id(p.athlete?.id),
+    name: p.athlete?.displayName || null,
+  }))
+  const none: Actor = { id: null, name: null }
+  return { main: list[0] ?? none, second: list[1] ?? none }
 }
 
 export interface EspnTimelineOptions {
   homeTeamId?: string | null
   awayTeamId?: string | null
+  // ESPN writes its commentary in English only, so the caller decides whether
+  // the reader's locale can be served it at all.
+  withText?: boolean
 }
 
 export function parseEspnTimeline(summary: EspnSummary, opts: EspnTimelineOptions = {}): TimelineEvent[] {
@@ -161,19 +193,18 @@ export function parseEspnTimeline(summary: EspnSummary, opts: EspnTimelineOption
     const kind = espnEventKind(event)
     if (!kind) continue
 
-    const teamId = id(event.team?.id)
-    const side = teamId != null && homeId != null && teamId === homeId ? 'HOME' : teamId != null && awayId != null && teamId === awayId ? 'AWAY' : null
+    const side = sideOf(id(event.team?.id), homeId, awayId)
 
     if (kind === 'goal' || kind === 'own-goal' || kind === 'penalty-goal') {
       if (side === 'HOME') home += 1
       else if (side === 'AWAY') away += 1
     }
 
-    const { main, second } = actorNames(event)
+    const { main, second } = actors(event)
     let periodKind: PeriodKind | null = null
     if (kind === 'period') {
       const type = espnEventTypeId(event)
-      periodKind = type === '83' && !wentToExtraTime ? 'full-time' : PERIOD_KINDS[type]
+      periodKind = type === '83' && !wentToExtraTime ? 'full-time' : (PERIOD_KINDS.get(type) ?? null)
     }
 
     out.push({
@@ -181,17 +212,20 @@ export function parseEspnTimeline(summary: EspnSummary, opts: EspnTimelineOption
       side: kind === 'period' ? null : side,
       minute: event.clock?.displayValue || null,
       // A substitution names the player coming on first, then the one going off.
-      playerName: kind === 'sub' ? null : main,
-      playerInName: kind === 'sub' ? main : null,
-      playerOutName: kind === 'sub' ? second : null,
+      playerName: kind === 'sub' ? null : main.name,
+      playerInName: kind === 'sub' ? main.name : null,
+      playerOutName: kind === 'sub' ? second.name : null,
       periodKind,
-      text: kind === 'var' ? (event.text ?? null) : null,
+      text: kind === 'var' && opts.withText ? (event.text ?? null) : null,
       homeScore: home,
       awayScore: away,
     })
   }
 
-  return out
+  // The feed is chronological and the UI wants newest first, same as FIFA and
+  // UEFA. The running score has to be accumulated forwards, so reverse at the
+  // end rather than walking backwards.
+  return out.reverse()
 }
 
 export function parseEspnGoals(
@@ -208,26 +242,24 @@ export function parseEspnGoals(
     // other roster, which is the same convention FIFA uses. A goal we cannot
     // attribute to either side is dropped rather than guessed onto one: this
     // feeds the scoreline and the scorer aggregation.
-    const side = teamId != null && teamId === teams.homeId ? 'HOME' : teamId != null && teamId === teams.awayId ? 'AWAY' : null
+    const side = sideOf(teamId, teams.homeId, teams.awayId)
     if (!side) continue
-    const { main, second } = actorNames(event)
-    const scorerAthlete = event.participants?.[0]?.athlete
-    const assistAthlete = event.participants?.[1]?.athlete
+    const { main, second } = actors(event)
 
     goals.push({
       side,
       teamId,
       teamName: side === 'HOME' ? teams.homeName : teams.awayName,
       teamCode: side === 'HOME' ? teams.homeCode : teams.awayCode,
-      playerId: id(scorerAthlete?.id),
-      playerName: main ?? 'Unknown',
+      playerId: main.id,
+      playerName: main.name ?? 'Unknown',
       minute: event.clock?.displayValue || null,
       goalType: null,
       ownGoal: kind === 'own-goal',
       // Only a goal from open play carries an assister; an own goal's second
       // participant, when there is one, is not one.
-      assistPlayerId: kind === 'goal' ? id(assistAthlete?.id) : null,
-      assistPlayerName: kind === 'goal' ? second : null,
+      assistPlayerId: kind === 'goal' ? second.id : null,
+      assistPlayerName: kind === 'goal' ? second.name : null,
     })
   }
   return goals
@@ -240,19 +272,19 @@ function cardOf(kind: TimelineEventKind): BookingEvent['card'] | null {
   return null
 }
 
-export function parseEspnBookings(summary: EspnSummary, homeId: string | null): BookingEvent[] {
+export function parseEspnBookings(summary: EspnSummary, homeId: string | null, awayId: string | null): BookingEvent[] {
   const out: BookingEvent[] = []
   for (const event of summary.keyEvents ?? []) {
     const kind = espnEventKind(event)
     const card = kind ? cardOf(kind) : null
     if (!card) continue
-    const teamId = id(event.team?.id)
-    if (teamId == null) continue
-    const { main } = actorNames(event)
+    const side = sideOf(id(event.team?.id), homeId, awayId)
+    if (!side) continue
+    const { main } = actors(event)
     out.push({
-      side: teamId === homeId ? 'HOME' : 'AWAY',
-      playerId: id(event.participants?.[0]?.athlete?.id),
-      playerName: main ?? 'Unknown',
+      side,
+      playerId: main.id,
+      playerName: main.name ?? 'Unknown',
       minute: event.clock?.displayValue || null,
       card,
     })
@@ -260,20 +292,20 @@ export function parseEspnBookings(summary: EspnSummary, homeId: string | null): 
   return out
 }
 
-export function parseEspnSubstitutions(summary: EspnSummary, homeId: string | null): SubstitutionEvent[] {
+export function parseEspnSubstitutions(summary: EspnSummary, homeId: string | null, awayId: string | null): SubstitutionEvent[] {
   const out: SubstitutionEvent[] = []
   for (const event of summary.keyEvents ?? []) {
     if (espnEventKind(event) !== 'sub') continue
-    const teamId = id(event.team?.id)
-    if (teamId == null) continue
-    const { main, second } = actorNames(event)
+    const side = sideOf(id(event.team?.id), homeId, awayId)
+    if (!side) continue
+    const { main, second } = actors(event)
     out.push({
-      side: teamId === homeId ? 'HOME' : 'AWAY',
+      side,
       minute: event.clock?.displayValue || null,
-      playerOnId: id(event.participants?.[0]?.athlete?.id),
-      playerOnName: main ?? 'Unknown',
-      playerOffId: id(event.participants?.[1]?.athlete?.id),
-      playerOffName: second ?? 'Unknown',
+      playerOnId: main.id,
+      playerOnName: main.name ?? 'Unknown',
+      playerOffId: second.id,
+      playerOffName: second.name ?? 'Unknown',
     })
   }
   return out
@@ -317,12 +349,16 @@ export function parseEspnMatchStats(summary: EspnSummary): Record<string, TeamMa
 export function mapEspnPosition(abbreviation: string | null | undefined): SquadPlayer['position'] {
   const a = (abbreviation ?? '').toUpperCase()
   if (!a || a === 'SUB') return null
-  if (a === 'G' || a.startsWith('GK')) return 'GK'
-  if (a.startsWith('CD') || a.startsWith('LB') || a.startsWith('RB') || a.startsWith('SW') || a === 'D') return 'DF'
-  if (a.startsWith('CF') || a.startsWith('LF') || a.startsWith('RF') || a.startsWith('ST') || a === 'F' || a === 'RCF') {
-    return 'FW'
-  }
-  if (a.startsWith('DM') || a.startsWith('CM') || a.startsWith('AM') || a.startsWith('LM') || a.startsWith('RM') || a === 'M') {
+  // A token is a role, optionally with a side: "CD-L" is the left centre-back,
+  // "RCF" the right centre-forward. Strip the side markers first so every role
+  // is matched once rather than by an ad-hoc list that handles RCF but not LCF.
+  // Only strip a leading side letter when a role survives it: "RCF" is the right
+  // centre-forward, but "LB" is the left-back and "B" is not a role.
+  const role = a.replace(/-[LRC]$/, '').replace(/^[LRC](?=[A-Z]{2})/, '')
+  if (role === 'G' || role === 'GK') return 'GK'
+  if (['CD', 'CB', 'LB', 'RB', 'SW', 'D'].some((r) => role === r || role.startsWith(r + '-'))) return 'DF'
+  if (['CF', 'LF', 'RF', 'ST', 'F'].some((r) => role === r || role.startsWith(r + '-'))) return 'FW'
+  if (['DM', 'CM', 'AM', 'LM', 'RM', 'LW', 'RW', 'W', 'M'].some((r) => role === r || role.startsWith(r + '-'))) {
     return 'MF'
   }
   return null
@@ -361,8 +397,13 @@ export function parseEspnLineups(summary: EspnSummary): MatchLineups | null {
   const rosters = summary.rosters ?? []
   if (!rosters.length) return null
 
-  const home = rosters.find((r) => r.homeAway === 'home') ?? rosters[0]
-  const away = rosters.find((r) => r.homeAway === 'away') ?? rosters[1]
+  // All or nothing: with only one side labelled, the positional fallback would
+  // hand the same roster back for both and render it on both halves of the pitch.
+  const labelledHome = rosters.find((r) => r.homeAway === 'home')
+  const labelledAway = rosters.find((r) => r.homeAway === 'away')
+  const labelled = labelledHome || labelledAway
+  const home = labelled ? labelledHome : rosters[0]
+  const away = labelled ? labelledAway : rosters[1]
   const lineups = { home: toTeamLineup(home), away: toTeamLineup(away) }
 
   return {
@@ -409,17 +450,22 @@ export function espnSummaryTeams(summary: EspnSummary): EspnDetailTeams {
   return {
     homeId: id(rosterHome?.team?.id) ?? id(headerHome?.team?.id),
     awayId: id(rosterAway?.team?.id) ?? id(headerAway?.team?.id),
-    homeName: rosterHome?.team?.displayName || 'TBD',
-    homeCode: rosterHome?.team?.abbreviation || null,
-    awayName: rosterAway?.team?.displayName || 'TBD',
-    awayCode: rosterAway?.team?.abbreviation || null,
+    homeName: rosterHome?.team?.displayName || headerHome?.team?.displayName || 'TBD',
+    homeCode: rosterHome?.team?.abbreviation || headerHome?.team?.abbreviation || null,
+    awayName: rosterAway?.team?.displayName || headerAway?.team?.displayName || 'TBD',
+    awayCode: rosterAway?.team?.abbreviation || headerAway?.team?.abbreviation || null,
   }
 }
 
 export function parseEspnMatchDetail(summary: EspnSummary, eventId: string, teams: EspnDetailTeams): MatchDetail {
   const boxscore = summary.boxscore?.teams ?? []
-  const homeBox = boxscore.find((t) => id(t.team?.id) === teams.homeId) ?? boxscore[0]
-  const awayBox = boxscore.find((t) => id(t.team?.id) === teams.awayId) ?? boxscore[1]
+  // All or nothing: independent positional fallbacks can hand the same entry back
+  // for both sides, which reports the away team's possession and cards as both.
+  const matchedHome = boxscore.find((t) => id(t.team?.id) === teams.homeId)
+  const matchedAway = boxscore.find((t) => id(t.team?.id) === teams.awayId)
+  const matched = matchedHome || matchedAway
+  const homeBox = matched ? matchedHome : boxscore[0]
+  const awayBox = matched ? matchedAway : boxscore[1]
   const homeStats = statsOf(homeBox)
   const awayStats = statsOf(awayBox)
   const status = summary.header?.competitions?.[0]?.status
@@ -436,8 +482,8 @@ export function parseEspnMatchDetail(summary: EspnSummary, eventId: string, team
       away: { yellow: awayStats.get('yellowCards') ?? 0, red: awayStats.get('redCards') ?? 0 },
     },
     goals: parseEspnGoals(summary, teams),
-    bookings: parseEspnBookings(summary, teams.homeId),
-    substitutions: parseEspnSubstitutions(summary, teams.homeId),
+    bookings: parseEspnBookings(summary, teams.homeId, teams.awayId),
+    substitutions: parseEspnSubstitutions(summary, teams.homeId, teams.awayId),
     playerNames: espnPlayerNames(summary),
     // The adapter reuses the event id as the stats key, so getMatchStats reads
     // the same cached summary document rather than fetching a second one.

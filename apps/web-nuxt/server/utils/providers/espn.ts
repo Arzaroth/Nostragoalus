@@ -231,6 +231,11 @@ export function normalizeEspnEvent(event: EspnEvent, groups?: Map<string, string
 
   return {
     providerMatchId: String(event.id),
+    // ESPN has no stage id, but the details sync only considers a match whose
+    // providerStageId is set (it is FIFA's detail-URL segment), so leaving this
+    // null means goal_event is never written and the scorer board never builds
+    // from local data. The season slug is the nearest thing ESPN publishes.
+    providerStageId: event.season?.slug || stage,
     stage,
     // Only a group-stage match has a group. The lookup is by team, and a team
     // carries its group letter into the knockouts, so an ungated join would
@@ -301,6 +306,8 @@ export interface EspnOptions {
   coreBaseUrl?: string
   fetchImpl?: typeof fetch
   rateLimiter?: RateLimiter
+  refRateLimiter?: RateLimiter
+  refIntervalMs?: number
   timeoutMs?: number
 }
 
@@ -327,7 +334,9 @@ export function mapEspnSeasonStats(raw: {
     goals: flat.get('totalGoals') ?? null,
     conceded: flat.get('goalsConceded') ?? null,
     assists: flat.get('goalAssists') ?? null,
-    possession: flat.get('possessionPct') ?? null,
+    // A side cannot have had none of the ball: ESPN returns 0 for a season it
+    // never aggregated, and forwarding it renders "Possession 0%".
+    possession: flat.get('possessionPct') || null,
     attempts: flat.get('totalShots') ?? null,
     onTarget: flat.get('shotsOnTarget') ?? null,
     passes: flat.get('totalPasses') ?? null,
@@ -354,6 +363,10 @@ const USER_AGENT = 'curl/8.0'
 
 const DEFAULT_TIMEOUT_MS = 20_000
 
+// The board ships 25 and every row past the leader costs a request; a hostile or
+// changed response must not turn one read into an unbounded fan-out.
+const MAX_LEADERS = 25
+
 export function espnProvider(options: EspnOptions): MatchDataProvider {
   const baseUrl = options.baseUrl ?? DEFAULT_BASE_URL
   const standingsBaseUrl = options.standingsBaseUrl ?? DEFAULT_STANDINGS_BASE_URL
@@ -361,10 +374,15 @@ export function espnProvider(options: EspnOptions): MatchDataProvider {
   const league = encodeURIComponent(options.league)
   const doFetch = options.fetchImpl ?? fetch
   const limiter = options.rateLimiter ?? new RateLimiter(1000)
+  // Resolving the scorer board is one request per player. At the main limiter's
+  // one-per-second that is half a minute of wall clock inside a read route, so
+  // the $ref hops get their own, much tighter spacing: they are tiny documents
+  // on a different host and the politeness budget that matters is the scoreboard's.
+  const refLimiter = options.refRateLimiter ?? new RateLimiter(options.refIntervalMs ?? 60)
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS
 
-  async function getJson<T>(url: string): Promise<T> {
-    await limiter.acquire()
+  async function getJson<T>(url: string, withLimiter: RateLimiter = limiter): Promise<T> {
+    await withLimiter.acquire()
     // scores:poll walks competitions serially, so one unanswered socket would
     // stall every other competition's live update until the process restarts.
     const response = await doFetch(url, {
@@ -483,36 +501,60 @@ export function espnProvider(options: EspnOptions): MatchDataProvider {
     return teamIdsCache
   }
 
-  function coreSeasonUrl(season: string | null): string {
+  function coreSeasonUrl(season: string): string {
     // The leaders and team aggregates are season-scoped; `types/1` is the one
     // season type football competitions publish.
-    return `${coreBaseUrl}/${league}/seasons/${encodeURIComponent(season ?? '')}/types/1`
+    return `${coreBaseUrl}/${league}/seasons/${encodeURIComponent(season)}/types/1`
+  }
+
+  // A $ref is a URL the upstream chose, so it is only followed when it points
+  // back at the core API we already trust: a hostile or spoofed response would
+  // otherwise make the server fetch an arbitrary address from inside its network.
+  const coreHost = (() => {
+    try {
+      return new URL(coreBaseUrl).host
+    } catch {
+      return null
+    }
+  })()
+
+  function trustedRef(ref: string | null | undefined): string | null {
+    if (!ref || !coreHost) return null
+    try {
+      // The board answers over http while the base is https; only the host matters.
+      return new URL(ref).host === coreHost ? ref : null
+    } catch {
+      return null
+    }
   }
 
   // A leaders entry points at its athlete and team rather than naming them, so
   // each row costs a follow-up. Teams repeat heavily across a top-25 board, so
   // they are resolved once and shared; athletes are unique and cannot be.
   async function resolveLeaders(season: string | null): Promise<TopScorer[]> {
+    // The core API is season-scoped; without one the path is malformed and the
+    // caller is better served falling through to its local aggregation.
+    if (!season) return []
     const data = await getJson<EspnLeaders>(`${coreSeasonUrl(season)}/leaders`)
-    const goals = data.categories?.find((c) => c.name === 'goalsLeaders')?.leaders ?? []
+    const goals = (data.categories?.find((c) => c.name === 'goalsLeaders')?.leaders ?? []).slice(0, MAX_LEADERS)
     if (!goals.length) return []
 
     const teamCache = new Map<string, { name: string; code: string | null }>()
     async function resolveTeam(ref: string | null | undefined) {
-      if (!ref) return { name: '', code: null }
-      const cached = teamCache.get(ref)
+      const trusted = trustedRef(ref)
+      if (!trusted) return { name: '', code: null }
+      const cached = teamCache.get(trusted)
       if (cached) return cached
-      const team = await getJson<{ displayName?: string | null; abbreviation?: string | null }>(ref)
+      const team = await getJson<{ displayName?: string | null; abbreviation?: string | null }>(trusted, refLimiter)
       const resolved = { name: team.displayName ?? '', code: team.abbreviation ?? null }
-      teamCache.set(ref, resolved)
+      teamCache.set(trusted, resolved)
       return resolved
     }
 
     const out: TopScorer[] = []
     for (const entry of goals) {
-      const athlete = entry.athlete?.$ref
-        ? await getJson<{ displayName?: string | null }>(entry.athlete.$ref)
-        : null
+      const athleteRef = trustedRef(entry.athlete?.$ref)
+      const athlete = athleteRef ? await getJson<{ displayName?: string | null }>(athleteRef, refLimiter) : null
       const team = await resolveTeam(entry.team?.$ref)
       out.push({
         playerName: athlete?.displayName ?? 'Unknown',
@@ -563,12 +605,21 @@ export function espnProvider(options: EspnOptions): MatchDataProvider {
       return parseEspnLineups(await summaryFor(matchId))
     },
 
-    async getMatchTimeline(opts: { matchId: string; homeTeamId?: string | null; awayTeamId?: string | null }) {
+    async getMatchTimeline(opts: {
+      matchId: string
+      homeTeamId?: string | null
+      awayTeamId?: string | null
+      language?: string | null
+    }) {
       const summary = await summaryFor(opts.matchId)
       const teams = espnSummaryTeams(summary)
       return parseEspnTimeline(summary, {
         homeTeamId: opts.homeTeamId ?? teams.homeId,
         awayTeamId: opts.awayTeamId ?? teams.awayId,
+        // ESPN's commentary is English only. Handing it to a French or Arabic
+        // reader would drop an untranslated sentence into an otherwise
+        // translated timeline, so the client's generic label wins instead.
+        withText: opts.language === 'en',
       })
     },
 
@@ -610,14 +661,19 @@ export function espnProvider(options: EspnOptions): MatchDataProvider {
       const head = roster.coach?.[0]
       const coach = head ? [head.firstName, head.lastName].filter(Boolean).join(' ').trim() || null : null
 
+      const season = seasonFor()
       let stats: TeamSeasonStats | null = null
       try {
+        if (!season) throw new Error('no season')
         const raw = await getJson<EspnTeamStatistics>(
-          `${coreSeasonUrl(seasonFor())}/teams/${encodeURIComponent(teamId)}/statistics`,
+          `${coreSeasonUrl(season)}/teams/${encodeURIComponent(teamId)}/statistics`,
         )
         stats = mapEspnSeasonStats(raw)
-      } catch {
-        // Season aggregates are a nicety; the squad alone is still worth having.
+      } catch (error) {
+        // A competition that publishes no aggregate is fine to shrug off, but a
+        // rate limit is not: the caller caches this result for six hours, so
+        // swallowing one would pin an empty stats panel there with no retry.
+        if (error instanceof ProviderRateLimitError) throw error
       }
 
       return { squad, coach, stats }

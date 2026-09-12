@@ -150,10 +150,15 @@ poll would return.
 `…/site/v2/sports/soccer/{league}/summary?event={id}` carries the play-by-play,
 both line-ups, both teams' stats and the venue in a single response, so
 `getMatchDetail`, `getMatchTimeline`, `getMatchLineups` and `getMatchStats` all
-read it and the adapter memoizes it per match: rendering a match page costs one
-request, not four. `getMatchDetail` hands its own event id back as `ifesId`
-precisely so `getMatchStats` hits that memo instead of fetching again. A failed
-fetch is evicted rather than cached. The parsing lives in
+read it, and the adapter memoizes it per match. Note what that memo does and does
+not buy: `providerForCompetition` builds a fresh adapter per HTTP request, so the
+memo collapses the method *pairs inside one route* (live-detail's detail + stats,
+timeline's detail + timeline) but not across routes - a first match-page render
+still costs three summary requests, one per route. `getMatchDetail` hands its own
+event id back as `ifesId` precisely so `getMatchStats` hits that memo instead of
+fetching again. A failed fetch is evicted rather than cached. The memo has no TTL
+or size bound because an instance lives for one request; anything that starts
+pooling adapters has to revisit it, or a LIVE match freezes at its first fetch. The parsing lives in
 [espn-summary.ts](../../apps/web-nuxt/server/utils/providers/espn-summary.ts) as
 pure functions over the document.
 
@@ -184,6 +189,24 @@ pure functions over the document.
   not. Bench players are all position `SUB`, so only the starting XI has real
   positions.
 
+- **A shootout leaves no per-kick events.** The summary emits type 88 "Start
+  Shootout" and 89 "End Match" and nothing between them, so the spot kicks cannot
+  leak into the timeline or the goal list; the shootout score comes from the
+  scoreboard's `shootoutScore` instead. Every keyEvent does carry a `shootout`
+  field, but it is always false - the guard on it is cheap defence, not the thing
+  doing the work. Checked against all four shootouts of the 2026 edition.
+- **ESPN matches carry a synthetic `providerStageId`** (the season slug). ESPN has
+  no stage concept, but `syncMatchDetails` only considers matches whose
+  `providerStageId` is set, so leaving it null means `goal_event` is never
+  written, the scorer board never builds from local data and the Golden Boot bonus
+  never pays out. The adapter's own `getMatchDetail` ignores the value.
+- **The timeline is returned newest-first**, like FIFA's and UEFA's - the route
+  documents that order and the play-by-play component does no sorting of its own.
+  The running score has to be accumulated forwards, so the parser reverses last.
+- **VAR commentary is English only**, so it is passed through solely when the
+  reader's locale is English; every other locale gets the client's generic label
+  rather than an untranslated sentence in the middle of a translated timeline.
+
 ### The season boards live on the other API
 
 The scorer board and the per-team season aggregate exist only on
@@ -194,10 +217,15 @@ The scorer board and the per-team season aggregate exist only on
   to an athlete and a team rather than a name. That is **one request per player**
   plus the teams (cached within the call, since a top-25 board repeats clubs
   heavily), so roughly 26-30 requests against the single request FIFA and UEFA
-  each need. The `/api/competitions/scorers` route caches its result, and the
-  local `goal_event` aggregation still runs first, so this is a cold-start cost
-  rather than a per-view one. Assists are read out of the board's own label
-  ("M: 8, G: 10: A: 4") to avoid a second `$ref` hop per player.
+  each need. Be careful about what that costs in wall clock: the adapter's main
+  limiter spaces requests a second apart, which would make this a ~30 second read
+  route, so the `$ref` hops run on their own much tighter limiter and the board is
+  capped at 25 rows. `/api/competitions/scorers` tries `getPlayerStats` **before**
+  the local `goal_event` aggregation, not after, so this path is reached whenever
+  its 10-minute cache has expired - it is only cheap because `matches:finalize`
+  keeps `goal_event` populated, which in turn is only true because ESPN matches
+  now carry a `providerStageId` (see below). Assists are read out of the board's
+  own label ("M: 8, G: 10: A: 4") to avoid a second `$ref` hop per player.
 - **`getTeamTournament`** maps the app's three-letter code to ESPN's numeric id
   through `…/{league}/teams` (48 entries, memoized per instance), then reads the
   squad and head coach from `…/teams/{id}/roster` and the season aggregate from

@@ -1153,10 +1153,12 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
       Done: the whole contract is implemented, and one memoized `summary`
       request serves detail + timeline + lineups + stats together.
 - [ ] ESPN's scorer board costs ~26-30 requests (one `$ref` per athlete on the
-      core API) against one for FIFA/UEFA. Cached by the scorers route and only
-      reached when the local `goal_event` aggregation is empty, so it is a
-      cold-start cost - but a competition that leans on it will feel it. If it
-      ever matters, the core API pages athletes in bulk somewhere worth finding.
+      core API) against one for FIFA/UEFA. Note the route tries `getPlayerStats`
+      BEFORE the local `goal_event` aggregation, so this runs on every 10-minute
+      cache expiry, not only as a cold start; it is affordable only because the
+      hops use a tighter limiter than the scoreboard's one-per-second. If a
+      competition leans on it, either flip the route to prefer local data or find
+      whether the core API pages athletes in bulk.
 - [ ] ESPN line-ups carry no coach (only the team endpoint has one, so a match
       line-up shows null while the team page shows a name), no captain flag, and
       no pitch coordinates - the pitch falls back to formation bands, as it

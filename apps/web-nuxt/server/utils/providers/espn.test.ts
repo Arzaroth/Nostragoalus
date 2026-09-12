@@ -783,10 +783,20 @@ describe('espnProvider getBracket', () => {
   })
 
   it('orders the semi-finals under the final side they feed', async () => {
-    const fetchImpl = vi.fn(async () => jsonResponse(knockoutScoreboard())) as unknown as typeof fetch
+    // The feed lists s1 (ESP) first, but the final is ARG vs ESP - so a correct
+    // ordering has to MOVE s2 above s1. Identity order would fail this.
+    const feed = knockoutScoreboard()
+    const final = feed.events[3].competitions[0].competitors
+    final[0].team = { id: 'ARG', displayName: 'ARG', abbreviation: 'ARG' }
+    final[0].winner = false
+    final[1].team = { id: 'ESP', displayName: 'ESP', abbreviation: 'ESP' }
+    final[1].winner = true
+
+    const fetchImpl = vi.fn(async () => jsonResponse(feed)) as unknown as typeof fetch
     const p = espnProvider({ league: 'fifa.world', season: '2026', fetchImpl, rateLimiter: noWait() })
     const bracket = (await p.getBracket!())!
-    expect(bracket.rounds[0].matches.map((m) => m.providerMatchId)).toEqual(['s1', 's2'])
+    expect(bracket.rounds[0].matches.map((m) => m.providerMatchId)).toEqual(['s2', 's1'])
+    expect(bracket.winner).toEqual({ name: 'ESP', code: 'ESP' })
   })
 
   it('has no bracket before a final exists', async () => {
@@ -802,8 +812,8 @@ describe('espnProvider season boards', () => {
       {
         name: 'goalsLeaders',
         leaders: [
-          { value: 10, shortDisplayValue: 'M: 8, G: 10: A: 4', athlete: { $ref: 'https://core/athletes/1' }, team: { $ref: 'https://core/teams/478' } },
-          { value: 8, shortDisplayValue: 'M: 7, G: 8', athlete: { $ref: 'https://core/athletes/2' }, team: { $ref: 'https://core/teams/478' } },
+          { value: 10, shortDisplayValue: 'M: 8, G: 10: A: 4', athlete: { $ref: 'https://sports.core.api.espn.com/athletes/1' }, team: { $ref: 'https://sports.core.api.espn.com/teams/478' } },
+          { value: 8, shortDisplayValue: 'M: 7, G: 8', athlete: { $ref: 'https://sports.core.api.espn.com/athletes/2' }, team: { $ref: 'https://sports.core.api.espn.com/teams/478' } },
         ],
       },
     ],
@@ -903,6 +913,25 @@ describe('espnProvider getTeamTournament', () => {
     expect(data.stats).toBeNull()
   })
 
+  it('surfaces a rate limit instead of caching an empty stats panel for six hours', async () => {
+    const fetchImpl = vi.fn(async (url: string) => {
+      if (url.includes('/statistics')) return new Response('', { status: 429 })
+      if (url.includes('/roster')) return jsonResponse(roster)
+      return jsonResponse(teams)
+    }) as unknown as typeof fetch
+    const p = espnProvider({ league: 'fifa.world', season: '2026', fetchImpl, rateLimiter: noWait() })
+    await expect(p.getTeamTournament!({ teamRef: 'ESP', matches: [] })).rejects.toBeInstanceOf(ProviderRateLimitError)
+  })
+
+  it('skips the season aggregate when no season is configured', async () => {
+    const fetchImpl = teamFetch()
+    const p = espnProvider({ league: 'fifa.world', fetchImpl, rateLimiter: noWait() })
+    const data = await p.getTeamTournament!({ teamRef: 'ESP', matches: [] })
+    expect(data.squad).toHaveLength(2)
+    expect(data.stats).toBeNull()
+    expect(urlsOf(fetchImpl).some((u) => u.includes('/statistics'))).toBe(false)
+  })
+
   it('returns nothing for a code ESPN does not carry', async () => {
     const p = espnProvider({ league: 'fifa.world', season: '2026', fetchImpl: teamFetch(), rateLimiter: noWait() })
     expect(await p.getTeamTournament!({ teamRef: 'ZZZ', matches: [] })).toEqual({ squad: [], coach: null, stats: null })
@@ -982,7 +1011,7 @@ describe('espnProvider defensive shapes', () => {
   it('reads a leaders row with no value or team as zero goals and no club', async () => {
     const fetchImpl = vi.fn(async (url: string) => {
       if (url.includes('/leaders')) {
-        return jsonResponse({ categories: [{ name: 'goalsLeaders', leaders: [{ athlete: { $ref: 'https://core/a/1' } }] }] })
+        return jsonResponse({ categories: [{ name: 'goalsLeaders', leaders: [{ athlete: { $ref: 'https://sports.core.api.espn.com/a/1' } }] }] })
       }
       return jsonResponse({})
     }) as unknown as typeof fetch
@@ -1003,11 +1032,56 @@ describe('espnProvider defensive shapes', () => {
     expect((await p.getTopScorers!({ season: '2026' }))[0]).toMatchObject({ teamName: '', teamCode: null, goals: 2 })
   })
 
-  it('asks the core api without a season when none is configured', async () => {
+  it('does not call the season-scoped core api when no season is known', async () => {
     const fetchImpl = vi.fn(async () => jsonResponse({ categories: [] })) as unknown as typeof fetch
     const p = espnProvider({ league: 'fifa.world', fetchImpl, rateLimiter: noWait() })
-    await p.getTopScorers!({ season: '' })
-    expect(urlsOf(fetchImpl)[0]).toContain('/seasons//types/1/leaders')
+    expect(await p.getTopScorers!({ season: '' })).toEqual([])
+    expect(urlsOf(fetchImpl)).toHaveLength(0)
+  })
+
+  it('refuses to follow a $ref pointing off the core api host', async () => {
+    const fetchImpl = vi.fn(async (url: string) => {
+      if (url.includes('/leaders')) {
+        return jsonResponse({
+          categories: [
+            {
+              name: 'goalsLeaders',
+              leaders: [{ value: 4, athlete: { $ref: 'http://169.254.169.254/latest/meta-data' }, team: { $ref: 'http://127.0.0.1:3000/api' } }],
+            },
+          ],
+        })
+      }
+      return jsonResponse({})
+    }) as unknown as typeof fetch
+    const p = espnProvider({ league: 'fifa.world', season: '2026', fetchImpl, rateLimiter: noWait() })
+    expect((await p.getTopScorers!({ season: '2026' }))[0]).toMatchObject({ playerName: 'Unknown', teamName: '' })
+    // Only the leaders board itself was fetched.
+    expect(urlsOf(fetchImpl)).toHaveLength(1)
+  })
+
+  it.each([
+    ['a ref that is not a url at all', 'not a url', 'https://sports.core.api.espn.com'],
+    ['any ref when the core base url is unparseable', 'https://sports.core.api.espn.com/a/1', 'nonsense'],
+  ])('refuses to follow %s', async (_label, ref, coreBaseUrl) => {
+    const fetchImpl = vi.fn(async (url: string) => {
+      if (url.includes('/leaders')) {
+        return jsonResponse({ categories: [{ name: 'goalsLeaders', leaders: [{ value: 1, athlete: { $ref: ref } }] }] })
+      }
+      return jsonResponse({})
+    }) as unknown as typeof fetch
+    const p = espnProvider({ league: 'fifa.world', season: '2026', coreBaseUrl, fetchImpl, rateLimiter: noWait() })
+    expect((await p.getTopScorers!({ season: '2026' }))[0].playerName).toBe('Unknown')
+    expect(urlsOf(fetchImpl)).toHaveLength(1)
+  })
+
+  it('caps the board so a runaway response cannot fan out without bound', async () => {
+    const many = Array.from({ length: 200 }, (_, i) => ({ value: i, athlete: { $ref: `https://sports.core.api.espn.com/a/${i}` } }))
+    const fetchImpl = vi.fn(async (url: string) => {
+      if (url.includes('/leaders')) return jsonResponse({ categories: [{ name: 'goalsLeaders', leaders: many }] })
+      return jsonResponse({ displayName: 'Someone' })
+    }) as unknown as typeof fetch
+    const p = espnProvider({ league: 'fifa.world', season: '2026', fetchImpl, rateLimiter: noWait() })
+    expect(await p.getTopScorers!({ season: '2026' })).toHaveLength(25)
   })
 
   it('honours an overridden core base url', async () => {
@@ -1044,6 +1118,11 @@ describe('mapEspnSeasonStats', () => {
     expect(mapEspnSeasonStats({})).toBeNull()
     expect(mapEspnSeasonStats({ splits: { categories: [] } })).toBeNull()
     expect(mapEspnSeasonStats({ splits: { categories: [{}] } })).toBeNull()
+  })
+
+  it('treats a zero possession as unpublished rather than a team without the ball', () => {
+    const stats = mapEspnSeasonStats({ splits: { categories: [{ stats: [{ name: 'possessionPct', value: 0 }] }] } })!
+    expect(stats.possession).toBeNull()
   })
 
   it('reads a stat published with no value as null', () => {

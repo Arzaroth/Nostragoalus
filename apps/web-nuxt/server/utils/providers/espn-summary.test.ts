@@ -93,26 +93,28 @@ const summary: EspnSummary = {
     teams: [
       {
         team: { id: HOME },
+        // The live feed ships these as displayValue strings with no `value`,
+        // so the fixture does too - testing the branch production actually runs.
         statistics: [
-          { name: 'possessionPct', value: 65.1 },
-          { name: 'totalShots', value: 20 },
-          { name: 'shotsOnTarget', value: 12 },
-          { name: 'totalPasses', value: 853 },
-          { name: 'accuratePasses', value: 763 },
-          { name: 'totalCrosses', value: 27 },
-          { name: 'wonCorners', value: 9 },
-          { name: 'foulsCommitted', value: 21 },
-          { name: 'offsides', value: 4 },
-          { name: 'yellowCards', value: 0 },
-          { name: 'redCards', value: 0 },
+          { name: 'possessionPct', displayValue: '65.1' },
+          { name: 'totalShots', displayValue: '20' },
+          { name: 'shotsOnTarget', displayValue: '12' },
+          { name: 'totalPasses', displayValue: '853' },
+          { name: 'accuratePasses', displayValue: '763' },
+          { name: 'totalCrosses', displayValue: '27' },
+          { name: 'wonCorners', displayValue: '9' },
+          { name: 'foulsCommitted', displayValue: '21' },
+          { name: 'offsides', displayValue: '4' },
+          { name: 'yellowCards', displayValue: '0' },
+          { name: 'redCards', displayValue: '0' },
         ],
       },
       {
         team: { id: AWAY },
         statistics: [
-          { name: 'possessionPct', value: 34.9 },
-          { name: 'yellowCards', value: 4 },
-          { name: 'redCards', value: 1 },
+          { name: 'possessionPct', displayValue: '34.9' },
+          { name: 'yellowCards', displayValue: '4' },
+          { name: 'redCards', displayValue: '1' },
         ],
       },
     ],
@@ -167,20 +169,23 @@ describe('espnEventKind', () => {
 })
 
 describe('parseEspnTimeline', () => {
-  const events = parseEspnTimeline(summary, { homeTeamId: HOME, awayTeamId: AWAY })
+  const events = parseEspnTimeline(summary, { homeTeamId: HOME, awayTeamId: AWAY, withText: true })
 
-  it('keeps only the meaningful rows', () => {
+  it('keeps only the meaningful rows, newest first like every other provider', () => {
     expect(events.map((e) => e.kind)).toEqual([
-      'period', 'yellow', 'sub', 'period', 'period', 'goal', 'own-goal', 'penalty-goal', 'red', 'var', 'period',
+      'period', 'var', 'red', 'penalty-goal', 'own-goal', 'goal', 'period', 'period', 'sub', 'yellow', 'period',
     ])
+    // Oldest event last: the feed's kickoff marker.
+    expect(events.at(-1)!.periodKind).toBe('kickoff')
   })
 
   it('runs the score forward, counting an own goal for the side it benefits', () => {
     const goals = events.filter((e) => ['goal', 'own-goal', 'penalty-goal'].includes(e.kind))
+    // Newest first, so the running score reads downwards as it was built.
     expect(goals.map((g) => [g.kind, g.side, g.homeScore, g.awayScore])).toEqual([
-      ['goal', 'HOME', 1, 0],
-      ['own-goal', 'HOME', 2, 0],
       ['penalty-goal', 'AWAY', 2, 1],
+      ['own-goal', 'HOME', 2, 0],
+      ['goal', 'HOME', 1, 0],
     ])
   })
 
@@ -202,7 +207,7 @@ describe('parseEspnTimeline', () => {
 
   it('labels the period markers and gives a period row no side', () => {
     const periods = events.filter((e) => e.kind === 'period')
-    expect(periods.map((p) => p.periodKind)).toEqual(['kickoff', 'half-time', 'second-half', 'full-time'])
+    expect(periods.map((p) => p.periodKind)).toEqual(['full-time', 'second-half', 'half-time', 'kickoff'])
     expect(periods.every((p) => p.side === null)).toBe(true)
   })
 
@@ -211,12 +216,52 @@ describe('parseEspnTimeline', () => {
       { keyEvents: [ev('83', 'End Regular Time', { team: null }), ev('84', 'Start Extra Time', { team: null })] },
       { homeTeamId: HOME, awayTeamId: AWAY },
     )
-    expect(withEt.map((e) => e.periodKind)).toEqual(['second-half-end', 'extra-time'])
+    expect(withEt.map((e) => e.periodKind)).toEqual(['extra-time', 'second-half-end'])
   })
 
   it('leaves the side null when the team matches neither', () => {
     const orphan = parseEspnTimeline({ keyEvents: [ev('94', 'Yellow Card', { team: { id: '999' } })] }, { homeTeamId: HOME, awayTeamId: AWAY })
     expect(orphan[0].side).toBeNull()
+  })
+
+  it('labels the end of extra time', () => {
+    const et = parseEspnTimeline(
+      { keyEvents: [ev('84', 'Start Extra Time', { team: null }), ev('87', 'End Extra Time', { team: null })] },
+      { homeTeamId: HOME, awayTeamId: AWAY },
+    )
+    expect(et.map((e) => e.periodKind)).toEqual(['extra-time-end', 'extra-time'])
+  })
+
+  it('withholds the English commentary from a locale the feed does not translate', () => {
+    const rows = parseEspnTimeline(summary, { homeTeamId: HOME, awayTeamId: AWAY })
+    expect(rows.find((e) => e.kind === 'var')!.text).toBeNull()
+  })
+
+  it.each(['constructor', 'toString', 'valueOf', '__proto__'])(
+    'does not read the prototype member %s as a period marker',
+    (type) => {
+      expect(parseEspnTimeline({ keyEvents: [ev(type, 'Odd')] }, { homeTeamId: HOME })).toEqual([])
+    },
+  )
+
+  it('keeps an actor id paired with its own name', () => {
+    // The first participant has an id but no name; compacting names separately
+    // would label the scorer with the assister's name.
+    const events: EspnKeyEvent[] = [
+      {
+        type: { id: '70' },
+        scoringPlay: true,
+        team: { id: HOME },
+        clock: { displayValue: "10'" },
+        participants: [{ athlete: { id: 'A' } }, { athlete: { id: 'B', displayName: 'Bob' } }],
+      },
+    ]
+    expect(parseEspnGoals({ keyEvents: events }, TEAMS)[0]).toMatchObject({
+      playerId: 'A',
+      playerName: 'Unknown',
+      assistPlayerId: 'B',
+      assistPlayerName: 'Bob',
+    })
   })
 
   it('tolerates a document with no events', () => {
@@ -254,25 +299,25 @@ describe('parseEspnGoals', () => {
 
 describe('parseEspnBookings', () => {
   it('reads both cards with their side', () => {
-    expect(parseEspnBookings(summary, HOME)).toEqual([
+    expect(parseEspnBookings(summary, HOME, AWAY)).toEqual([
       { side: 'AWAY', playerId: '1', playerName: 'Lisandro Martínez', minute: "41'", card: 'YELLOW' },
       { side: 'AWAY', playerId: '7', playerName: 'Sent Off', minute: "85'", card: 'RED' },
     ])
   })
 
   it('reads a second yellow as its own card', () => {
-    const second = parseEspnBookings({ keyEvents: [ev('95', 'Yellow Card 2', { participants: [athlete('9', 'Booked')] })] }, HOME)
+    const second = parseEspnBookings({ keyEvents: [ev('95', 'Yellow Card 2', { participants: [athlete('9', 'Booked')] })] }, HOME, AWAY)
     expect(second[0].card).toBe('SECOND_YELLOW')
   })
 
   it('skips a booking with no team', () => {
-    expect(parseEspnBookings({ keyEvents: [ev('94', 'Yellow Card', { team: null })] }, HOME)).toEqual([])
+    expect(parseEspnBookings({ keyEvents: [ev('94', 'Yellow Card', { team: null })] }, HOME, AWAY)).toEqual([])
   })
 })
 
 describe('parseEspnSubstitutions', () => {
   it('reads the pair in the feed order, on first', () => {
-    expect(parseEspnSubstitutions(summary, HOME)).toEqual([
+    expect(parseEspnSubstitutions(summary, HOME, AWAY)).toEqual([
       {
         side: 'AWAY',
         minute: "44'",
@@ -285,7 +330,7 @@ describe('parseEspnSubstitutions', () => {
   })
 
   it('skips a substitution with no team', () => {
-    expect(parseEspnSubstitutions({ keyEvents: [ev('76', 'Substitution', { team: null })] }, HOME)).toEqual([])
+    expect(parseEspnSubstitutions({ keyEvents: [ev('76', 'Substitution', { team: null })] }, HOME, AWAY)).toEqual([])
   })
 })
 
@@ -312,6 +357,15 @@ describe('parseEspnMatchStats', () => {
     expect(parseEspnMatchStats(summary)[AWAY]).toMatchObject({ attempts: null, passes: null, possession: 34.9 })
   })
 
+  it('does not report one team twice when only one side can be matched', () => {
+    const doc: EspnSummary = {
+      boxscore: { teams: [{ team: { id: AWAY }, statistics: [{ name: 'possessionPct', displayValue: '40' }] }] },
+    }
+    const detail = parseEspnMatchDetail(doc, '1', TEAMS)
+    expect(detail.possessionHome).toBeNull()
+    expect(detail.possessionAway).toBe(40)
+  })
+
   it('skips a boxscore team with no id, and tolerates an empty document', () => {
     expect(parseEspnMatchStats({ boxscore: { teams: [{ statistics: [] }] } })).toEqual({})
     expect(parseEspnMatchStats({})).toEqual({})
@@ -335,6 +389,14 @@ describe('mapEspnPosition', () => {
     ['CF-L', 'FW'],
     ['RF', 'FW'],
     ['RCF', 'FW'],
+    ['LCF', 'FW'],
+    ['RCB', 'DF'],
+    ['LCB', 'DF'],
+    ['RW', 'MF'],
+    ['LW', 'MF'],
+    ['ST', 'FW'],
+    ['D', 'DF'],
+    ['GK', 'GK'],
   ])('maps the played position %s to %s', (abbr, expected) => {
     expect(mapEspnPosition(abbr)).toBe(expected)
   })
@@ -372,6 +434,22 @@ describe('parseEspnLineups', () => {
       ],
     }
     expect(parseEspnLineups(early)!.available).toBe(false)
+  })
+
+  it('does not render one published side as both when only it is labelled', () => {
+    const doc: EspnSummary = {
+      rosters: [
+        {
+          homeAway: 'away',
+          team: { id: AWAY, displayName: 'Argentina' },
+          roster: [{ starter: true, jersey: '10', position: { abbreviation: 'AM' }, athlete: { id: '20', displayName: 'Lionel Messi' } }],
+        },
+      ],
+    }
+    const lineups = parseEspnLineups(doc)!
+    expect(lineups.away.startingXI).toHaveLength(1)
+    expect(lineups.home.startingXI).toEqual([])
+    expect(lineups.available).toBe(false)
   })
 
   it('returns null when the document carries no rosters at all', () => {
@@ -425,24 +503,24 @@ describe('malformed payloads', () => {
       ],
     }
     expect(parseEspnTimeline(bare, { homeTeamId: HOME, awayTeamId: AWAY })).toMatchObject([
-      { kind: 'goal', minute: null, playerName: null },
-      { kind: 'yellow', minute: null },
       { kind: 'sub', minute: null, playerInName: null, playerOutName: null },
+      { kind: 'yellow', minute: null },
+      { kind: 'goal', minute: null, playerName: null },
     ])
-    expect(parseEspnBookings(bare, HOME)).toEqual([{ side: 'HOME', playerId: null, playerName: 'Unknown', minute: null, card: 'YELLOW' }])
-    expect(parseEspnSubstitutions(bare, HOME)).toEqual([
+    expect(parseEspnBookings(bare, HOME, AWAY)).toEqual([{ side: 'HOME', playerId: null, playerName: 'Unknown', minute: null, card: 'YELLOW' }])
+    expect(parseEspnSubstitutions(bare, HOME, AWAY)).toEqual([
       { side: 'HOME', minute: null, playerOnId: null, playerOnName: 'Unknown', playerOffId: null, playerOffName: 'Unknown' },
     ])
   })
 
   it('ignores a participant carrying no name', () => {
     const events: EspnKeyEvent[] = [{ type: { id: '94' }, team: { id: AWAY }, participants: [{ athlete: { id: '1' } }, { athlete: null }] }]
-    expect(parseEspnBookings({ keyEvents: events }, HOME)[0].playerName).toBe('Unknown')
+    expect(parseEspnBookings({ keyEvents: events }, HOME, AWAY)[0].playerName).toBe('Unknown')
   })
 
   it('treats a VAR event with no text as having none', () => {
     const events: EspnKeyEvent[] = [{ type: { id: '900', text: 'VAR - Goal Review' }, team: { id: HOME } }]
-    expect(parseEspnTimeline({ keyEvents: events }, { homeTeamId: HOME })[0]).toMatchObject({ kind: 'var', text: null })
+    expect(parseEspnTimeline({ keyEvents: events }, { homeTeamId: HOME, withText: true })[0]).toMatchObject({ kind: 'var', text: null })
   })
 
   it('leaves the running score alone for a goal it cannot attribute', () => {
