@@ -735,19 +735,130 @@ effort buckets; order within a bucket is not priority.
     link/code the owner distributes; claiming binds a real account.
   - Imported standings are historical flavor (shown on the league), not
     points in our ladder - scoring systems don't translate.
+- [ ] **Competition admin (discovery + provider bindings)** - the prerequisite
+      for "More competitions" below. Today the supported set is two dev-owned
+      code constants (`DEFAULT_COMPETITIONS` in
+      `apps/web-nuxt/server/utils/competitions/store.ts`, `DEFAULT_COMPETITION`
+      in `apps/web-nuxt/shared/competition.ts`), so adding a tournament is a
+      deploy. Make it an admin task:
+  - **Default competition -> `appSetting`** (the KV store already exists).
+    Ships alone. Catch: `DEFAULT_COMPETITION` is a build-time import used by the
+    isomorphic deep-link builder (`shared/types/notifications.ts`), which has a
+    Dart twin, so it becomes a parameter and the parity vectors move with it.
+  - **`competition_provider` bindings table**, not a provider field on the row.
+    The row already carries a second provider for odds, and capabilities
+    genuinely differ: ESPN is fixtures-only, FIFA has bracket + timeline +
+    player stats, so the best World Cup config may be fixtures from ESPN with
+    bracket/detail from FIFA. Add the table up front - one-provider-per-row is
+    assumed at every `createProvider()` call site. First cut uses one binding
+    for everything; per-capability routing later.
+  - **Optional `discoverCompetitions?()`** on `MatchDataProvider`, matching the
+    existing optional-method style. FIFA / ESPN / football-data can enumerate;
+    UEFA is a curated static id list; fixture has none.
+  - **The dry-run probe is the actual value**, not the listing. Normalize a
+    season without writing and report what came back (fixture count, how many
+    resolved a matchday, groups, bracket/detail availability). Without it an
+    admin picks "Premier League" from a nice dropdown and gets a competition
+    with zero matches and no error anywhere: `assignGroupMatchdays` keys off the
+    group letter, `findRoundId` looks a null matchday up as `IS NULL`, and every
+    group fixture is silently skipped at insert. The probe's verdict is also the
+    gate on which formats are allowed at all, rather than an admin-set dropdown
+    - an admin has no way to know `uefa.champions` changed format in 2024.
+  - **Switching provider on an existing competition is the dangerous op**, not
+    add/remove. Match identity is `match_provider_uq (competitionId,
+    providerMatchId)`, so a fifa -> espn flip inserts a second full set of
+    matches under new ids while every prediction still points at the orphans.
+    Free choice before the first sync; afterwards gate it behind an explicit
+    re-key job (match old to new on kickoff + team codes, rewrite
+    `providerMatchId` in one transaction, preview the matched count first).
+  - **Remove = archive.** `competition` cascades into round, match,
+    `competition_award`, `user_achievement`, `showcase_pin`, with leagues and
+    chat hanging off it; `isActive=false` already hides it from the switcher.
+    Hard delete only at zero predictions, behind a typed confirm. Slugs are
+    validated at creation and immutable after - they sit in every URL, the
+    `ng-competition` cookie, share images and push deep-links.
 - [ ] **More competitions**:
-  - Spike order: UCL 2025-26 first (check the UEFA API covers it; cheap test
-    of long-format comps in the round model), then EU top-5 leagues, then
-    rugby (WC + 6 Nations), then LoL Worlds / CS majors.
-  - Rugby: closeness tiers need retuning (27-24 scorelines, rare draws);
-    sport switch drives theme or at least logo.
+  - **Classify phases, not competitions.** "League vs cup" is a property of a
+    phase, and `round.kind` (`GROUP_MATCHDAY | KNOCKOUT`) already half-models it.
+    Store **topology** (`MULTI_GROUP | SINGLE_TABLE | KNOCKOUT`) and **legs**
+    (1 or 2) per phase and the hybrids dissolve: World Cup = groups + single-leg
+    KO, Premier League = one table, Top14 and the new UCL = table + KO, differing
+    only in legs. Pairing (round-robin vs UCL's partial 8-of-35) needs no column;
+    it falls out of the fixtures.
+  - **`sport` is a first-class field on the competition**, driving theme/logo,
+    ranking source, scoring preset and provider family.
+  - **Revised spike order** (the old "UCL first, a cheap test of long-format
+    comps" was backwards - it is the hardest of the lot): rugby **World Cup**
+    first, since pools + single-leg KO is exactly the format already supported
+    and it exercises only the sport abstraction; then **6 Nations**, the ideal
+    first `SINGLE_TABLE` (6 teams, 5 rounds, 15 matches, so volume is a
+    non-issue and the matchday-without-a-group-letter plumbing gets proven
+    cheaply); then EU top-5 leagues; then UCL; then LoL Worlds / CS majors.
+  - **Two-legged ties are the real cost of the new UCL**, not the table shape,
+    and nothing models them today: `round_competition_stage_matchday_uq
+    (competitionId, stage, matchday)` forbids two rounds for one stage, the
+    bracket is one match per tie, scoring has no aggregate concept, and
+    `stageEnum` has no value for the league-phase playoff round. Its own
+    feature, sequenced after the admin work. Later generalizes to best-of-N.
+  - Rugby: closeness tiers need retuning. Exact 3 / diff 2 / outcome 1
+    degenerates when nobody guesses 27-24, so exact collapses into luck. Port to
+    **margin bands** (correct winner + margin in 1-7 / 8-14 / 15+), which
+    generalizes the existing `diff` tier rather than replacing the engine. Also
+    World Rugby rankings instead of FIFA for champion tiers, tries rather than
+    goals through `goal_event` and the timeline, and two top-scorer boards
+    (tries and points). ESPN covers rugby under `sports/rugby/`. Sport switch
+    drives theme or at least logo. Multi-sport is a MAJOR.
+  - Basketball: wanted, but **NBA playoffs is not a smaller NBA** - best-of-7 is
+    variable-length multi-leg, a generalization of the UCL problem rather than
+    an escape from it. No draws and 110-point scorelines collapse exact and diff
+    both, leaving outcome near a coin flip, so it needs a third (spread) scoring
+    model. Parked until rugby proves the per-sport preset works.
   - Esports: series scores (3-1 in maps) fit the existing score model.
   - UX: the default never changes - football internationals, zero questions
     asked, no onboarding quiz. Per-user **followed competitions** set; pill
-    switcher shows followed + "more..." browser; following is the lazy
-    opt-in. Long club comps default to a **featured view** (top-table
-    clashes + the user's followed teams), full matchday behind a tab.
-    Picking stays optional per match; rankings stay total-points.
+    switcher shows followed + "more..." browser; following is the lazy opt-in.
+- [ ] **Followed team + highlighted fixtures** - what makes long league
+      competitions playable at all. 380 matches a season is unplayable, and most
+      of them are teams you don't care about:
+  - You pick **one team per competition, locked** once set (otherwise people
+    swap to whoever is hot). Your highlighted set is your team's matches plus
+    the "big games", and you may still fill anything else.
+  - **Fixed-size highlighted set of N** per competition: take your team's
+    matches, then fill up to N with the highest-ranked big games you don't
+    already have. Without this the asymmetry runs backwards - a big-club
+    follower's team matches largely *are* the big games, so the high overlap
+    leaves them a *smaller* set (~43) than a small-club follower (~66). N is the
+    single knob controlling how much work a season asks of a player.
+  - **Big games: one pluggable highlight-rule list**, shipping two rules (your
+    team; top-X vs top-X). Derbies, relegation six-pointers and title deciders
+    then drop in with no schema change. The admin knob is which rules are on,
+    plus X. All-time ranking is static (the same six clubs forever); the current
+    table has a bootstrap hole (matchdays 1-5 are noise), so seed from last
+    season's final table and blend into the live one.
+  - **Reduced weight alone does not work, cap it.** 380 matches, ~60
+    highlighted: a grinder filling everything gets 60 full + 320 at weight `w`,
+    and at `w = 0.25` that is 80 effective extra matches, more than the entire
+    highlighted set. Keeping the focused player competitive would need
+    `w ~ 0.03`, which makes optional matches decorative. Instead: **all
+    highlighted count, plus your best K optional ones at weight `w`.** Everyone's
+    maximum contributable volume is then identical, so totals stay directly
+    comparable - no rate-based ranking and no minimum-volume floor needed
+    anywhere. Best-K is monotonic, so a total never goes backwards as results
+    land. K and `w` are admin knobs.
+  - **Per-user weighting needs no new machinery.** The joker is already a
+    per-user, per-prediction multiplier resolved at scoring and frozen on the row
+    as `jokerMultiplierApplied`, so a `highlightWeightApplied` sits beside it and
+    the leaderboard keeps summing `totalPoints`. There is no global "optional
+    match" anywhere in the schema - highlighting is per-user by construction.
+  - **Freeze the volatile rule at match lock, not pick time.** The followed-team
+    rule is static once the team is locked, but top-X-vs-top-X moves with the
+    table. Resolving at kickoff keeps it identical for every user on that match,
+    so nobody is penalised for having picked early. Precedent: the champion tier
+    snapshots the FIFA rank at pick time for the same reason.
+  - Difficulty is **already handled** and needs no new mechanic: `bonusSource`
+    (`CROWD` / `ODDS`) already pays more for longer odds and rarer correct calls,
+    so a small-club follower's harder fixtures are already worth more per match.
+    Tune the existing knobs rather than stacking a difficulty multiplier on top.
 - [~] **Mobile / desktop apps** (tech showcase, no store publishing planned):
   - [x] PWA first regardless (see push above).
   - [x] **Native mobile client in Flutter/Dart**, not Tauri: `apps/mobile-flutter/app/`.
