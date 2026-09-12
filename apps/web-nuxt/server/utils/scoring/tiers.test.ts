@@ -4,6 +4,7 @@ import {
   classifyTier,
   DEFAULT_BASE_POINTS,
   goalDifference,
+  marginBandOf,
   outcomeOf,
   type BaseTier,
 } from './tiers'
@@ -76,5 +77,68 @@ describe('basePointsFor', () => {
     expect(basePointsFor('DIFF', custom)).toBe(5)
     expect(basePointsFor('OUTCOME', custom)).toBe(2)
     expect(basePointsFor('MISS', custom)).toBe(-1)
+  })
+})
+
+describe('marginBandOf', () => {
+  it('gives every margin its own band when there are none', () => {
+    // This is what keeps football identical: band equality collapses back into
+    // exact goal-difference equality.
+    expect(marginBandOf(3, null)).toBe(3)
+    expect(marginBandOf(-3, null)).toBe(3)
+    expect(marginBandOf(0, null)).toBe(0)
+    expect(marginBandOf(3, [])).toBe(3)
+  })
+
+  it('buckets a margin by the first bound it fits under', () => {
+    const bands = [7, 14]
+    expect(marginBandOf(1, bands)).toBe(0)
+    expect(marginBandOf(7, bands)).toBe(0)
+    expect(marginBandOf(8, bands)).toBe(1)
+    expect(marginBandOf(14, bands)).toBe(1)
+    expect(marginBandOf(15, bands)).toBe(2)
+    expect(marginBandOf(60, bands)).toBe(2)
+  })
+
+  it('ignores which side is ahead', () => {
+    expect(marginBandOf(-9, [7, 14])).toBe(marginBandOf(9, [7, 14]))
+  })
+
+  it('puts a draw in the first band', () => {
+    expect(marginBandOf(0, [7, 14])).toBe(0)
+  })
+})
+
+describe('classifyTier with margin bands', () => {
+  const RUGBY = [7, 14]
+
+  it('rewards a margin in the same band as DIFF', () => {
+    // 31-24 is a 7-point win; 27-24 is a 3-point win. Different margins, same
+    // band - one converted try - so it reads as the close call it was.
+    expect(classifyTier({ home: 27, away: 24 }, { home: 31, away: 24 }, RUGBY)).toBe('DIFF')
+  })
+
+  it('drops a correct winner in the wrong band to OUTCOME', () => {
+    expect(classifyTier({ home: 38, away: 24 }, { home: 31, away: 24 }, RUGBY)).toBe('OUTCOME')
+  })
+
+  it('still pays EXACT for the exact scoreline', () => {
+    expect(classifyTier({ home: 31, away: 24 }, { home: 31, away: 24 }, RUGBY)).toBe('EXACT')
+  })
+
+  it('still calls the wrong winner a MISS', () => {
+    expect(classifyTier({ home: 20, away: 30 }, { home: 31, away: 24 }, RUGBY)).toBe('MISS')
+  })
+
+  it('treats any drawn guess as the same band as any other draw', () => {
+    expect(classifyTier({ home: 20, away: 20 }, { home: 17, away: 17 }, RUGBY)).toBe('DIFF')
+  })
+
+  it('is unchanged from exact-difference matching when no bands are given', () => {
+    // The football path, asserted against the banded call explicitly so a future
+    // default cannot quietly reband every existing competition.
+    expect(classifyTier({ home: 3, away: 1 }, { home: 2, away: 0 })).toBe('DIFF')
+    expect(classifyTier({ home: 4, away: 1 }, { home: 2, away: 0 })).toBe('OUTCOME')
+    expect(classifyTier({ home: 4, away: 1 }, { home: 2, away: 0 }, RUGBY)).toBe('DIFF')
   })
 })

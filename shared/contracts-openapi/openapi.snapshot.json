@@ -2548,6 +2548,16 @@
                               "jokerAppliesToBonus": {
                                 "type": "boolean"
                               },
+                              "marginBands": {
+                                "nullable": true,
+                                "maxItems": 10,
+                                "type": "array",
+                                "items": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 1000
+                                }
+                              },
                               "championBonus": {
                                 "type": "integer",
                                 "minimum": 0,
@@ -2690,6 +2700,7 @@
                               "base",
                               "jokerMultiplier",
                               "jokerAppliesToBonus",
+                              "marginBands",
                               "championBonus",
                               "championTiers",
                               "bestScorerBonus",
@@ -2814,6 +2825,16 @@
                       },
                       "jokerAppliesToBonus": {
                         "type": "boolean"
+                      },
+                      "marginBands": {
+                        "nullable": true,
+                        "maxItems": 10,
+                        "type": "array",
+                        "items": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 1000
+                        }
                       },
                       "championBonus": {
                         "type": "integer",
@@ -2953,6 +2974,7 @@
                       "base",
                       "jokerMultiplier",
                       "jokerAppliesToBonus",
+                      "marginBands",
                       "championBonus",
                       "championTiers",
                       "bestScorerBonus",

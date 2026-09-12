@@ -40,6 +40,19 @@ Scoring is MPP-style and lives in `apps/web-nuxt/server/utils/scoring/`
    - `DIFF` = 2 (right goal difference, wrong scoreline)
    - `OUTCOME` = 1 (right winner/draw only)
    - `MISS` = 0
+
+   `DIFF` is really "same margin band", with football's bands being one per
+   margin so it reduces to exact goal difference. `scoringConfig.marginBands`
+   holds the upper bounds; null is football. Rugby ships `[7, 14]` (1-7 = one
+   converted try, 8-14, 15+) because an exact rugby scoreline is luck rather
+   than judgement - so the rugby preset also moves `EXACT` to a lottery-sized
+   5 with `DIFF` at 3, and switches the crowd basis to `OUTCOME`. That last one
+   is not taste: exact rugby scores are nearly all unique, so on `EXACT` basis
+   the share is tiny for everyone and the top rarity tier pays out to the whole
+   field. See `rulesForSport` and `RUGBY_UNION_RULES` in
+   `apps/web-nuxt/server/utils/scoring/config.ts`; a non-football competition
+   gets the preset as an ordinary, editable per-competition override the moment
+   it is created (`competitions/service.ts`).
 2. **Crowd-rarity bonus** - rewards going against the crowd, computed from the
    global locked histogram of all predictions for that match. The denominator is
    always global and never shrinks for league views; `crowdMinDenominator`

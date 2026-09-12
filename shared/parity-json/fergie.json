@@ -103,6 +103,7 @@
           },
           "jokerMultiplier": 2,
           "jokerAppliesToBonus": true,
+          "marginBands": null,
           "championBonus": 10,
           "championTiers": [
             {
@@ -295,6 +296,7 @@
           },
           "jokerMultiplier": 2,
           "jokerAppliesToBonus": true,
+          "marginBands": null,
           "championBonus": 10,
           "championTiers": [
             {
@@ -459,6 +461,7 @@
           },
           "jokerMultiplier": 2,
           "jokerAppliesToBonus": true,
+          "marginBands": null,
           "championBonus": 10,
           "championTiers": [
             {
@@ -555,6 +558,7 @@
           },
           "jokerMultiplier": 2,
           "jokerAppliesToBonus": true,
+          "marginBands": null,
           "championBonus": 10,
           "championTiers": [
             {
@@ -832,6 +836,7 @@
           },
           "jokerMultiplier": 2,
           "jokerAppliesToBonus": true,
+          "marginBands": null,
           "championBonus": 10,
           "championTiers": [
             {
@@ -1168,6 +1173,7 @@
           },
           "jokerMultiplier": 2,
           "jokerAppliesToBonus": true,
+          "marginBands": null,
           "championBonus": 10,
           "championTiers": [
             {
@@ -1384,6 +1390,7 @@
           },
           "jokerMultiplier": 2,
           "jokerAppliesToBonus": true,
+          "marginBands": null,
           "championBonus": 10,
           "championTiers": [
             {
@@ -1529,6 +1536,7 @@
           },
           "jokerMultiplier": 2,
           "jokerAppliesToBonus": true,
+          "marginBands": null,
           "championBonus": 10,
           "championTiers": [
             {
@@ -1794,6 +1802,7 @@
           },
           "jokerMultiplier": 2,
           "jokerAppliesToBonus": true,
+          "marginBands": null,
           "championBonus": 10,
           "championTiers": [
             {

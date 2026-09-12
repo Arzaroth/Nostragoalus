@@ -4,6 +4,7 @@ interface OddsTier { minDecimalOdds: number; bonus: number }
 interface ChampionTier { maxRank: number | null; points: number }
 interface Rules {
   base: { exact: number; diff: number; outcome: number; miss: number }
+  marginBands: number[] | null
   jokerMultiplier: number
   jokerAppliesToBonus: boolean
   championBonus: number
@@ -55,6 +56,22 @@ function loadScope() {
   form.value = clone((override ?? defaultEntry.value)?.rules ?? null as unknown as Rules)
 }
 watch([scope, data], loadScope, { immediate: true })
+
+// Edited as free text ("7, 14") rather than a tier editor: the list is two or
+// three numbers and empty means football, which a row-adder makes clumsier than
+// it needs to be. Anything unparseable reads as empty rather than throwing - the
+// zod schema is what actually refuses a bad list on save.
+const marginBandsText = computed({
+  get: () => (form.value?.marginBands ?? []).join(', '),
+  set: (raw: string) => {
+    if (!form.value) return
+    const parsed = raw
+      .split(',')
+      .map((part) => Number(part.trim()))
+      .filter((n) => Number.isInteger(n) && n > 0)
+    form.value.marginBands = parsed.length > 0 ? parsed : null
+  },
+})
 
 const sourceOptions = computed(() => [
   { label: t('admin.scoring.sourceNone'), value: 'NONE' },
@@ -156,6 +173,11 @@ function errorMessage(e: unknown): string {
           <label class="flex flex-col gap-1 text-xs font-medium">{{ t('admin.scoring.outcome') }}<InputNumber v-model="form.base.outcome" :min="0" :max="100" class="w-full" /></label>
           <label class="flex flex-col gap-1 text-xs font-medium">{{ t('admin.scoring.miss') }}<InputNumber v-model="form.base.miss" :min="0" :max="100" class="w-full" /></label>
         </div>
+        <label class="flex flex-col gap-1 text-xs font-medium">
+          {{ t('admin.scoring.marginBands') }}
+          <InputText v-model="marginBandsText" :placeholder="t('admin.scoring.marginBandsPlaceholder')" class="w-full sm:w-64" />
+          <span class="text-xs font-normal" style="color: var(--p-text-muted-color)">{{ t('admin.scoring.marginBandsHint') }}</span>
+        </label>
       </section>
 
       <!-- Joker -->

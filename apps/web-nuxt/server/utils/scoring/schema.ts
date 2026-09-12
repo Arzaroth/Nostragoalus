@@ -27,6 +27,11 @@ export const scoringRulesSchema = z.object({
   }),
   jokerMultiplier: z.number().min(1).max(99.99),
   jokerAppliesToBonus: z.boolean(),
+  // Strictly ascending positive bounds, so each band is non-empty and a
+  // margin lands in exactly one. Null = football (exact goal difference).
+  marginBands: z.array(z.number().int().min(1).max(1000)).max(10)
+    .refine((b) => b.every((v, i) => i === 0 || v > b[i - 1]!), 'margin bands must ascend')
+    .nullable(),
   championBonus: z.number().int().min(0).max(1000),
   // Tier arrays are short by nature; cap the length so a hand-built payload
   // can't bloat the JSONB or the per-score tier scan / recompute loop.

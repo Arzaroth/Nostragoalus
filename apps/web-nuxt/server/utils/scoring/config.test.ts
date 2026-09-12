@@ -3,7 +3,9 @@ import {
   DEFAULT_CHAMPION_TIERS,
   DEFAULT_RULES,
   championPointsForRank,
+  rulesForSport,
   rulesFromConfigRow,
+  RUGBY_UNION_RULES,
   type ScoringConfigRow,
 } from './config'
 
@@ -104,5 +106,30 @@ describe('rulesFromConfigRow', () => {
     expect(rulesFromConfigRow(baseRow).championTiers).toEqual(DEFAULT_CHAMPION_TIERS)
     const custom = [{ maxRank: 10, points: 11 }]
     expect(rulesFromConfigRow({ ...baseRow, championTiers: custom }).championTiers).toEqual(custom)
+  })
+
+  it('reads a row that predates margin_bands as football', () => {
+    // Every config written before this column existed has to keep scoring
+    // exactly as it did, or a live competition rebands mid-tournament.
+    expect(rulesFromConfigRow(baseRow).marginBands).toBeNull()
+    expect(rulesFromConfigRow({ ...baseRow, marginBands: [7, 14] }).marginBands).toEqual([7, 14])
+  })
+})
+
+describe('rulesForSport', () => {
+  it('gives rugby the banded preset', () => {
+    expect(rulesForSport('RUGBY_UNION')).toBe(RUGBY_UNION_RULES)
+    expect(rulesForSport('RUGBY_UNION').marginBands).toEqual([7, 14])
+  })
+
+  it('gives football, and anything unrecognised, the default', () => {
+    expect(rulesForSport('FOOTBALL')).toBe(DEFAULT_RULES)
+    expect(rulesForSport('CURLING')).toBe(DEFAULT_RULES)
+  })
+
+  it('keeps the rugby champion payout flat until World Rugby ranks are wired', () => {
+    // Rank-based tiers would read every rugby side as absent from the FIFA
+    // table and hand them all the long-shot payout.
+    expect(RUGBY_UNION_RULES.championTiers).toEqual([{ maxRank: null, points: 10 }])
   })
 })

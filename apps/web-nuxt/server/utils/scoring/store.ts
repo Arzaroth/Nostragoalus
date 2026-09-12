@@ -21,6 +21,7 @@ export async function ensureDefaultScoringConfig(db: AppDatabase): Promise<void>
     ptsMiss: DEFAULT_RULES.base.miss,
     jokerMultiplier: String(DEFAULT_RULES.jokerMultiplier),
     jokerAppliesToBonus: DEFAULT_RULES.jokerAppliesToBonus,
+    marginBands: DEFAULT_RULES.marginBands,
     championBonus: DEFAULT_RULES.championBonus,
     championTiers: DEFAULT_RULES.championTiers,
     bestScorerBonus: DEFAULT_RULES.bestScorerBonus,

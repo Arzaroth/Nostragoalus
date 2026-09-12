@@ -7,6 +7,7 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ### chel
 
+- ragh: chev toblu', mI' pIn'a' toqbe'. 27-24 luHarbe' Hoch. DaH chev Daq lugh (1-7, 8-14, 15 nIteb) 'oH pop'e'. mI' pIn'a' 'oH Do'Ha' pop neH. je motlhHa' pop choHlu': 'Iv Sovbe' net toq, qaDHom charghwI' Sovbogh Hoch pop nobbe'. qaD chelDI', DaH Hoch tu'lu'; che'wI' Hoch choHlaH.
 - che'wI': DaH ragh'e' qaD chellaH. World Rugby De' Hal ngeb pagh lo'lu'; ghom, may' Qav je, wej Daq may' je lulaDlu'chu'. 2027 ragh qaD naQ; 16 ghom chu' je tu'lu'. 'ach QIv mI' HIja' 'ej HaSta, DaH nay' rur.
 
 ## [4.12.1] - 2026-09-12

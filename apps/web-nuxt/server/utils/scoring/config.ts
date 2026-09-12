@@ -1,11 +1,13 @@
 import type { ChampionTier, CrowdTier, OddsTier } from '../../../shared/types/scoring'
-import { DEFAULT_BASE_POINTS, type BasePoints } from './tiers'
+import { DEFAULT_BASE_POINTS, type BasePoints, type MarginBands } from './tiers'
 
 export type BonusSource = 'NONE' | 'CROWD' | 'ODDS'
 export type MatchBasis = 'EXACT' | 'OUTCOME'
 
 export interface ScoringRules {
   base: BasePoints
+  // Null = football: DIFF means the exact goal difference. See tiers.ts.
+  marginBands: MarginBands
   jokerMultiplier: number
   jokerAppliesToBonus: boolean
   championBonus: number
@@ -74,6 +76,7 @@ export const DEFAULT_RULES: ScoringRules = {
   base: DEFAULT_BASE_POINTS,
   jokerMultiplier: 2,
   jokerAppliesToBonus: true,
+  marginBands: null,
   championBonus: 10,
   championTiers: DEFAULT_CHAMPION_TIERS,
   bestScorerBonus: 10,
@@ -93,6 +96,7 @@ export interface ScoringConfigRow {
   ptsMiss: number
   jokerMultiplier: string | number
   jokerAppliesToBonus: boolean
+  marginBands: number[] | null | undefined
   championBonus: number
   championTiers: ChampionTier[] | null
   bestScorerBonus: number
@@ -110,6 +114,7 @@ export function rulesFromConfigRow(row: ScoringConfigRow): ScoringRules {
     base: { exact: row.ptsExact, diff: row.ptsDiff, outcome: row.ptsOutcome, miss: row.ptsMiss },
     jokerMultiplier: Number(row.jokerMultiplier),
     jokerAppliesToBonus: row.jokerAppliesToBonus,
+    marginBands: row.marginBands ?? null,
     championBonus: row.championBonus,
     championTiers: row.championTiers ?? DEFAULT_CHAMPION_TIERS,
     bestScorerBonus: row.bestScorerBonus,
@@ -121,4 +126,46 @@ export function rulesFromConfigRow(row: ScoringConfigRow): ScoringRules {
     oddsTiers: row.oddsTiers,
     oddsAppliesTo: row.oddsAppliesTo ?? 'OUTCOME',
   }
+}
+
+// Rugby union preset, applied as a per-competition override when a rugby
+// competition is created. Three things differ from football, all forced by the
+// shape of a rugby scoreline rather than by taste:
+//
+// 1. DIFF counts margin BANDS (1-7, 8-14, 15+) instead of the exact margin. A
+//    seven-point band is one converted try, which is how the sport itself talks
+//    about a result.
+// 2. EXACT stays but stops being the headline. Nobody predicts 27-24 on
+//    judgement, so it pays like a lottery line rather than like the skill tier -
+//    DIFF is where reading the game actually shows.
+// 3. The crowd bonus moves off EXACT basis. Exact rugby scores are nearly all
+//    unique, so exactCount/outcomeCount is tiny for everyone and the top rarity
+//    tier would pay out to the entire field: a flat top-up that discriminates
+//    nothing. On OUTCOME basis the share is "how much of the field read this
+//    result", which is the thing that is actually rare.
+export const RUGBY_CROWD_TIERS: CrowdTier[] = [
+  { maxShareExclusive: 0.15, bonus: 5 },
+  { maxShareExclusive: 0.3, bonus: 3 },
+  { maxShareExclusive: 0.45, bonus: 2 },
+  { maxShareExclusive: 0.6, bonus: 1 },
+]
+
+// Flat until World Rugby rankings are wired: every side is absent from the FIFA
+// table, so the rank tiers would hand every rugby champion pick the long-shot
+// payout.
+export const RUGBY_CHAMPION_TIERS: ChampionTier[] = [{ maxRank: null, points: 10 }]
+
+export const RUGBY_UNION_RULES: ScoringRules = {
+  ...DEFAULT_RULES,
+  base: { exact: 5, diff: 3, outcome: 1, miss: 0 },
+  marginBands: [7, 14],
+  crowdMatchBasis: 'OUTCOME',
+  crowdTiers: RUGBY_CROWD_TIERS,
+  // Skipped by the engine on OUTCOME basis anyway; null says so out loud.
+  crowdOutcomeTiers: null,
+  championTiers: RUGBY_CHAMPION_TIERS,
+}
+
+export function rulesForSport(sport: string): ScoringRules {
+  return sport === 'RUGBY_UNION' ? RUGBY_UNION_RULES : DEFAULT_RULES
 }

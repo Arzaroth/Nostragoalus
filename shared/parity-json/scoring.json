@@ -18,6 +18,7 @@
             },
             "jokerMultiplier": 2,
             "jokerAppliesToBonus": true,
+            "marginBands": null,
             "championBonus": 10,
             "championTiers": [
               {
@@ -177,6 +178,7 @@
             },
             "jokerMultiplier": 2,
             "jokerAppliesToBonus": true,
+            "marginBands": null,
             "championBonus": 10,
             "championTiers": [
               {
@@ -270,6 +272,7 @@
             },
             "jokerMultiplier": 2,
             "jokerAppliesToBonus": true,
+            "marginBands": null,
             "championBonus": 10,
             "championTiers": [
               {
@@ -461,6 +464,7 @@
             },
             "jokerMultiplier": 2,
             "jokerAppliesToBonus": true,
+            "marginBands": null,
             "championBonus": 10,
             "championTiers": [
               {
@@ -636,6 +640,7 @@
             },
             "jokerMultiplier": 2,
             "jokerAppliesToBonus": true,
+            "marginBands": null,
             "championBonus": 10,
             "championTiers": [
               {
@@ -764,6 +769,7 @@
             },
             "jokerMultiplier": 2,
             "jokerAppliesToBonus": true,
+            "marginBands": null,
             "championBonus": 10,
             "championTiers": [
               {
@@ -875,6 +881,7 @@
             },
             "jokerMultiplier": 2,
             "jokerAppliesToBonus": true,
+            "marginBands": null,
             "championBonus": 10,
             "championTiers": [
               {
@@ -1043,6 +1050,7 @@
           },
           "jokerMultiplier": 2,
           "jokerAppliesToBonus": true,
+          "marginBands": null,
           "championBonus": 10,
           "championTiers": [
             {
@@ -1145,6 +1153,7 @@
             },
             "jokerMultiplier": 2,
             "jokerAppliesToBonus": true,
+            "marginBands": null,
             "championBonus": 10,
             "championTiers": [
               {
@@ -1290,6 +1299,7 @@
             },
             "jokerMultiplier": 1.5,
             "jokerAppliesToBonus": false,
+            "marginBands": null,
             "championBonus": 10,
             "championTiers": [
               {
@@ -1449,6 +1459,7 @@
             },
             "jokerMultiplier": 2,
             "jokerAppliesToBonus": true,
+            "marginBands": null,
             "championBonus": 10,
             "championTiers": [
               {
@@ -1577,6 +1588,7 @@
             },
             "jokerMultiplier": 2,
             "jokerAppliesToBonus": true,
+            "marginBands": null,
             "championBonus": 10,
             "championTiers": [
               {
@@ -1688,6 +1700,7 @@
             },
             "jokerMultiplier": 2,
             "jokerAppliesToBonus": true,
+            "marginBands": null,
             "championBonus": 10,
             "championTiers": [
               {
@@ -1787,6 +1800,7 @@
             },
             "jokerMultiplier": 2,
             "jokerAppliesToBonus": true,
+            "marginBands": null,
             "championBonus": 10,
             "championTiers": [
               {
@@ -1969,6 +1983,7 @@
             },
             "jokerMultiplier": 2,
             "jokerAppliesToBonus": true,
+            "marginBands": null,
             "championBonus": 10,
             "championTiers": [
               {
@@ -2154,6 +2169,7 @@
           },
           "jokerMultiplier": 2,
           "jokerAppliesToBonus": true,
+          "marginBands": null,
           "championBonus": 10,
           "championTiers": [
             {
@@ -2229,6 +2245,340 @@
         "source": "CROWD",
         "share": 0.2
       }
+    },
+    {
+      "fn": "scorePredictions",
+      "args": [
+        {
+          "actual": {
+            "home": 31,
+            "away": 24
+          },
+          "rules": {
+            "base": {
+              "exact": 5,
+              "diff": 3,
+              "outcome": 1,
+              "miss": 0
+            },
+            "jokerMultiplier": 2,
+            "jokerAppliesToBonus": true,
+            "marginBands": [
+              7,
+              14
+            ],
+            "championBonus": 10,
+            "championTiers": [
+              {
+                "maxRank": null,
+                "points": 10
+              }
+            ],
+            "bestScorerBonus": 10,
+            "bonusSource": "NONE",
+            "crowdTiers": [
+              {
+                "maxShareExclusive": 0.15,
+                "bonus": 5
+              },
+              {
+                "maxShareExclusive": 0.3,
+                "bonus": 3
+              },
+              {
+                "maxShareExclusive": 0.45,
+                "bonus": 2
+              },
+              {
+                "maxShareExclusive": 0.6,
+                "bonus": 1
+              }
+            ],
+            "crowdOutcomeTiers": null,
+            "crowdMatchBasis": "OUTCOME",
+            "crowdMinDenominator": 5,
+            "oddsTiers": [
+              {
+                "minDecimalOdds": 6,
+                "bonus": 5
+              },
+              {
+                "minDecimalOdds": 3.5,
+                "bonus": 3
+              },
+              {
+                "minDecimalOdds": 2.2,
+                "bonus": 2
+              }
+            ],
+            "oddsAppliesTo": "OUTCOME"
+          },
+          "predictions": [
+            {
+              "id": "sameBand",
+              "home": 27,
+              "away": 24,
+              "isJoker": false
+            },
+            {
+              "id": "exact",
+              "home": 31,
+              "away": 24,
+              "isJoker": false
+            },
+            {
+              "id": "nextBand",
+              "home": 38,
+              "away": 24,
+              "isJoker": false
+            },
+            {
+              "id": "wrongSide",
+              "home": 20,
+              "away": 30,
+              "isJoker": false
+            }
+          ]
+        }
+      ],
+      "expected": [
+        {
+          "id": "sameBand",
+          "baseTier": "DIFF",
+          "basePoints": 3,
+          "bonusPoints": 0,
+          "bonusSource": "NONE",
+          "crowdShare": null,
+          "jokerMultiplier": 1,
+          "totalPoints": 3
+        },
+        {
+          "id": "exact",
+          "baseTier": "EXACT",
+          "basePoints": 5,
+          "bonusPoints": 0,
+          "bonusSource": "NONE",
+          "crowdShare": null,
+          "jokerMultiplier": 1,
+          "totalPoints": 5
+        },
+        {
+          "id": "nextBand",
+          "baseTier": "OUTCOME",
+          "basePoints": 1,
+          "bonusPoints": 0,
+          "bonusSource": "NONE",
+          "crowdShare": null,
+          "jokerMultiplier": 1,
+          "totalPoints": 1
+        },
+        {
+          "id": "wrongSide",
+          "baseTier": "MISS",
+          "basePoints": 0,
+          "bonusPoints": 0,
+          "bonusSource": "NONE",
+          "crowdShare": null,
+          "jokerMultiplier": 1,
+          "totalPoints": 0
+        }
+      ]
+    },
+    {
+      "fn": "scorePredictions",
+      "args": [
+        {
+          "actual": {
+            "home": 40,
+            "away": 10
+          },
+          "rules": {
+            "base": {
+              "exact": 5,
+              "diff": 3,
+              "outcome": 1,
+              "miss": 0
+            },
+            "jokerMultiplier": 2,
+            "jokerAppliesToBonus": true,
+            "marginBands": [
+              7,
+              14
+            ],
+            "championBonus": 10,
+            "championTiers": [
+              {
+                "maxRank": null,
+                "points": 10
+              }
+            ],
+            "bestScorerBonus": 10,
+            "bonusSource": "NONE",
+            "crowdTiers": [
+              {
+                "maxShareExclusive": 0.15,
+                "bonus": 5
+              },
+              {
+                "maxShareExclusive": 0.3,
+                "bonus": 3
+              },
+              {
+                "maxShareExclusive": 0.45,
+                "bonus": 2
+              },
+              {
+                "maxShareExclusive": 0.6,
+                "bonus": 1
+              }
+            ],
+            "crowdOutcomeTiers": null,
+            "crowdMatchBasis": "OUTCOME",
+            "crowdMinDenominator": 5,
+            "oddsTiers": [
+              {
+                "minDecimalOdds": 6,
+                "bonus": 5
+              },
+              {
+                "minDecimalOdds": 3.5,
+                "bonus": 3
+              },
+              {
+                "minDecimalOdds": 2.2,
+                "bonus": 2
+              }
+            ],
+            "oddsAppliesTo": "OUTCOME"
+          },
+          "predictions": [
+            {
+              "id": "openBand",
+              "home": 33,
+              "away": 12,
+              "isJoker": false
+            },
+            {
+              "id": "band2",
+              "home": 26,
+              "away": 14,
+              "isJoker": false
+            }
+          ]
+        }
+      ],
+      "expected": [
+        {
+          "id": "openBand",
+          "baseTier": "DIFF",
+          "basePoints": 3,
+          "bonusPoints": 0,
+          "bonusSource": "NONE",
+          "crowdShare": null,
+          "jokerMultiplier": 1,
+          "totalPoints": 3
+        },
+        {
+          "id": "band2",
+          "baseTier": "OUTCOME",
+          "basePoints": 1,
+          "bonusPoints": 0,
+          "bonusSource": "NONE",
+          "crowdShare": null,
+          "jokerMultiplier": 1,
+          "totalPoints": 1
+        }
+      ]
+    },
+    {
+      "fn": "scorePredictions",
+      "args": [
+        {
+          "actual": {
+            "home": 17,
+            "away": 17
+          },
+          "rules": {
+            "base": {
+              "exact": 5,
+              "diff": 3,
+              "outcome": 1,
+              "miss": 0
+            },
+            "jokerMultiplier": 2,
+            "jokerAppliesToBonus": true,
+            "marginBands": [
+              7,
+              14
+            ],
+            "championBonus": 10,
+            "championTiers": [
+              {
+                "maxRank": null,
+                "points": 10
+              }
+            ],
+            "bestScorerBonus": 10,
+            "bonusSource": "NONE",
+            "crowdTiers": [
+              {
+                "maxShareExclusive": 0.15,
+                "bonus": 5
+              },
+              {
+                "maxShareExclusive": 0.3,
+                "bonus": 3
+              },
+              {
+                "maxShareExclusive": 0.45,
+                "bonus": 2
+              },
+              {
+                "maxShareExclusive": 0.6,
+                "bonus": 1
+              }
+            ],
+            "crowdOutcomeTiers": null,
+            "crowdMatchBasis": "OUTCOME",
+            "crowdMinDenominator": 5,
+            "oddsTiers": [
+              {
+                "minDecimalOdds": 6,
+                "bonus": 5
+              },
+              {
+                "minDecimalOdds": 3.5,
+                "bonus": 3
+              },
+              {
+                "minDecimalOdds": 2.2,
+                "bonus": 2
+              }
+            ],
+            "oddsAppliesTo": "OUTCOME"
+          },
+          "predictions": [
+            {
+              "id": "drawn",
+              "home": 20,
+              "away": 20,
+              "isJoker": false
+            }
+          ]
+        }
+      ],
+      "expected": [
+        {
+          "id": "drawn",
+          "baseTier": "DIFF",
+          "basePoints": 3,
+          "bonusPoints": 0,
+          "bonusSource": "NONE",
+          "crowdShare": null,
+          "jokerMultiplier": 1,
+          "totalPoints": 3
+        }
+      ]
     }
   ]
 }

@@ -90,7 +90,7 @@ export function computeBonus(
 
 function scoreOne(input: ScoreMatchInput, hist: Histogram, p: PredictionInput): PredictionScore {
   const pred: Scoreline = { home: p.home, away: p.away }
-  const baseTier = classifyTier(pred, input.actual)
+  const baseTier = classifyTier(pred, input.actual, input.rules.marginBands ?? null)
   const basePoints = basePointsFor(baseTier, input.rules.base)
   const { bonus, source, share } = computeBonus(
     pred,

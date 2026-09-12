@@ -88,6 +88,10 @@ export const scoringConfig = pgTable(
     ptsMiss: integer('pts_miss').notNull().default(0),
     jokerMultiplier: numeric('joker_multiplier', { precision: 4, scale: 2 }).notNull().default('2'),
     jokerAppliesToBonus: boolean('joker_applies_to_bonus').notNull().default(true),
+    // Upper bounds of the winning margins the DIFF tier treats as equal.
+    // Null = football, where DIFF is the exact goal difference; rugby ships
+    // [7, 14] because an exact rugby scoreline is luck, not judgement.
+    marginBands: jsonb('margin_bands').$type<number[]>(),
     championBonus: integer('champion_bonus').notNull().default(10),
     bestScorerBonus: integer('best_scorer_bonus').notNull().default(10),
     bonusSource: bonusSourceEnum('bonus_source').notNull().default('CROWD'),

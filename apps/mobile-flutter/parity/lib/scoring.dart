@@ -12,10 +12,21 @@ String outcomeOf(Map s) {
 
 num _goalDiff(Map s) => (s['home'] as num) - (s['away'] as num);
 
-String classifyTier(Map pred, Map actual) {
+// Null bands = football: every margin is its own band, so DIFF is the exact
+// goal difference. Rugby ships [7, 14] because an exact rugby scoreline is luck.
+int marginBandOf(num diff, List? bands) {
+  final margin = diff.abs();
+  if (bands == null || bands.isEmpty) return margin.toInt();
+  for (var i = 0; i < bands.length; i++) {
+    if (margin <= (bands[i] as num)) return i;
+  }
+  return bands.length;
+}
+
+String classifyTier(Map pred, Map actual, [List? bands]) {
   if (pred['home'] == actual['home'] && pred['away'] == actual['away']) return 'EXACT';
   if (outcomeOf(pred) != outcomeOf(actual)) return 'MISS';
-  if (_goalDiff(pred) == _goalDiff(actual)) return 'DIFF';
+  if (marginBandOf(_goalDiff(pred), bands) == marginBandOf(_goalDiff(actual), bands)) return 'DIFF';
   return 'OUTCOME';
 }
 
@@ -105,7 +116,7 @@ Map<String, dynamic> _scoreOne(Map input, Map hist, Map p) {
   final pred = {'home': p['home'], 'away': p['away']};
   final actual = input['actual'] as Map;
   final rules = input['rules'] as Map;
-  final baseTier = classifyTier(pred, actual);
+  final baseTier = classifyTier(pred, actual, rules['marginBands'] as List?);
   final basePoints = basePointsFor(baseTier, rules['base'] as Map);
   final b = computeBonus(pred, actual, rules, hist, (input['actualOutcomeOdds'] as num?));
   final bonus = b['bonus'] as num;

@@ -1,7 +1,7 @@
 // Vectors for the scoring engine - the deterministic points computation a Dart
 // client would reimplement to show scores. The full ScoringRules config is
 // frozen into each vector, so a case is self-contained.
-import { DEFAULT_RULES, type ScoringRules } from '../../../server/utils/scoring/config'
+import { DEFAULT_RULES, RUGBY_UNION_RULES, type ScoringRules } from '../../../server/utils/scoring/config'
 import { buildHistogram, type PredictionInput } from '../../../server/utils/scoring/engine'
 
 interface RawCase {
@@ -13,6 +13,7 @@ const NO_BONUS: ScoringRules = { ...DEFAULT_RULES, bonusSource: 'NONE' }
 const CROWD_EXACT: ScoringRules = { ...DEFAULT_RULES, bonusSource: 'CROWD', crowdMatchBasis: 'EXACT', crowdMinDenominator: 1 }
 const CROWD_OUTCOME: ScoringRules = { ...CROWD_EXACT, crowdMatchBasis: 'OUTCOME' }
 const ODDS: ScoringRules = { ...DEFAULT_RULES, bonusSource: 'ODDS' }
+const RUGBY: ScoringRules = { ...RUGBY_UNION_RULES, bonusSource: 'NONE' }
 const ODDS_EXACT: ScoringRules = { ...ODDS, oddsAppliesTo: 'EXACT' }
 // The joker scales the base points only, and by a fractional multiplier - the
 // total then needs rounding, which is where two stacks can drift.
@@ -59,5 +60,26 @@ export async function buildCases(): Promise<RawCase[]> {
     { fn: 'scorePredictions', args: [{ actual, rules: CROWD_NO_OUTCOME_TIERS, predictions: crowd }] },
     { fn: 'scorePredictions', args: [{ actual, rules: CROWD_EMPTY_OUTCOME_TIERS, predictions: crowd }] },
     { fn: 'computeBonus', args: [{ home: 2, away: 1 }, actual, CROWD_NO_OUTCOME_TIERS, hist, null] },
+    // Rugby margin bands. A 31-24 actual (margin 7) with calls landing in the
+    // same band, the next band up, and the wrong side entirely - the case that
+    // separates band-DIFF from exact-margin-DIFF.
+    {
+      fn: 'scorePredictions',
+      args: [
+        {
+          actual: { home: 31, away: 24 },
+          rules: RUGBY,
+          predictions: preds(['sameBand', 27, 24], ['exact', 31, 24], ['nextBand', 38, 24], ['wrongSide', 20, 30]),
+        },
+      ],
+    },
+    // A draw is margin 0 in every banding, and a 15+ blowout is the open band.
+    {
+      fn: 'scorePredictions',
+      args: [
+        { actual: { home: 40, away: 10 }, rules: RUGBY, predictions: preds(['openBand', 33, 12], ['band2', 26, 14]) },
+      ],
+    },
+    { fn: 'scorePredictions', args: [{ actual: { home: 17, away: 17 }, rules: RUGBY, predictions: preds(['drawn', 20, 20]) }] },
   ]
 }

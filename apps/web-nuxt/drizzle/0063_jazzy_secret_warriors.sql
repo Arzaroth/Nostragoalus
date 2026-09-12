@@ -1,0 +1,1 @@
+ALTER TABLE "scoring_config" ADD COLUMN "margin_bands" jsonb;

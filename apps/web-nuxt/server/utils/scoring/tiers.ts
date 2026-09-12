@@ -30,10 +30,31 @@ export function goalDifference({ home, away }: Scoreline): number {
   return home - away
 }
 
-export function classifyTier(prediction: Scoreline, actual: Scoreline): BaseTier {
+// Upper bounds of the winning margins that count as "the same margin", used by
+// the DIFF tier. Null is football: every margin is its own band, so DIFF means
+// the exact goal difference, which is the behaviour this generalizes.
+//
+// Rugby needs bands because exact-score degenerates there - nobody calls 27-24,
+// so EXACT collapses into luck and DIFF-by-exact-margin is barely easier. With
+// [7, 14] a margin of 1-7 (a converted try), 8-14 and 15+ each count as one
+// band, which is how the sport itself talks about a result.
+export type MarginBands = number[] | null
+
+export function marginBandOf(diff: number, bands: MarginBands): number {
+  const margin = Math.abs(diff)
+  if (!bands || bands.length === 0) return margin
+  for (let i = 0; i < bands.length; i++) {
+    if (margin <= bands[i]!) return i
+  }
+  return bands.length
+}
+
+export function classifyTier(prediction: Scoreline, actual: Scoreline, bands: MarginBands = null): BaseTier {
   if (prediction.home === actual.home && prediction.away === actual.away) return 'EXACT'
   if (outcomeOf(prediction) !== outcomeOf(actual)) return 'MISS'
-  if (goalDifference(prediction) === goalDifference(actual)) return 'DIFF'
+  // Outcomes already match, so both margins have the same sign and comparing
+  // their bands compares like with like. A draw is margin 0 in every banding.
+  if (marginBandOf(goalDifference(prediction), bands) === marginBandOf(goalDifference(actual), bands)) return 'DIFF'
   return 'OUTCOME'
 }
 

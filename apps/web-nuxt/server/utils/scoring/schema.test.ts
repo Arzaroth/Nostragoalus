@@ -44,3 +44,35 @@ describe('saveScoringConfigSchema', () => {
     expect(saveScoringConfigSchema.safeParse({ competition: 'x' }).success).toBe(false)
   })
 })
+
+describe('marginBands validation', () => {
+  const withBands = (marginBands: unknown) =>
+    saveScoringConfigSchema.safeParse({ rules: { ...DEFAULT_RULES, marginBands } })
+
+  it('accepts null (football) and an ascending list (rugby)', () => {
+    expect(withBands(null).success).toBe(true)
+    expect(withBands([7, 14]).success).toBe(true)
+    expect(withBands([5]).success).toBe(true)
+  })
+
+  it('rejects bounds that do not ascend', () => {
+    // Out of order or repeated, a band would be empty and unreachable - every
+    // margin would fall into an earlier one, silently.
+    expect(withBands([14, 7]).success).toBe(false)
+    expect(withBands([7, 7]).success).toBe(false)
+  })
+
+  it('rejects a non-positive or fractional bound', () => {
+    expect(withBands([0, 7]).success).toBe(false)
+    expect(withBands([-1]).success).toBe(false)
+    expect(withBands([7.5]).success).toBe(false)
+  })
+
+  it('accepts an empty list, which the engine reads as football', () => {
+    expect(withBands([]).success).toBe(true)
+  })
+
+  it('caps the list length', () => {
+    expect(withBands(Array.from({ length: 11 }, (_, i) => i + 1)).success).toBe(false)
+  })
+})

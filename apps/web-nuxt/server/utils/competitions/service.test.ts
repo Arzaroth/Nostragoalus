@@ -5,6 +5,8 @@ import { listCompetitions } from './store'
 import { ValidationError } from '../errors'
 import type { AppStage, NormalizedMatch } from '../../../shared/types/match'
 import type { MatchDataProvider } from '../providers/types'
+import { ensureDefaultScoringConfig, getScoringConfigFor } from '../scoring/store'
+import { saveScoringConfig } from '../scoring/admin'
 
 let seq = 0
 
@@ -87,6 +89,62 @@ describe('addCompetition', () => {
       resolveSeason: async () => undefined,
     })
     expect(listFixtures).toHaveBeenCalledWith({ season: '2028' })
+    await client.close()
+  })
+})
+
+describe('the sport preset a new competition opens on', () => {
+  const rugby = {
+    slug: 'rwc-2027',
+    name: "Men's Rugby World Cup 2027",
+    provider: 'worldrugby',
+    externalCompetitionId: '14bc12d5',
+    seasonHint: '2027',
+    sport: 'RUGBY_UNION' as const,
+    providerSport: 'mru',
+  }
+
+  const clean = {
+    makeProvider: () => adapter([fixture('GROUP', 1, 'A'), fixture('FINAL')]),
+    resolveSeason: async () => undefined,
+  }
+
+  it('gives a rugby competition the rugby rules, not the football ones', async () => {
+    const { db, client } = await createTestDb()
+    const row = await addCompetition(db, rugby, clean)
+
+    const { rules } = await getScoringConfigFor(db, row.id)
+    // Margin bands are the point: without them a 27-24 call scores the same as
+    // a 60-0 one.
+    expect(rules.marginBands).toEqual([7, 14])
+    expect(rules.base).toEqual({ exact: 5, diff: 3, outcome: 1, miss: 0 })
+    // And the crowd rarity has to be measured on the result, or every player who
+    // merely read the winner collects the top tier.
+    expect(rules.crowdMatchBasis).toBe('OUTCOME')
+    await client.close()
+  })
+
+  it('leaves a football competition on the default config, with no override', async () => {
+    const { db, client } = await createTestDb()
+    await ensureDefaultScoringConfig(db)
+    const row = await addCompetition(db, input, clean)
+
+    const { rules } = await getScoringConfigFor(db, row.id)
+    expect(rules.marginBands).toBeNull()
+    expect(rules.crowdMatchBasis).toBe('EXACT')
+    await client.close()
+  })
+
+  it('leaves the rugby override editable like any other', async () => {
+    // Seeding the preset is about not opening in a state nobody wants; it must
+    // not become a rule an admin cannot move.
+    const { db, client } = await createTestDb()
+    const row = await addCompetition(db, rugby, clean)
+
+    const { rules: seeded } = await getScoringConfigFor(db, row.id)
+    await saveScoringConfig(db, row.id, { ...seeded, marginBands: [5] })
+    const { rules } = await getScoringConfigFor(db, row.id)
+    expect(rules.marginBands).toEqual([5])
     await client.close()
   })
 })

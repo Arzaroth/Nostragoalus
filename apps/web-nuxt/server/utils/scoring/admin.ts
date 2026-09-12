@@ -56,6 +56,7 @@ function rowValuesFromRules(rules: ScoringRules) {
     ptsMiss: rules.base.miss,
     jokerMultiplier: String(rules.jokerMultiplier),
     jokerAppliesToBonus: rules.jokerAppliesToBonus,
+    marginBands: rules.marginBands,
     championBonus: rules.championBonus,
     championTiers: rules.championTiers,
     bestScorerBonus: rules.bestScorerBonus,

@@ -821,13 +821,18 @@ effort buckets; order within a bucket is not priority.
     (52 matches, pools A-F, the new round of 16, bronze final) months ahead.
     Still football-shaped: scoring preset, rankings and theme are the next slices.
     See [brain/architecture/providers.md](brain/architecture/providers.md).
-  - Rugby: closeness tiers need retuning. Exact 3 / diff 2 / outcome 1
-    degenerates when nobody guesses 27-24, so exact collapses into luck. Port to
-    **margin bands** (correct winner + margin in 1-7 / 8-14 / 15+), which
-    generalizes the existing `diff` tier rather than replacing the engine. Also
-    World Rugby rankings instead of FIFA for champion tiers, tries rather than
-    goals through `goal_event` and the timeline, and two top-scorer boards
-    (tries and points). ESPN covers rugby under `sports/rugby/`. Sport switch
+  - [x] **Rugby closeness tiers are margin bands.** `DIFF` now means "same
+    margin band" with `scoringConfig.marginBands` holding the bounds; null is
+    football, so the existing behaviour is byte-identical (the frozen parity
+    vectors re-blessed with zero deletions). Rugby ships `[7, 14]`, `EXACT` 5 /
+    `DIFF` 3, and a crowd basis of `OUTCOME` - on `EXACT` basis nearly every
+    rugby scoreline is unique, so the top rarity tier would pay the whole field.
+    Applied as an editable per-competition override at creation. Ported to Dart
+    in the same pass; 304 parity vectors green.
+  - Rugby, still to do: World Rugby rankings instead of FIFA for champion tiers
+    (the preset is a flat 10 until then, since every side reads as absent from
+    the FIFA table), tries rather than goals through `goal_event` and the
+    timeline, and two top-scorer boards (tries and points). ESPN covers rugby under `sports/rugby/`. Sport switch
     drives theme or at least logo. Multi-sport is a MAJOR.
   - Basketball: wanted, but **NBA playoffs is not a smaller NBA** - best-of-7 is
     variable-length multi-leg, a generalization of the UCL problem rather than
