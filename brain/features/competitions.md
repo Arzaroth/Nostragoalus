@@ -104,6 +104,31 @@ League 29/189 with two legs at R16, QF and SF (both rejected).
 `roundDefForMatch()` and `findRoundId()` rather than restating it, so the probe
 follows a change to either.
 
+The create route (`server/api/admin/competitions/index.post.ts`) **re-probes
+server-side** and refuses anything unsupported, rather than trusting a verdict
+the client claims to have got - the guarantee is that nothing unsupported
+reaches the `competition` table, not that the UI asked nicely. There is no
+override: every blocker is a schema-level impossibility, and an override would
+recreate the silent-loss bug the probe exists to prevent (see TODO.md for the
+one legitimate case this shuts out, a competition whose fixtures are unpublished).
+
+Slugs are suggested from the chosen name and season but validated hard
+(`^[a-z0-9]+(?:-[a-z0-9]+)*$`, unique) and are **permanent**: every URL, the
+`ng-competition` cookie, share images and push deep-links carry them.
+
+## Archiving, and why there is no delete
+
+`isActive=false` hides a competition from the switcher, from
+`listActiveCompetitions` and from the default resolver, keeping every
+prediction, trophy, league and chat room attached to it.
+
+There is deliberately no hard delete. `competition` cascades into `round`,
+`match`, `competition_award`, `user_achievement` and `showcase_pin`, with
+leagues and chat hanging off it, so deleting a row takes a tournament's whole
+history with it. Archiving the current default is allowed by the API (the
+resolver falls back to the newest active season) but blocked in the UI, which
+asks the admin to choose a new default first so the move is never a surprise.
+
 ## The switcher
 
 `CompetitionPill.vue` sits next to each page's H1 (chosen over a header dropdown
@@ -132,6 +157,8 @@ competition id in the service layer.
 - `apps/web-nuxt/server/api/competitions/index.get.ts`
 - `apps/web-nuxt/server/api/admin/competitions/default.put.ts`
 - `apps/web-nuxt/server/utils/competitions/probe.ts`
+- `apps/web-nuxt/server/utils/competitions/discovery.ts`
+- `apps/web-nuxt/server/api/admin/competitions/` (list, create, discover, probe, `[slug]/active`)
 - `apps/web-nuxt/server/utils/sync/rounds.ts` (`isIngestible`)
 - `apps/web-nuxt/app/components/AdminCompetitionsSection.vue`
 - `apps/web-nuxt/app/plugins/competition-meta.server.ts`

@@ -3353,3 +3353,34 @@ Deferred by the review fix pass (each was a deliberate call, not an oversight):
 - [ ] The KT head pin is per-install (`ng_kt_head`), so a fresh install cannot
       catch a from-genesis log rewrite. Same documented limit as the web.
 
+## Competition admin (deferred from the feature pass)
+
+- [ ] **No e2e for the add-a-competition success path.** Discovery and the probe
+      both read a live third-party catalog, and the e2e stack is deliberately
+      offline and disposable, so the happy path cannot be driven without either
+      network flake or a test-only fake provider shipped in production code.
+      Covered instead by the component test (discover -> probe -> create, and the
+      refusal) and the probe's unit tests. `competition-default.e2e.ts` covers
+      the half that works offline. Revisit if the provider layer ever grows a
+      recorded-fixtures mode; adding `discoverCompetitions()` to
+      `providers/fixture.ts` is not enough on its own, because its `listFixtures`
+      returns `[]` and the probe would correctly refuse.
+- [ ] **`competition_provider` bindings table not built.** The roadmap argued for
+      it up front on the grounds that one-provider-per-row is assumed at every
+      `createProvider()` call site. That premise is wrong: every consumer goes
+      through the single `providerForCompetition()` chokepoint, so the retrofit
+      is concentrated and cheap. Doing it properly also means backfilling then
+      dropping four columns from `competition`, and a destructive migration is a
+      MAJOR trigger. Build it when per-capability routing or provider failover is
+      actually wanted, not before.
+- [ ] **The probe cannot be overridden.** A competition whose fixtures are not
+      published yet reads as `no_fixtures` and cannot be added at all. That is
+      deliberate for now - every blocker is a genuine schema-level impossibility
+      and an override would recreate the silent-loss bug - but a "publish later"
+      competition is a legitimate case with no path today.
+- [ ] **Discovery is memoized per process, not shared.** Each app instance walks
+      ESPN's ~218-entry catalog on its first admin visit after the 10 minute TTL.
+      Fine single-instance; revisit alongside anything else that assumes one node.
+- [ ] Archiving is the only removal. There is no hard delete even for a
+      competition with zero predictions, which the roadmap floated as safe.
+

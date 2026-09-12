@@ -8,6 +8,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 ### Added
 
 - Admin: a Competitions section that sets which tournament the site opens on. It used to be fixed at build time, so changing it meant a new release. Only an active tournament can be picked, and archiving the chosen one hands the role to the newest active season rather than leaving dead links behind.
+- Admin: tournaments can be added from the admin page instead of in code. Pick a data source, browse what it carries, and the app checks the real fixtures before anything is saved - it will not accept a tournament whose matches it would silently drop, and says why in plain language. Adding a supported tournament is no longer a release.
+- Admin: tournaments can be archived and restored. Archiving hides one from the switcher while keeping every prediction, trophy, league and chat room attached to it.
 
 ## [4.11.1] - 2026-09-12
 
