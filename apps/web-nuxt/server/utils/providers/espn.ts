@@ -22,7 +22,13 @@ import {
 } from './espn-summary'
 import { RateLimiter } from './rate-limiter'
 import { assignGroupMatchdays, mapStageFromName, parseGroupNameStrict } from './stage'
-import { ProviderRateLimitError, ProviderUpstreamError, type ListFixturesOptions, type MatchDataProvider } from './types'
+import {
+  ProviderRateLimitError,
+  ProviderUpstreamError,
+  type DiscoveredCompetition,
+  type ListFixturesOptions,
+  type MatchDataProvider,
+} from './types'
 
 // ESPN's public site API - keyless, undocumented, no announced quota.
 // e.g. https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=2026
@@ -350,6 +356,20 @@ export function mapEspnSeasonStats(raw: {
   }
 }
 
+// The league catalog: `items` carries only $ref links, so each entry costs one
+// hop to learn its name. 218 leagues at the time of writing.
+export interface EspnLeagueIndex {
+  items?: { $ref?: string | null }[] | null
+}
+
+export interface EspnLeagueDoc {
+  slug?: string | null
+  name?: string | null
+  displayName?: string | null
+  isTournament?: boolean | null
+  season?: { year?: number | null } | null
+}
+
 const DEFAULT_CORE_BASE_URL = 'https://sports.core.api.espn.com/v2/sports/soccer/leagues'
 
 const DEFAULT_BASE_URL = 'https://site.api.espn.com/apis/site/v2/sports/soccer'
@@ -366,6 +386,11 @@ const DEFAULT_TIMEOUT_MS = 20_000
 // The board ships 25 and every row past the leader costs a request; a hostile or
 // changed response must not turn one read into an unbounded fan-out.
 const MAX_LEADERS = 25
+
+// Discovery hydrates one document per league. The catalog is ~218 entries, so
+// the cap is headroom rather than a limit - it exists so a changed or hostile
+// index cannot turn one admin click into an unbounded fan-out.
+const MAX_DISCOVERED = 400
 
 export function espnProvider(options: EspnOptions): MatchDataProvider {
   const baseUrl = options.baseUrl ?? DEFAULT_BASE_URL
@@ -572,6 +597,45 @@ export function espnProvider(options: EspnOptions): MatchDataProvider {
 
   return {
     meta: { name: 'espn', rateLimitPerMin: 60, dailyCap: null },
+
+    // The catalog ESPN carries, for the admin's add-a-competition list. The
+    // index gives $ref links only, so the name, season and isTournament flag
+    // each cost a hop; they go through the tight ref limiter, not the
+    // scoreboard's one-per-second, which would make this a four-minute call.
+    // A league whose document fails to load is dropped rather than failing the
+    // whole catalog - one dead entry should not cost the admin the other 217.
+    async discoverCompetitions(): Promise<DiscoveredCompetition[]> {
+      const index = await getJson<EspnLeagueIndex>(`${coreBaseUrl}?limit=${MAX_DISCOVERED}`)
+      const slugs: string[] = []
+      for (const item of index.items ?? []) {
+        const ref = item?.$ref
+        if (!ref) continue
+        const tail = decodeURIComponent(ref).split('/leagues/')[1]
+        const slug = tail?.split('?')[0]?.replace(/\/+$/, '')
+        if (slug) slugs.push(slug)
+        if (slugs.length >= MAX_DISCOVERED) break
+      }
+
+      const found = await Promise.all(
+        slugs.map(async (slug) => {
+          try {
+            const doc = await getJson<EspnLeagueDoc>(`${coreBaseUrl}/${encodeURIComponent(slug)}`, refLimiter)
+            const name = doc.displayName ?? doc.name
+            if (!name) return null
+            return {
+              externalCompetitionId: doc.slug ?? slug,
+              name,
+              seasonHint: doc.season?.year != null ? String(doc.season.year) : null,
+              isTournament: doc.isTournament ?? null,
+            } satisfies DiscoveredCompetition
+          } catch {
+            return null
+          }
+        }),
+      )
+
+      return found.filter((c): c is DiscoveredCompetition => c !== null).sort((a, b) => a.name.localeCompare(b.name))
+    },
 
     listFixtures({ season }: ListFixturesOptions) {
       return fetchSeason(season)

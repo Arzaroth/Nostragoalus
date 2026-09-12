@@ -20,8 +20,28 @@ export interface ProviderMeta {
   dailyCap: number | null
 }
 
+// One competition a provider carries, as returned by discoverCompetitions().
+// This is a catalog entry, not a supported competition: whether the app can
+// actually ingest it is decided by probing its real fixtures, never by this.
+export interface DiscoveredCompetition {
+  // What a competition row would store as externalCompetitionId for this provider.
+  externalCompetitionId: string
+  name: string
+  // The provider's current season for it, when it publishes one.
+  seasonHint: string | null
+  // The provider's own claim about shape, surfaced to the admin as a hint and
+  // nothing more. ESPN marks the Champions League a tournament even though its
+  // league phase is a single table, so this cannot gate anything.
+  isTournament: boolean | null
+}
+
 export interface MatchDataProvider {
   readonly meta: ProviderMeta
+  // Optional: the competitions this provider carries, for the admin's
+  // add-a-competition flow. Not every provider can enumerate - UEFA's ids are a
+  // curated handful and the offline fixture provider has exactly one - so the
+  // absence of this method means "ask an admin to type the id", not "broken".
+  discoverCompetitions?(): Promise<DiscoveredCompetition[]>
   listFixtures(opts: ListFixturesOptions): Promise<NormalizedMatch[]>
   getMatchesByDate(date: string): Promise<NormalizedMatch[]>
   getLiveMatches(): Promise<NormalizedMatch[]>

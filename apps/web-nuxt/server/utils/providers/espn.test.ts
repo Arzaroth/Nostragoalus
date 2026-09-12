@@ -1136,3 +1136,75 @@ describe('mapEspnSeasonStats', () => {
     expect(stats.redCards).toBeNull()
   })
 })
+
+describe('espnProvider.discoverCompetitions', () => {
+  function leagueDoc(slug: string, over: Record<string, unknown> = {}) {
+    return { slug, displayName: `${slug} league`, isTournament: true, season: { year: 2026 }, ...over }
+  }
+
+  function stubCatalog(refs: string[], docs: Record<string, unknown>) {
+    return vi.fn(async (url: string) => {
+      if (url.includes('?limit=')) return jsonResponse({ items: refs.map(($ref) => ({ $ref })) })
+      const slug = decodeURIComponent(url).split('/leagues/')[1]!
+      const doc = docs[slug]
+      if (!doc) return jsonResponse({ message: 'gone' }, 404)
+      return jsonResponse(doc)
+    })
+  }
+
+  const provider = (fetchImpl: typeof fetch) =>
+    espnProvider({ league: 'fifa.world', fetchImpl, rateLimiter: noWait(), refRateLimiter: noWait() })
+
+  it('reads the slug out of each $ref and hydrates its name, season and tournament flag', async () => {
+    const fetchImpl = stubCatalog(
+      [
+        'http://sports.core.api.espn.com/v2/sports/soccer/leagues/uefa.champions?lang=en&region=us',
+        'http://sports.core.api.espn.com/v2/sports/soccer/leagues/eng.1?lang=en',
+      ],
+      {
+        'uefa.champions': leagueDoc('uefa.champions', { displayName: 'UEFA Champions League' }),
+        'eng.1': leagueDoc('eng.1', { displayName: 'Premier League', isTournament: false, season: { year: 2027 } }),
+      },
+    )
+    const found = await provider(fetchImpl).discoverCompetitions!()
+    // Sorted by name, so the catalog reads alphabetically rather than in feed order.
+    expect(found).toEqual([
+      { externalCompetitionId: 'eng.1', name: 'Premier League', seasonHint: '2027', isTournament: false },
+      { externalCompetitionId: 'uefa.champions', name: 'UEFA Champions League', seasonHint: '2026', isTournament: true },
+    ])
+  })
+
+  // One dead entry must not cost the admin the rest of the catalog.
+  it('drops a league whose document fails to load, keeping the others', async () => {
+    const fetchImpl = stubCatalog(
+      [
+        'http://sports.core.api.espn.com/v2/sports/soccer/leagues/eng.1',
+        'http://sports.core.api.espn.com/v2/sports/soccer/leagues/dead.league',
+      ],
+      { 'eng.1': leagueDoc('eng.1', { displayName: 'Premier League' }) },
+    )
+    const found = await provider(fetchImpl).discoverCompetitions!()
+    expect(found.map((c) => c.externalCompetitionId)).toEqual(['eng.1'])
+  })
+
+  it('skips malformed index entries and a league with no name', async () => {
+    const fetchImpl = stubCatalog(
+      [
+        '',
+        'http://sports.core.api.espn.com/v2/sports/soccer/leagues/nameless',
+        'http://sports.core.api.espn.com/v2/sports/soccer/leagues/eng.1',
+      ],
+      { nameless: { slug: 'nameless' }, 'eng.1': leagueDoc('eng.1', { displayName: 'Premier League' }) },
+    )
+    const found = await provider(fetchImpl).discoverCompetitions!()
+    expect(found.map((c) => c.externalCompetitionId)).toEqual(['eng.1'])
+  })
+
+  it('leaves the season null when the provider publishes none', async () => {
+    const fetchImpl = stubCatalog(['http://sports.core.api.espn.com/v2/sports/soccer/leagues/eng.1'], {
+      'eng.1': { slug: 'eng.1', displayName: 'Premier League', isTournament: false },
+    })
+    const found = await provider(fetchImpl).discoverCompetitions!()
+    expect(found[0]).toMatchObject({ seasonHint: null, isTournament: false })
+  })
+})
