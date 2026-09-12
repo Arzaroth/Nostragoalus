@@ -1146,10 +1146,22 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
       That silence is what hid the ESPN group stage going missing. Make the
       mismatch loud (or make the two agree) so the next provider does not pay
       for it.
-- [ ] ESPN implements no optional provider method (`getMatchDetail`,
+- [x] ESPN implements no optional provider method (`getMatchDetail`,
       `getBracket`, `getTopScorers`, `getMatchTimeline`, lineups, per-team
       stats). Each needs a per-match `summary` call and the polling budget that
       implies - decide per competition that needs one.
+      Done: the whole contract is implemented, and one memoized `summary`
+      request serves detail + timeline + lineups + stats together.
+- [ ] ESPN's scorer board costs ~26-30 requests (one `$ref` per athlete on the
+      core API) against one for FIFA/UEFA. Cached by the scorers route and only
+      reached when the local `goal_event` aggregation is empty, so it is a
+      cold-start cost - but a competition that leans on it will feel it. If it
+      ever matters, the core API pages athletes in bulk somewhere worth finding.
+- [ ] ESPN line-ups carry no coach (only the team endpoint has one, so a match
+      line-up shows null while the team page shows a name), no captain flag, and
+      no pitch coordinates - the pitch falls back to formation bands, as it
+      already does for UEFA. Bench players are all position `SUB`, so only the
+      starting XI has real positions.
 - [ ] `kickoffTime: ?? ''` in uefa.ts has the same shape the ESPN pass removed:
       an undated event becomes an Invalid Date in `upsertMatches`, which throws
       inside the match loop and abandons every match after it in that batch.

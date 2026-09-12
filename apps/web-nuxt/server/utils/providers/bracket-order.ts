@@ -1,4 +1,4 @@
-import type { BracketMatch, NormalizedBracket } from '../../../shared/types/match'
+import type { AppStage, BracketMatch, NormalizedBracket, NormalizedMatch } from '../../../shared/types/match'
 
 const winnerCode = (m: BracketMatch) =>
   m.winner === 'HOME' ? m.homeCode : m.winner === 'AWAY' ? m.awayCode : null
@@ -91,4 +91,60 @@ export function orderBracketFeeders(bracket: NormalizedBracket): NormalizedBrack
     chain[i].matches = ordered
   }
   return { ...bracket, rounds }
+}
+
+const KNOCKOUT_ORDER: AppStage[] = ['R32', 'R16', 'QF', 'SF', 'FINAL']
+
+const STAGE_LABELS: Record<string, string> = {
+  R32: 'Round of 32',
+  R16: 'Round of 16',
+  QF: 'Quarter-finals',
+  SF: 'Semi-finals',
+  FINAL: 'Final',
+}
+
+function toBracketMatch(m: NormalizedMatch): BracketMatch {
+  return {
+    providerMatchId: m.providerMatchId,
+    status: m.status,
+    kickoffTime: m.kickoffTime,
+    homeTeam: m.homeTeam.name,
+    homeCode: m.homeTeam.code,
+    awayTeam: m.awayTeam.name,
+    awayCode: m.awayTeam.code,
+    homeScore: m.score.fullTime.home,
+    awayScore: m.score.fullTime.away,
+    homePens: m.score.penalties?.home ?? null,
+    awayPens: m.score.penalties?.away ?? null,
+    winner: m.winner === 'HOME' || m.winner === 'AWAY' ? m.winner : null,
+  }
+}
+
+// Build a bracket from a flat fixture list, for the providers that publish no
+// bracket feed of their own (UEFA, ESPN). The third-place tie is left out of the
+// rounds on purpose: it feeds nothing, and giving it a round of its own crowns
+// its winner beside the champion.
+export function bracketFromKnockoutMatches(matches: NormalizedMatch[]): NormalizedBracket | null {
+  const byStage = new Map<AppStage, NormalizedMatch[]>()
+  for (const m of matches) {
+    if (!KNOCKOUT_ORDER.includes(m.stage)) continue
+    byStage.set(m.stage, [...(byStage.get(m.stage) ?? []), m])
+  }
+  const final = byStage.get('FINAL')?.[0]
+  if (!final) return null
+
+  const stages = KNOCKOUT_ORDER.filter((s) => byStage.has(s))
+  const champCode =
+    final.winner === 'HOME' ? final.homeTeam.code : final.winner === 'AWAY' ? final.awayTeam.code : null
+
+  return orderBracketFeeders({
+    winner: champCode
+      ? { name: champCode === final.homeTeam.code ? final.homeTeam.name : final.awayTeam.name, code: champCode }
+      : null,
+    rounds: stages.map((stage, index) => ({
+      name: STAGE_LABELS[stage],
+      sequence: index + 1,
+      matches: byStage.get(stage)!.map(toBracketMatch),
+    })),
+  })
 }

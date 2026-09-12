@@ -63,11 +63,13 @@ and [../features/best-scorer.md](../features/best-scorer.md).
 
 `server/utils/providers/espn.ts` reads ESPN's public site API - keyless,
 undocumented, no announced quota. `externalCompetitionId` is the ESPN league slug
-(`fifa.world`, `uefa.euro`, `uefa.champions`), `seasonHint` the season year.
-Fixtures only: it implements `listFixtures` / `getMatchesByDate` /
-`getLiveMatches` and none of the optional detail methods. All three read one
-season fetch, so the derived group matchdays always see a whole group rather than
-the slice one day or the live poll would return.
+(`fifa.world`, `uefa.euro`, `uefa.champions`), `seasonHint` the season year. It
+implements the whole `MatchDataProvider` contract except `getMatchLineups`'
+pitch coordinates: fixtures, bracket, per-match detail, timeline, line-ups,
+per-match team stats, the scorer board and the per-team season aggregate. The
+three fixture reads all go through one season fetch, so the derived group
+matchdays always see a whole group rather than the slice one day or the live
+poll would return.
 
 - **One call per sync.** `…/site/v2/sports/soccer/{league}/scoreboard?dates=YYYY`
   returns the whole season (104 events for the 2026 World Cup). `dates` also takes
@@ -142,6 +144,73 @@ the slice one day or the live poll would return.
   ones: a LIVE/PAUSED-only feed never carries the final whistle, so the row would
   stay LIVE until the hourly fixtures refresh. Same 4h recent-kickoff window as
   FIFA, which covers extra time plus penalties.
+
+### One summary document per match
+
+`…/site/v2/sports/soccer/{league}/summary?event={id}` carries the play-by-play,
+both line-ups, both teams' stats and the venue in a single response, so
+`getMatchDetail`, `getMatchTimeline`, `getMatchLineups` and `getMatchStats` all
+read it and the adapter memoizes it per match: rendering a match page costs one
+request, not four. `getMatchDetail` hands its own event id back as `ifesId`
+precisely so `getMatchStats` hits that memo instead of fetching again. A failed
+fetch is evicted rather than cached. The parsing lives in
+[espn-summary.ts](../../apps/web-nuxt/server/utils/providers/espn-summary.ts) as
+pure functions over the document.
+
+- **Events are typed by a numeric id**, not by their English text: 70/137/138/173
+  are goal variants named after the finish, 97 own goal, 98 penalty scored, 94/95/93
+  the cards, 76 a substitution, 80-87 the period markers, 167+ the VAR decisions.
+  Types 129/130 (delay opened, delay closed) wrap every VAR check and injury and
+  run to several hundred entries per match - they are dropped, as are 85/86, the
+  extra-time interval markers the app has no kind for.
+- **An own goal sits under the team it benefits** while the scorer is on the
+  other roster, the same convention FIFA uses. Verified against the real feed: in
+  USA 4-1 Paraguay the own goal carries `team.id` = USA and names the Paraguay
+  player. A goal whose team matches neither side is dropped rather than guessed
+  onto one - it feeds both the scoreline and the scorer aggregation. Checked
+  across 24 finished matches, the play-by-play goals equal the scoreboard in all
+  of them.
+- **A substitution names the player coming on first**, then the one going off.
+- **"End Regular Time" is full time** for a match that never went to extra time,
+  and only the end of the second half for one that did; the parser decides by
+  looking for an extra-time start in the same document.
+- **The timeline's running score is accumulated**, not parsed out of the
+  commentary text. The provider's free text is kept only for VAR rows, the one
+  kind the app cannot phrase from structure.
+- **ESPN publishes no captain flag and no pitch coordinates**, so `SquadPlayer`
+  gets `captain: false` and no `x`/`y`; the pitch falls back to formation bands,
+  as it does for UEFA. The match rosters carry no coach either - that only comes
+  from the team endpoint, so a line-up's `coach` is null while the team page's is
+  not. Bench players are all position `SUB`, so only the starting XI has real
+  positions.
+
+### The season boards live on the other API
+
+The scorer board and the per-team season aggregate exist only on
+`sports.core.api.espn.com`, the hyperlinked one, and that changes their cost.
+
+- **`getTopScorers` / `getPlayerStats`** read
+  `…/seasons/{year}/types/1/leaders` -> `goalsLeaders`, 25 entries, each a `$ref`
+  to an athlete and a team rather than a name. That is **one request per player**
+  plus the teams (cached within the call, since a top-25 board repeats clubs
+  heavily), so roughly 26-30 requests against the single request FIFA and UEFA
+  each need. The `/api/competitions/scorers` route caches its result, and the
+  local `goal_event` aggregation still runs first, so this is a cold-start cost
+  rather than a per-view one. Assists are read out of the board's own label
+  ("M: 8, G: 10: A: 4") to avoid a second `$ref` hop per player.
+- **`getTeamTournament`** maps the app's three-letter code to ESPN's numeric id
+  through `…/{league}/teams` (48 entries, memoized per instance), then reads the
+  squad and head coach from `…/teams/{id}/roster` and the season aggregate from
+  `…/seasons/{year}/types/1/teams/{id}/statistics`. The aggregate arrives as
+  categories to be flattened; `passPct` is a fraction where the app wants a
+  percentage. The `matches` argument the caller passes is ignored: it only
+  contains fixtures that carry a `providerStageId`, which ESPN has no concept of,
+  so it is always empty.
+- **`getBracket`** needs no endpoint at all (there is none). The tree is built
+  from the knockout fixtures the adapter already has, by the shared
+  `bracketFromKnockoutMatches` in
+  [bracket-order.ts](../../apps/web-nuxt/server/utils/providers/bracket-order.ts),
+  which UEFA now uses too - it had its own copy of the same walk.
 
 ## Match data: fixture (offline, e2e only)
 

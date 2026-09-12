@@ -1,5 +1,25 @@
-import type { MatchStatus, NormalizedMatch, Score, ScorePair, Team, Winner } from '../../../shared/types/match'
+import type {
+  MatchStatus,
+  NormalizedMatch,
+  Score,
+  ScorePair,
+  SquadPlayer,
+  Team,
+  TeamSeasonStats,
+  TopScorer,
+  Winner,
+} from '../../../shared/types/match'
 import { matchHasStarted } from '../../../shared/types/match'
+import { bracketFromKnockoutMatches } from './bracket-order'
+import {
+  espnSummaryTeams,
+  mapEspnPosition,
+  parseEspnLineups,
+  parseEspnMatchDetail,
+  parseEspnMatchStats,
+  parseEspnTimeline,
+  type EspnSummary,
+} from './espn-summary'
 import { RateLimiter } from './rate-limiter'
 import { assignGroupMatchdays, mapStageFromName, parseGroupNameStrict } from './stage'
 import { ProviderRateLimitError, ProviderUpstreamError, type ListFixturesOptions, type MatchDataProvider } from './types'
@@ -240,15 +260,88 @@ interface EspnStandings {
     | null
 }
 
+// The season-long leaders board and the per-team season aggregate live only on
+// the `core` API, which serves a graph of $refs rather than whole objects.
+interface EspnLeaderEntry {
+  value?: number | null
+  displayValue?: string | null
+  shortDisplayValue?: string | null
+  athlete?: { $ref?: string | null } | null
+  team?: { $ref?: string | null } | null
+}
+
+interface EspnLeaders {
+  categories?: { name?: string | null; leaders?: EspnLeaderEntry[] | null }[] | null
+}
+
+interface EspnTeamList {
+  sports?: { leagues?: { teams?: { team?: { id?: string | number | null; abbreviation?: string | null } | null }[] | null }[] | null }[] | null
+}
+
+interface EspnTeamRoster {
+  athletes?: {
+    id?: string | number | null
+    displayName?: string | null
+    jersey?: string | null
+    position?: { abbreviation?: string | null } | null
+    headshot?: { href?: string | null } | null
+  }[] | null
+  coach?: { firstName?: string | null; lastName?: string | null }[] | null
+}
+
+interface EspnTeamStatistics {
+  splits?: { categories?: { stats?: { name?: string | null; value?: number | null }[] | null }[] | null } | null
+}
+
 export interface EspnOptions {
   league: string
   season?: string | null
   baseUrl?: string
   standingsBaseUrl?: string
+  coreBaseUrl?: string
   fetchImpl?: typeof fetch
   rateLimiter?: RateLimiter
   timeoutMs?: number
 }
+
+// The leaders board labels a row "M: 8, G: 10: A: 4" - matches, goals, assists.
+// Reading the assist count out of it saves one $ref hop per player.
+export function assistsFromLabel(label: string | null | undefined): number | null {
+  const found = String(label ?? '').match(/\bA:\s*(\d+)/)
+  return found ? Number(found[1]) : null
+}
+
+export function mapEspnSeasonStats(raw: {
+  splits?: { categories?: { stats?: { name?: string | null; value?: number | null }[] | null }[] | null } | null
+}): TeamSeasonStats | null {
+  const flat = new Map<string, number | null>()
+  for (const category of raw.splits?.categories ?? []) {
+    for (const stat of category.stats ?? []) {
+      if (stat.name) flat.set(stat.name, stat.value ?? null)
+    }
+  }
+  if (!flat.size) return null
+
+  const passPct = flat.get('passPct')
+  return {
+    goals: flat.get('totalGoals') ?? null,
+    conceded: flat.get('goalsConceded') ?? null,
+    assists: flat.get('goalAssists') ?? null,
+    possession: flat.get('possessionPct') ?? null,
+    attempts: flat.get('totalShots') ?? null,
+    onTarget: flat.get('shotsOnTarget') ?? null,
+    passes: flat.get('totalPasses') ?? null,
+    // ESPN ships the pass rate as a fraction; the app renders a percentage.
+    passAccuracy: passPct != null ? Math.round(passPct * 1000) / 10 : null,
+    crosses: flat.get('totalCrosses') ?? null,
+    corners: flat.get('wonCorners') ?? null,
+    offsides: flat.get('offsides') ?? null,
+    yellowCards: flat.get('yellowCards') ?? null,
+    redCards: flat.get('redCards') ?? null,
+  }
+}
+
+const DEFAULT_CORE_BASE_URL = 'https://sports.core.api.espn.com/v2/sports/soccer/leagues'
 
 const DEFAULT_BASE_URL = 'https://site.api.espn.com/apis/site/v2/sports/soccer'
 // Standings live on apis/v2, not apis/site/v2. The site path also answers 200,
@@ -264,6 +357,7 @@ const DEFAULT_TIMEOUT_MS = 20_000
 export function espnProvider(options: EspnOptions): MatchDataProvider {
   const baseUrl = options.baseUrl ?? DEFAULT_BASE_URL
   const standingsBaseUrl = options.standingsBaseUrl ?? DEFAULT_STANDINGS_BASE_URL
+  const coreBaseUrl = options.coreBaseUrl ?? DEFAULT_CORE_BASE_URL
   const league = encodeURIComponent(options.league)
   const doFetch = options.fetchImpl ?? fetch
   const limiter = options.rateLimiter ?? new RateLimiter(1000)
@@ -348,6 +442,92 @@ export function espnProvider(options: EspnOptions): MatchDataProvider {
     return assignGroupMatchdays(matches)
   }
 
+  // One summary document carries the play-by-play, both line-ups and both
+  // teams' stats, and four provider methods read it - memoize per match so a
+  // detail + stats + timeline render costs one request, not three.
+  const summaries = new Map<string, Promise<EspnSummary>>()
+  function summaryFor(matchId: string): Promise<EspnSummary> {
+    let pending = summaries.get(matchId)
+    if (!pending) {
+      pending = getJson<EspnSummary>(`${baseUrl}/${league}/summary?event=${encodeURIComponent(matchId)}`).catch(
+        (error) => {
+          summaries.delete(matchId)
+          throw error
+        },
+      )
+      summaries.set(matchId, pending)
+    }
+    return pending
+  }
+
+  let teamIdsCache: Promise<Map<string, string>> | null = null
+  // The app addresses a team by its three-letter code; ESPN wants a numeric id.
+  function teamIdsByCode(): Promise<Map<string, string>> {
+    if (!teamIdsCache) {
+      teamIdsCache = getJson<EspnTeamList>(`${baseUrl}/${league}/teams`)
+        .then((data) => {
+          const byCode = new Map<string, string>()
+          for (const entry of data.sports?.[0]?.leagues?.[0]?.teams ?? []) {
+            const code = entry.team?.abbreviation
+            const teamId = entry.team?.id
+            if (code && teamId != null) byCode.set(code.toUpperCase(), String(teamId))
+          }
+          if (!byCode.size) teamIdsCache = null
+          return byCode
+        })
+        .catch((error) => {
+          teamIdsCache = null
+          throw error
+        })
+    }
+    return teamIdsCache
+  }
+
+  function coreSeasonUrl(season: string | null): string {
+    // The leaders and team aggregates are season-scoped; `types/1` is the one
+    // season type football competitions publish.
+    return `${coreBaseUrl}/${league}/seasons/${encodeURIComponent(season ?? '')}/types/1`
+  }
+
+  // A leaders entry points at its athlete and team rather than naming them, so
+  // each row costs a follow-up. Teams repeat heavily across a top-25 board, so
+  // they are resolved once and shared; athletes are unique and cannot be.
+  async function resolveLeaders(season: string | null): Promise<TopScorer[]> {
+    const data = await getJson<EspnLeaders>(`${coreSeasonUrl(season)}/leaders`)
+    const goals = data.categories?.find((c) => c.name === 'goalsLeaders')?.leaders ?? []
+    if (!goals.length) return []
+
+    const teamCache = new Map<string, { name: string; code: string | null }>()
+    async function resolveTeam(ref: string | null | undefined) {
+      if (!ref) return { name: '', code: null }
+      const cached = teamCache.get(ref)
+      if (cached) return cached
+      const team = await getJson<{ displayName?: string | null; abbreviation?: string | null }>(ref)
+      const resolved = { name: team.displayName ?? '', code: team.abbreviation ?? null }
+      teamCache.set(ref, resolved)
+      return resolved
+    }
+
+    const out: TopScorer[] = []
+    for (const entry of goals) {
+      const athlete = entry.athlete?.$ref
+        ? await getJson<{ displayName?: string | null }>(entry.athlete.$ref)
+        : null
+      const team = await resolveTeam(entry.team?.$ref)
+      out.push({
+        playerName: athlete?.displayName ?? 'Unknown',
+        teamName: team.name,
+        teamCode: team.code,
+        goals: entry.value ?? 0,
+        // The board ships assists inside its own label ("M: 8, G: 10: A: 4"),
+        // which saves a second $ref hop per player for the statistics document.
+        assists: assistsFromLabel(entry.shortDisplayValue ?? entry.displayValue),
+        penalties: null,
+      })
+    }
+    return out
+  }
+
   return {
     meta: { name: 'espn', rateLimitPerMin: 60, dailyCap: null },
 
@@ -372,6 +552,75 @@ export function espnProvider(options: EspnOptions): MatchDataProvider {
           m.status === 'INTERRUPTED' ||
           (m.status === 'FINISHED' && new Date(m.kickoffTime).getTime() >= finishedCutoff),
       )
+    },
+
+    async getMatchDetail({ matchId }: { stageId?: string; matchId: string }) {
+      const summary = await summaryFor(matchId)
+      return parseEspnMatchDetail(summary, matchId, espnSummaryTeams(summary))
+    },
+
+    async getMatchLineups({ matchId }: { stageId?: string; matchId: string }) {
+      return parseEspnLineups(await summaryFor(matchId))
+    },
+
+    async getMatchTimeline(opts: { matchId: string; homeTeamId?: string | null; awayTeamId?: string | null }) {
+      const summary = await summaryFor(opts.matchId)
+      const teams = espnSummaryTeams(summary)
+      return parseEspnTimeline(summary, {
+        homeTeamId: opts.homeTeamId ?? teams.homeId,
+        awayTeamId: opts.awayTeamId ?? teams.awayId,
+      })
+    },
+
+    // `ifesId` is the event id that getMatchDetail handed back, so this reads
+    // the memoized summary rather than fetching the document a second time.
+    async getMatchStats({ ifesId }: { ifesId: string }) {
+      const stats = parseEspnMatchStats(await summaryFor(ifesId))
+      return Object.keys(stats).length ? stats : null
+    },
+
+    async getBracket() {
+      return bracketFromKnockoutMatches(await fetchSeason())
+    },
+
+    getTopScorers({ season }: ListFixturesOptions) {
+      return resolveLeaders(seasonFor(season))
+    },
+
+    // The caller passes a team id only because FIFA needs one; ESPN's leaders
+    // board is competition-wide, so the id is ignored.
+    getPlayerStats(_opts: { teamId: string }) {
+      return resolveLeaders(seasonFor())
+    },
+
+    async getTeamTournament({ teamRef }: { teamRef: string; matches: { stageId: string; matchId: string }[] }) {
+      const teamId = (await teamIdsByCode()).get(teamRef.toUpperCase())
+      if (!teamId) return { squad: [], coach: null, stats: null }
+
+      const roster = await getJson<EspnTeamRoster>(`${baseUrl}/${league}/teams/${encodeURIComponent(teamId)}/roster`)
+      const squad: SquadPlayer[] = (roster.athletes ?? []).map((a) => ({
+        playerId: a.id != null ? String(a.id) : '',
+        name: a.displayName || '?',
+        shirtNumber: a.jersey != null && a.jersey !== '' ? Number(a.jersey) : null,
+        position: mapEspnPosition(a.position?.abbreviation),
+        captain: false,
+        pictureUrl: a.headshot?.href || null,
+      }))
+
+      const head = roster.coach?.[0]
+      const coach = head ? [head.firstName, head.lastName].filter(Boolean).join(' ').trim() || null : null
+
+      let stats: TeamSeasonStats | null = null
+      try {
+        const raw = await getJson<EspnTeamStatistics>(
+          `${coreSeasonUrl(seasonFor())}/teams/${encodeURIComponent(teamId)}/statistics`,
+        )
+        stats = mapEspnSeasonStats(raw)
+      } catch {
+        // Season aggregates are a nicety; the squad alone is still worth having.
+      }
+
+      return { squad, coach, stats }
     },
   }
 }

@@ -1,7 +1,9 @@
 import { describe, it, expect, vi } from 'vitest'
 import {
+  assistsFromLabel,
   espnMinute,
   espnProvider,
+  mapEspnSeasonStats,
   mapEspnStage,
   mapEspnStatus,
   normalizeEspnEvent,
@@ -15,6 +17,9 @@ import { ProviderRateLimitError, ProviderUpstreamError } from './types'
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status })
 }
+
+const urlsOf = (fetchImpl: typeof fetch) =>
+  (fetchImpl as unknown as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[0] as string)
 
 function noWait() {
   return new RateLimiter(0, () => 0, async () => {})
@@ -378,11 +383,22 @@ describe('normalizeEspnEvent', () => {
       expect(normalizeEspnEvent(e)!.kickoffTime).toBe('2026-06-20T19:00Z')
     })
 
-    it('returns null rather than mirroring a half-labelled payload', () => {
+    it.each([
+      ['both tagged away', 'away', 'away'],
+      ['both tagged home', 'home', 'home'],
+      ['only the home side tagged', 'home', undefined],
+      ['only the away side tagged', undefined, 'away'],
+    ])('returns null rather than mirroring a half-labelled payload (%s)', (_label, first, second) => {
       const e = event({ id: '24' })
-      e.competitions![0].competitors![0].homeAway = 'away'
-      e.competitions![0].competitors![1].homeAway = 'away'
+      e.competitions![0].competitors![0].homeAway = first
+      e.competitions![0].competitors![1].homeAway = second
       expect(normalizeEspnEvent(e)).toBeNull()
+    })
+
+    it('tolerates a status with no period', () => {
+      const e = event({ id: '28' })
+      e.competitions![0].status = { type: { name: 'STATUS_FULL_TIME', state: 'post', completed: true } }
+      expect(normalizeEspnEvent(e)!.status).toBe('FINISHED')
     })
 
     it('falls back to competitor order only when neither side is labelled', () => {
@@ -436,9 +452,6 @@ describe('espnProvider', () => {
       return jsonResponse(routes.scoreboard ?? scoreboard)
     }) as unknown as typeof fetch
   }
-
-  const urlsOf = (fetchImpl: typeof fetch) =>
-    (fetchImpl as unknown as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[0] as string)
 
   it('lists a whole season in one scoreboard call and attaches group letters', async () => {
     const fetchImpl = stubFetch()
@@ -650,5 +663,397 @@ describe('espnProvider', () => {
     const urls = urlsOf(fetchImpl)
     expect(urls[0].startsWith('https://stub/site/fifa.world/scoreboard?')).toBe(true)
     expect(urls[1].startsWith('https://stub/v2/fifa.world/standings?')).toBe(true)
+  })
+})
+
+describe('espnProvider per-match reads', () => {
+  const summaryDoc = {
+    keyEvents: [
+      { type: { id: '70', text: 'Goal' }, scoringPlay: true, clock: { displayValue: "60'" }, team: { id: '1' }, participants: [{ athlete: { id: '9', displayName: 'Scorer' } }] },
+    ],
+    rosters: [
+      { homeAway: 'home', formation: '4-3-3', team: { id: '1', displayName: 'Team 1', abbreviation: 'T1' }, roster: [{ starter: true, jersey: '1', position: { abbreviation: 'G' }, athlete: { id: '9', displayName: 'Scorer' } }] },
+      { homeAway: 'away', formation: '4-4-2', team: { id: '2', displayName: 'Team 2', abbreviation: 'T2' }, roster: [{ starter: true, jersey: '5', position: { abbreviation: 'CD' }, athlete: { id: '8', displayName: 'Other' } }] },
+    ],
+    boxscore: { teams: [{ team: { id: '1' }, statistics: [{ name: 'possessionPct', value: 60 }] }, { team: { id: '2' }, statistics: [{ name: 'possessionPct', value: 40 }] }] },
+    gameInfo: { venue: { fullName: 'Stadium' }, attendance: 1000 },
+  }
+
+  function summaryFetch() {
+    return vi.fn(async (url: string) => {
+      if (url.includes('/summary')) return jsonResponse(summaryDoc)
+      return jsonResponse({ events: [] })
+    }) as unknown as typeof fetch
+  }
+
+  it('reads the detail, lineups, timeline and stats off ONE summary request', async () => {
+    const fetchImpl = summaryFetch()
+    const p = espnProvider({ league: 'fifa.world', season: '2026', fetchImpl, rateLimiter: noWait() })
+
+    const detail = await p.getMatchDetail!({ matchId: '77' })
+    const lineups = await p.getMatchLineups!({ matchId: '77' })
+    const timeline = await p.getMatchTimeline!({ matchId: '77' })
+    const stats = await p.getMatchStats!({ ifesId: '77' })
+
+    expect(detail).toMatchObject({ stadium: 'Stadium', attendance: 1000, possessionHome: 60, ifesId: '77' })
+    expect(detail!.goals).toHaveLength(1)
+    expect(lineups).toMatchObject({ available: true })
+    expect(lineups!.home.formation).toBe('4-3-3')
+    expect(timeline.map((e) => e.kind)).toEqual(['goal'])
+    expect(stats!['1'].possession).toBe(60)
+
+    // Four reads, one document.
+    const calls = (fetchImpl as unknown as ReturnType<typeof vi.fn>).mock.calls.filter((c) => (c[0] as string).includes('/summary'))
+    expect(calls).toHaveLength(1)
+    expect(calls[0][0]).toContain('/soccer/fifa.world/summary?event=77')
+  })
+
+  it('resolves the sides from the summary when the caller names none', async () => {
+    const p = espnProvider({ league: 'fifa.world', fetchImpl: summaryFetch(), rateLimiter: noWait() })
+    expect((await p.getMatchTimeline!({ matchId: '77' }))[0].side).toBe('HOME')
+  })
+
+  it('prefers the team ids the caller passes', async () => {
+    const p = espnProvider({ league: 'fifa.world', fetchImpl: summaryFetch(), rateLimiter: noWait() })
+    const events = await p.getMatchTimeline!({ matchId: '77', homeTeamId: '2', awayTeamId: '1' })
+    expect(events[0].side).toBe('AWAY')
+  })
+
+  it('does not cache a failed summary', async () => {
+    let calls = 0
+    const fetchImpl = vi.fn(async (url: string) => {
+      if (url.includes('/summary')) {
+        calls += 1
+        return calls === 1 ? new Response('boom', { status: 500 }) : jsonResponse(summaryDoc)
+      }
+      return jsonResponse({ events: [] })
+    }) as unknown as typeof fetch
+    const p = espnProvider({ league: 'fifa.world', fetchImpl, rateLimiter: noWait() })
+    await expect(p.getMatchDetail!({ matchId: '77' })).rejects.toBeInstanceOf(ProviderUpstreamError)
+    expect((await p.getMatchDetail!({ matchId: '77' }))!.stadium).toBe('Stadium')
+    expect(calls).toBe(2)
+  })
+
+  it('returns null stats when the boxscore is empty', async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse({ boxscore: { teams: [] } })) as unknown as typeof fetch
+    const p = espnProvider({ league: 'fifa.world', fetchImpl, rateLimiter: noWait() })
+    expect(await p.getMatchStats!({ ifesId: '77' })).toBeNull()
+  })
+})
+
+describe('espnProvider getBracket', () => {
+  function knockoutScoreboard() {
+    const tie = (id: string, slug: string, date: string, home: string, away: string, hs: string, as: string, winner: 'h' | 'a') => ({
+      id,
+      date,
+      season: { slug },
+      competitions: [
+        {
+          date,
+          status: { period: 2, type: { name: 'STATUS_FULL_TIME', state: 'post', completed: true } },
+          competitors: [
+            { homeAway: 'home', score: hs, winner: winner === 'h', team: { id: home, displayName: home, abbreviation: home } },
+            { homeAway: 'away', score: as, winner: winner === 'a', team: { id: away, displayName: away, abbreviation: away } },
+          ],
+        },
+      ],
+    })
+    return {
+      events: [
+        tie('s1', 'semifinals', '2026-07-14T19:00Z', 'ESP', 'FRA', '2', '1', 'h'),
+        tie('s2', 'semifinals', '2026-07-15T19:00Z', 'ARG', 'BRA', '1', '0', 'h'),
+        tie('t1', '3rd-place-match', '2026-07-18T19:00Z', 'FRA', 'BRA', '3', '2', 'h'),
+        tie('f1', 'final', '2026-07-19T19:00Z', 'ESP', 'ARG', '1', '0', 'h'),
+      ],
+    }
+  }
+
+  it('builds the tree from the fixture list and crowns the final winner', async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse(knockoutScoreboard())) as unknown as typeof fetch
+    const p = espnProvider({ league: 'fifa.world', season: '2026', fetchImpl, rateLimiter: noWait() })
+    const bracket = (await p.getBracket!())!
+
+    expect(bracket.winner).toEqual({ name: 'ESP', code: 'ESP' })
+    expect(bracket.rounds.map((r) => [r.name, r.matches.length])).toEqual([
+      ['Semi-finals', 2],
+      ['Final', 1],
+    ])
+    // The third-place tie is not a round: giving it one crowns its winner too.
+    expect(bracket.rounds.some((r) => r.matches.some((m) => m.providerMatchId === 't1'))).toBe(false)
+  })
+
+  it('orders the semi-finals under the final side they feed', async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse(knockoutScoreboard())) as unknown as typeof fetch
+    const p = espnProvider({ league: 'fifa.world', season: '2026', fetchImpl, rateLimiter: noWait() })
+    const bracket = (await p.getBracket!())!
+    expect(bracket.rounds[0].matches.map((m) => m.providerMatchId)).toEqual(['s1', 's2'])
+  })
+
+  it('has no bracket before a final exists', async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse({ events: [] })) as unknown as typeof fetch
+    const p = espnProvider({ league: 'fifa.world', season: '2026', fetchImpl, rateLimiter: noWait() })
+    expect(await p.getBracket!()).toBeNull()
+  })
+})
+
+describe('espnProvider season boards', () => {
+  const leaders = {
+    categories: [
+      {
+        name: 'goalsLeaders',
+        leaders: [
+          { value: 10, shortDisplayValue: 'M: 8, G: 10: A: 4', athlete: { $ref: 'https://core/athletes/1' }, team: { $ref: 'https://core/teams/478' } },
+          { value: 8, shortDisplayValue: 'M: 7, G: 8', athlete: { $ref: 'https://core/athletes/2' }, team: { $ref: 'https://core/teams/478' } },
+        ],
+      },
+    ],
+  }
+
+  function boardFetch() {
+    return vi.fn(async (url: string) => {
+      if (url.includes('/leaders')) return jsonResponse(leaders)
+      if (url.includes('/athletes/1')) return jsonResponse({ displayName: 'Kylian Mbappé' })
+      if (url.includes('/athletes/2')) return jsonResponse({ displayName: 'Lionel Messi' })
+      if (url.includes('/teams/478')) return jsonResponse({ displayName: 'France', abbreviation: 'FRA' })
+      return jsonResponse({})
+    }) as unknown as typeof fetch
+  }
+
+  it('resolves the scorer board and reads assists out of the label', async () => {
+    const fetchImpl = boardFetch()
+    const p = espnProvider({ league: 'fifa.world', season: '2026', fetchImpl, rateLimiter: noWait() })
+    expect(await p.getTopScorers!({ season: '2026' })).toEqual([
+      { playerName: 'Kylian Mbappé', teamName: 'France', teamCode: 'FRA', goals: 10, assists: 4, penalties: null },
+      { playerName: 'Lionel Messi', teamName: 'France', teamCode: 'FRA', goals: 8, assists: null, penalties: null },
+    ])
+    // The two rows share a team, so it is fetched once, not twice.
+    expect(urlsOf(fetchImpl).filter((u) => u.includes('/teams/478'))).toHaveLength(1)
+  })
+
+  it('serves getPlayerStats off the same board, ignoring the team id it is handed', async () => {
+    const p = espnProvider({ league: 'fifa.world', season: '2026', fetchImpl: boardFetch(), rateLimiter: noWait() })
+    expect((await p.getPlayerStats!({ teamId: 'anything' }))[0].playerName).toBe('Kylian Mbappé')
+  })
+
+  it('returns an empty board when the category is missing', async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse({ categories: [] })) as unknown as typeof fetch
+    const p = espnProvider({ league: 'fifa.world', season: '2026', fetchImpl, rateLimiter: noWait() })
+    expect(await p.getTopScorers!({ season: '2026' })).toEqual([])
+  })
+
+  it('names an unresolvable athlete rather than dropping the row', async () => {
+    const fetchImpl = vi.fn(async (url: string) => {
+      if (url.includes('/leaders')) return jsonResponse({ categories: [{ name: 'goalsLeaders', leaders: [{ value: 3 }] }] })
+      return jsonResponse({})
+    }) as unknown as typeof fetch
+    const p = espnProvider({ league: 'fifa.world', season: '2026', fetchImpl, rateLimiter: noWait() })
+    expect(await p.getTopScorers!({ season: '2026' })).toEqual([
+      { playerName: 'Unknown', teamName: '', teamCode: null, goals: 3, assists: null, penalties: null },
+    ])
+  })
+})
+
+describe('espnProvider getTeamTournament', () => {
+  const teams = { sports: [{ leagues: [{ teams: [{ team: { id: '164', abbreviation: 'ESP' } }, { team: { id: '202', abbreviation: 'ARG' } }] }] }] }
+  const roster = {
+    athletes: [
+      { id: '1', displayName: 'Unai Simón', jersey: '23', position: { abbreviation: 'G' }, headshot: { href: 'u.png' } },
+      { id: '2', displayName: 'Aymeric Laporte', jersey: '14', position: { abbreviation: 'CD-L' } },
+    ],
+    coach: [{ firstName: 'Vincente', lastName: 'del Bosque' }],
+  }
+  const statistics = {
+    splits: {
+      categories: [
+        { stats: [{ name: 'totalGoals', value: 14 }, { name: 'goalsConceded', value: 1 }, { name: 'passPct', value: 0.897 }] },
+        { stats: [{ name: 'possessionPct', value: 62.7 }, { name: 'yellowCards', value: 6 }] },
+      ],
+    },
+  }
+
+  function teamFetch(over: { statistics?: unknown } = {}) {
+    return vi.fn(async (url: string) => {
+      if (url.includes('/teams/164/roster')) return jsonResponse(roster)
+      if (url.includes('/statistics')) {
+        return over.statistics === null ? new Response('nope', { status: 404 }) : jsonResponse(over.statistics ?? statistics)
+      }
+      if (url.endsWith('/teams')) return jsonResponse(teams)
+      return jsonResponse({})
+    }) as unknown as typeof fetch
+  }
+
+  it('resolves the code to an id, then the squad, coach and season stats', async () => {
+    const p = espnProvider({ league: 'fifa.world', season: '2026', fetchImpl: teamFetch(), rateLimiter: noWait() })
+    const data = await p.getTeamTournament!({ teamRef: 'ESP', matches: [] })
+
+    expect(data.coach).toBe('Vincente del Bosque')
+    expect(data.squad.map((s) => [s.shirtNumber, s.name, s.position])).toEqual([
+      [23, 'Unai Simón', 'GK'],
+      [14, 'Aymeric Laporte', 'DF'],
+    ])
+    expect(data.squad[0].pictureUrl).toBe('u.png')
+    // passPct arrives as a fraction and the app renders a percentage.
+    expect(data.stats).toMatchObject({ goals: 14, conceded: 1, passAccuracy: 89.7, possession: 62.7, yellowCards: 6 })
+  })
+
+  it('keeps the squad when the season aggregate is unavailable', async () => {
+    const p = espnProvider({ league: 'fifa.world', season: '2026', fetchImpl: teamFetch({ statistics: null }), rateLimiter: noWait() })
+    const data = await p.getTeamTournament!({ teamRef: 'ESP', matches: [] })
+    expect(data.squad).toHaveLength(2)
+    expect(data.stats).toBeNull()
+  })
+
+  it('returns nothing for a code ESPN does not carry', async () => {
+    const p = espnProvider({ league: 'fifa.world', season: '2026', fetchImpl: teamFetch(), rateLimiter: noWait() })
+    expect(await p.getTeamTournament!({ teamRef: 'ZZZ', matches: [] })).toEqual({ squad: [], coach: null, stats: null })
+  })
+
+  it('fetches the team index once across calls', async () => {
+    const fetchImpl = teamFetch()
+    const p = espnProvider({ league: 'fifa.world', season: '2026', fetchImpl, rateLimiter: noWait() })
+    await p.getTeamTournament!({ teamRef: 'ESP', matches: [] })
+    await p.getTeamTournament!({ teamRef: 'ESP', matches: [] })
+    expect(urlsOf(fetchImpl).filter((u) => u.endsWith('/teams'))).toHaveLength(1)
+  })
+
+  it('retries the team index after a failure', async () => {
+    let calls = 0
+    const fetchImpl = vi.fn(async (url: string) => {
+      if (url.endsWith('/teams')) {
+        calls += 1
+        return calls === 1 ? new Response('boom', { status: 500 }) : jsonResponse(teams)
+      }
+      if (url.includes('/roster')) return jsonResponse(roster)
+      return jsonResponse(statistics)
+    }) as unknown as typeof fetch
+    const p = espnProvider({ league: 'fifa.world', season: '2026', fetchImpl, rateLimiter: noWait() })
+    await expect(p.getTeamTournament!({ teamRef: 'ESP', matches: [] })).rejects.toBeInstanceOf(ProviderUpstreamError)
+    expect((await p.getTeamTournament!({ teamRef: 'ESP', matches: [] })).coach).toBe('Vincente del Bosque')
+    expect(calls).toBe(2)
+  })
+
+  it('has no coach when the feed ships none', async () => {
+    const fetchImpl = vi.fn(async (url: string) => {
+      if (url.includes('/roster')) return jsonResponse({ athletes: [], coach: [] })
+      if (url.endsWith('/teams')) return jsonResponse(teams)
+      return jsonResponse(statistics)
+    }) as unknown as typeof fetch
+    const p = espnProvider({ league: 'fifa.world', season: '2026', fetchImpl, rateLimiter: noWait() })
+    expect((await p.getTeamTournament!({ teamRef: 'ESP', matches: [] })).coach).toBeNull()
+  })
+})
+
+describe('espnProvider defensive shapes', () => {
+  it('survives a team index, roster and leaders board full of holes', async () => {
+    const fetchImpl = vi.fn(async (url: string) => {
+      if (url.endsWith('/teams')) {
+        return jsonResponse({ sports: [{ leagues: [{ teams: [{ team: { abbreviation: 'NOID' } }, { team: { id: '9' } }, { team: { id: '164', abbreviation: 'ESP' } }] }] }] })
+      }
+      if (url.includes('/roster')) return jsonResponse({ athletes: [{}, { displayName: 'No Jersey', jersey: '' }] })
+      if (url.includes('/statistics')) return jsonResponse({ splits: { categories: [{}] } })
+      return jsonResponse({})
+    }) as unknown as typeof fetch
+    const p = espnProvider({ league: 'fifa.world', season: '2026', fetchImpl, rateLimiter: noWait() })
+    const data = await p.getTeamTournament!({ teamRef: 'ESP', matches: [] })
+    expect(data.squad).toEqual([
+      { playerId: '', name: '?', shirtNumber: null, position: null, captain: false, pictureUrl: null },
+      { playerId: '', name: 'No Jersey', shirtNumber: null, position: null, captain: false, pictureUrl: null },
+    ])
+    expect(data.coach).toBeNull()
+    expect(data.stats).toBeNull()
+  })
+
+  it('retries an empty team index rather than caching it', async () => {
+    let calls = 0
+    const fetchImpl = vi.fn(async (url: string) => {
+      if (url.endsWith('/teams')) {
+        calls += 1
+        return jsonResponse(calls === 1 ? {} : { sports: [{ leagues: [{ teams: [{ team: { id: '164', abbreviation: 'ESP' } }] }] }] })
+      }
+      if (url.includes('/roster')) return jsonResponse({ athletes: [], coach: [{ firstName: 'A', lastName: 'Coach' }] })
+      return jsonResponse({ splits: { categories: [{ stats: [{ name: 'totalGoals', value: 1 }] }] } })
+    }) as unknown as typeof fetch
+    const p = espnProvider({ league: 'fifa.world', season: '2026', fetchImpl, rateLimiter: noWait() })
+    expect(await p.getTeamTournament!({ teamRef: 'ESP', matches: [] })).toEqual({ squad: [], coach: null, stats: null })
+    expect((await p.getTeamTournament!({ teamRef: 'ESP', matches: [] })).coach).toBe('A Coach')
+    expect(calls).toBe(2)
+  })
+
+  it('reads a leaders row with no value or team as zero goals and no club', async () => {
+    const fetchImpl = vi.fn(async (url: string) => {
+      if (url.includes('/leaders')) {
+        return jsonResponse({ categories: [{ name: 'goalsLeaders', leaders: [{ athlete: { $ref: 'https://core/a/1' } }] }] })
+      }
+      return jsonResponse({})
+    }) as unknown as typeof fetch
+    const p = espnProvider({ league: 'fifa.world', season: '2026', fetchImpl, rateLimiter: noWait() })
+    expect(await p.getTopScorers!({ season: '2026' })).toEqual([
+      { playerName: 'Unknown', teamName: '', teamCode: null, goals: 0, assists: null, penalties: null },
+    ])
+  })
+
+  it('reads a team ref that resolves to nothing as a nameless club', async () => {
+    const fetchImpl = vi.fn(async (url: string) => {
+      if (url.includes('/leaders')) {
+        return jsonResponse({ categories: [{ name: 'goalsLeaders', leaders: [{ value: 2, team: { $ref: 'https://core/t/1' } }] }] })
+      }
+      return jsonResponse({})
+    }) as unknown as typeof fetch
+    const p = espnProvider({ league: 'fifa.world', season: '2026', fetchImpl, rateLimiter: noWait() })
+    expect((await p.getTopScorers!({ season: '2026' }))[0]).toMatchObject({ teamName: '', teamCode: null, goals: 2 })
+  })
+
+  it('asks the core api without a season when none is configured', async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse({ categories: [] })) as unknown as typeof fetch
+    const p = espnProvider({ league: 'fifa.world', fetchImpl, rateLimiter: noWait() })
+    await p.getTopScorers!({ season: '' })
+    expect(urlsOf(fetchImpl)[0]).toContain('/seasons//types/1/leaders')
+  })
+
+  it('honours an overridden core base url', async () => {
+    const fetchImpl = vi.fn(async () => jsonResponse({ categories: [] })) as unknown as typeof fetch
+    const p = espnProvider({ league: 'fifa.world', season: '2026', coreBaseUrl: 'https://stub/core', fetchImpl, rateLimiter: noWait() })
+    await p.getTopScorers!({ season: '2026' })
+    expect(urlsOf(fetchImpl)[0]).toBe('https://stub/core/fifa.world/seasons/2026/types/1/leaders')
+  })
+
+  it('asks the standings without a season when none is configured', async () => {
+    const fetchImpl = vi.fn(async (url: string) => {
+      if (url.includes('/standings')) return jsonResponse({ children: [] })
+      return jsonResponse({ events: [finishedGroupMatch] })
+    }) as unknown as typeof fetch
+    const p = espnProvider({ league: 'fifa.world', fetchImpl, rateLimiter: noWait() })
+    await p.listFixtures({ season: '' })
+    expect(urlsOf(fetchImpl)[1]).toMatch(/\/standings$/)
+  })
+})
+
+describe('assistsFromLabel', () => {
+  it.each([
+    ['M: 8, G: 10: A: 4', 4],
+    ['M: 7, G: 8', null],
+    ['', null],
+    [null, null],
+  ])('reads %s as %s', (label, expected) => {
+    expect(assistsFromLabel(label)).toBe(expected)
+  })
+})
+
+describe('mapEspnSeasonStats', () => {
+  it('returns null when the document carries no stats', () => {
+    expect(mapEspnSeasonStats({})).toBeNull()
+    expect(mapEspnSeasonStats({ splits: { categories: [] } })).toBeNull()
+    expect(mapEspnSeasonStats({ splits: { categories: [{}] } })).toBeNull()
+  })
+
+  it('reads a stat published with no value as null', () => {
+    expect(mapEspnSeasonStats({ splits: { categories: [{ stats: [{ name: 'totalGoals' }] }] } })!.goals).toBeNull()
+  })
+
+  it('leaves an absent counter null and skips a nameless stat', () => {
+    const stats = mapEspnSeasonStats({ splits: { categories: [{ stats: [{ name: 'totalGoals', value: 3 }, { value: 9 }] }] } })!
+    expect(stats.goals).toBe(3)
+    expect(stats.passAccuracy).toBeNull()
+    expect(stats.redCards).toBeNull()
   })
 })

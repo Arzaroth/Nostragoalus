@@ -724,11 +724,20 @@ See [features/mobile-app.md](features/mobile-app.md).
   domestic league, and "Premier League" ends in a letter the loose parser reads as
   group E. Tightening the shared one would have broken FIFA; they sit side by side
   in `stage.ts` with names that say which is which.
-- **ESPN is a fixtures adapter only, by choice.** It implements `listFixtures`,
-  `getMatchesByDate` and `getLiveMatches` and none of the optional methods
-  (`getMatchDetail`, `getBracket`, `getTopScorers`, `getMatchTimeline`,
-  lineups, per-team stats). Those exist on FIFA and UEFA because those feeds are
-  the primary source for the tournament the app actually runs; ESPN's value is
-  breadth. Adding a detail method later means a per-match `summary` call and the
-  polling budget that implies, which is a decision to take when a competition
-  needs it, not up front.
+- **ESPN shipped as fixtures-only first, and that scoping was a mistake.** The
+  first pass implemented the three required contract methods and recorded a
+  rationale - that ESPN's value was breadth and breadth was bought with the
+  scoreboard alone. That rationale was written without anyone having opened the
+  `summary` endpoint. When it was finally surveyed it turned out to carry the
+  play-by-play, both line-ups, both teams' stats and the venue in a single
+  request, which is cheaper per match than FIFA's own detail path. The adapter is
+  now at parity. The lesson is in the sequencing, not the scope: survey the feed
+  before deciding what a provider can do, and never write a tradeoff into this
+  file that has not actually been measured.
+- **`bracketFromKnockoutMatches` is shared rather than copied.** UEFA built its
+  bracket by walking its own knockout fixtures - no feed endpoint involved - and
+  ESPN needs exactly the same walk (ESPN publishes no bracket endpoint either;
+  `/bracket` is a 404). Rather than copy fifty lines, the walk moved into
+  `bracket-order.ts` beside `orderBracketFeeders`, which it now delegates the
+  feeder ordering to. UEFA's bracket tests passed unchanged against the shared
+  version, which is what made the extraction safe to do inside this change.
