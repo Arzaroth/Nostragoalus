@@ -5,6 +5,12 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Ajouté
+
+- Administration : une section Compétitions qui définit le tournoi sur lequel le site s'ouvre. Il était jusqu'ici figé à la compilation, donc le changer imposait une nouvelle version. Seul un tournoi actif peut être choisi, et archiver celui qui est sélectionné confie le rôle à la saison active la plus récente plutôt que de laisser des liens morts.
+- Administration : les tournois s'ajoutent depuis la page d'administration au lieu du code. Choisissez une source de données, parcourez ce qu'elle propose, et l'application vérifie les vrais matchs avant d'enregistrer quoi que ce soit : elle refuse un tournoi dont elle perdrait silencieusement des matchs, et explique pourquoi en langage clair. Ajouter un tournoi pris en charge n'est plus une publication.
+- Administration : les tournois peuvent être archivés puis restaurés. L'archivage masque un tournoi du sélecteur tout en conservant tous les pronostics, trophées, ligues et discussions qui y sont rattachés.
+
 ## [4.11.1] - 2026-09-12
 
 ### Corrigé

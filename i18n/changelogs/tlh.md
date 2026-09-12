@@ -5,6 +5,12 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### chelpu'
+
+- che'wI': QaD lI'wI'. QaD DevwI' ngu', 'ej De'wI'Hom poS. wa'DIch chenmoHDI' ngu'lu'pu', vaj choHmeH chu'wI' poQlu'pu'. QaD taHtaH neH wIvlu'laH. lI'be'choHDI', QaD chu' Dev, 'ej Heghpu'bogh rar tu'lu'be'.
+- che'wI': che'wI' HaSta lo'lu'DI' QaD chellu', ghItlh lo'lu'be'. mung yIwIv, QaDmey yIlegh, 'ej teH qaD noH De'wI'Hom qaSpa' choq. qaDmey chIlbogh QaD lajbe', 'ej meq per. DaH QaD chelmeH chu'wI' poQlu'be'.
+- che'wI': QaDmey pollu' 'ej cheghlu'laH. pollu'DI', wIvwI'vo' So'lu', 'ach Hoch noH, huch, ghom, 'ej ja'chuq poltaH.
+
 ## [4.11.1] - 2026-09-12
 
 ### tI'pu'
