@@ -3013,6 +3013,20 @@ blocking):
       `apk-publish`. The build number in particular can only ever go up, and a
       mistake there is unrecoverable without an uninstall.
 
+## Chat content rendering - deferred (fix/mobile-mention-names)
+
+- [ ] The app tokenizes a message with the shared `parseChatContent` but renders
+      link and image tokens as their plain URL text: a link is not tappable and
+      an image URL is not inlined, both of which the web's `ChatMessageContent`
+      does. The tokens are already there, so this is a render-side gap only.
+- [ ] `encodeMentions` only matches an `@Name` at the start of the text or after
+      whitespace, so the second mention in `@Alice,@Bob` stays literal on BOTH
+      clients. Pinned by a parity vector as current behaviour; changing it means
+      changing the vector and both sides together.
+- [ ] Mentions are league-only. A DM composer has no picker on either client, and
+      the app resolves only the other participant's name when a forwarded message
+      carries one - a mention of a third party in a DM renders as the stand-in.
+
 ## Release flakes
 
 - [ ] `pnpm test:components` can fail a release with every test green.
