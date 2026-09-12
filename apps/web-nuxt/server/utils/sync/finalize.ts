@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNotNull } from 'drizzle-orm'
+import { and, eq, inArray, isNotNull, ne, or, sql } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { match, matchScoreEvent, prediction } from '../../../db/schema'
 import { countsDouble } from '../../../shared/types/match'
@@ -28,11 +28,18 @@ export async function scoreMatchRow(
   db: AppDatabase,
   matchId: string,
   context?: ScoringContext,
+  // The caller often already holds the row (finalizeMatches selects it, then
+  // used to make this re-select it by id - one extra point-select per finished
+  // match per tick). Passing it in skips that; omitting it keeps the original
+  // behaviour for callers that only have an id.
+  preloaded?: typeof match.$inferSelect,
 ): Promise<ScoreOutcome> {
-  const rows = await db.select().from(match).where(eq(match.id, matchId)).limit(1)
-  if (rows.length === 0) return 'skipped'
-
-  const m = rows[0]
+  let m = preloaded
+  if (!m) {
+    const rows = await db.select().from(match).where(eq(match.id, matchId)).limit(1)
+    if (rows.length === 0) return 'skipped'
+    m = rows[0]
+  }
   if (m.status !== 'FINISHED' || m.fullTimeHome === null || m.fullTimeAway === null) return 'skipped'
 
   const { version, rules } = context ?? (await getScoringConfigFor(db, m.competitionId))
@@ -154,33 +161,93 @@ export async function finalizeMatches(db: AppDatabase, now: Date = new Date()): 
     }
 
     const changedMatchIds: string[] = []
-    const finished = await tx.select().from(match).where(eq(match.status, 'FINISHED'))
+    // Only matches that are not already settled. The full FINISHED scan this
+    // replaces re-read and re-hashed every match ever played on every tick,
+    // which at a one-minute cadence is the heaviest thing in the task.
+    //
+    // "Settled" is the same three-part test scoreMatchRow applies, pushed into
+    // SQL so the rows never load: the state (PENDING never scored, STALE when
+    // late odds forced a rescore - see markMatchesStaleForRescore), the result
+    // hash, which is just `status:home:away` so a score correction that leaves
+    // the state SCORED is still caught, and the config version. The version is
+    // per competition, so the scan runs once per competition with that
+    // competition's resolved version rather than as one table-wide query -
+    // a handful of indexed lookups (match_scoring_state_idx) that return
+    // nothing in the steady state.
+    //
+    // The version trigger is deliberately kept even though saveScoringConfig
+    // recomputes in the same transaction: finalize is the backstop if a version
+    // ever moves by another route, which finalize.test.ts pins directly.
+    const competitionIds = (
+      await tx.selectDistinct({ id: match.competitionId }).from(match).where(eq(match.status, 'FINISHED'))
+    ).map((r) => r.id)
+
+    const finished: (typeof match.$inferSelect)[] = []
+    for (const cid of competitionIds) {
+      const { version } = await configFor(cid)
+      const rows = await tx
+        .select()
+        .from(match)
+        .where(
+          and(
+            eq(match.competitionId, cid),
+            eq(match.status, 'FINISHED'),
+            isNotNull(match.fullTimeHome),
+            isNotNull(match.fullTimeAway),
+            or(
+              ne(match.scoringState, 'SCORED'),
+              sql`${match.resultHash} is distinct from ('FINISHED:' || ${match.fullTimeHome} || ':' || ${match.fullTimeAway})`,
+              sql`${match.scoredAtVersion} is distinct from ${version}`,
+            ),
+          ),
+        )
+      finished.push(...rows)
+    }
     let scored = 0
     for (const m of finished) {
-      if (m.fullTimeHome === null || m.fullTimeAway === null) continue
-      if ((await scoreMatchRow(tx, m.id, await configFor(m.competitionId))) === 'scored') {
+      // The row is already loaded; hand it over so scoreMatchRow does not
+      // re-select it by id.
+      if ((await scoreMatchRow(tx, m.id, await configFor(m.competitionId), m)) === 'scored') {
         scored += 1
         changedMatchIds.push(m.id)
         await notifyMatchResults(tx, m.id, pending)
       }
-      // The champion bonus is awarded in the same transaction as the final's
-      // scoring (it reads only the final's settled winner). The best-scorer
-      // bonus is NOT here: it depends on goal_event, which the detail sync
-      // populates after this transaction - it's awarded by the finalize task
-      // once details are fresh.
-      if (countsDouble(m.stage) && (m.winner === 'HOME' || m.winner === 'AWAY')) {
-        const winnerCode = m.winner === 'HOME' ? m.homeTeamCode : m.awayTeamCode
-        await awardChampionBonuses(tx, m.competitionId, winnerCode, pending)
-      }
+    }
+
+    // The champion bonus rides its own query rather than the scoring scan. It
+    // is re-awarded on every tick on purpose (idempotent, and it is the belt to
+    // the scoring pass's braces), so narrowing the scan above must not quietly
+    // stop it. Only a decided FINAL can award it, which is at most one row per
+    // competition. The best-scorer bonus is NOT here: it depends on goal_event,
+    // which the detail sync populates after this transaction - the finalize task
+    // awards it once details are fresh.
+    const decidedFinals = await tx
+      .select()
+      .from(match)
+      .where(
+        and(
+          eq(match.status, 'FINISHED'),
+          eq(match.stage, 'FINAL'),
+          inArray(match.winner, ['HOME', 'AWAY']),
+        ),
+      )
+    for (const m of decidedFinals) {
+      if (!countsDouble(m.stage)) continue
+      const winnerCode = m.winner === 'HOME' ? m.homeTeamCode : m.awayTeamCode
+      await awardChampionBonuses(tx, m.competitionId, winnerCode, pending)
     }
 
     // Finished matches shed their now-dead LIVE watch links.
     await pruneLiveMediaForFinishedMatches(tx)
 
-    const voidable = await tx.select().from(match).where(inArray(match.status, ['CANCELLED', 'POSTPONED']))
+    // Same shape as the scoring scan: the already-voided rows were being loaded
+    // and skipped in JS on every tick. VOID is terminal for these statuses.
+    const voidable = await tx
+      .select()
+      .from(match)
+      .where(and(inArray(match.status, ['CANCELLED', 'POSTPONED']), ne(match.scoringState, 'VOID')))
     let voided = 0
     for (const m of voidable) {
-      if (m.scoringState === 'VOID') continue
       if (m.status === 'POSTPONED' && m.kickoffTime > new Date(now.getTime() - POSTPONED_VOID_AFTER_MS)) continue
       await voidMatch(tx, m.id)
       voided += 1

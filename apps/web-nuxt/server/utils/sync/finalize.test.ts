@@ -293,3 +293,81 @@ describe('finalizeMatches', () => {
     await client.close()
   })
 })
+
+describe('finalizeMatches settled-match filter', () => {
+  // The scan used to load every FINISHED match ever played on every tick and
+  // re-hash it in JS. At a one-minute cadence that was the heaviest thing in
+  // the task, so the settled test now lives in SQL - these pin that it did not
+  // simply stop looking.
+  it('rescores nothing once every match is settled', async () => {
+    const { db, client, competitionId, roundId } = await setup()
+    for (let i = 0; i < 5; i++) {
+      const m = await makeMatch(db, { competitionId, roundId, kickoffTime: KICKOFF, status: 'FINISHED', fullTimeHome: 2, fullTimeAway: 1 })
+      const u = await makeUser(db, `settled-${i}`)
+      await makePrediction(db, { userId: u, matchId: m, roundId, home: 2, away: 1, lockedAt: KICKOFF })
+    }
+
+    expect((await finalizeMatches(db, NOW)).scored).toBe(5)
+    expect((await finalizeMatches(db, NOW)).scored).toBe(0)
+    await client.close()
+  })
+
+  // The result hash is `status:home:away`, compared in SQL, so a corrected
+  // scoreline is still picked up even though the row stays SCORED.
+  it('still picks up a score correction on an already-scored match', async () => {
+    const { db, client, competitionId, roundId } = await setup()
+    const m = await makeMatch(db, { competitionId, roundId, kickoffTime: KICKOFF, status: 'FINISHED', fullTimeHome: 2, fullTimeAway: 1 })
+    const u = await makeUser(db, 'corrected')
+    await makePrediction(db, { userId: u, matchId: m, roundId, home: 3, away: 1, lockedAt: KICKOFF })
+
+    await finalizeMatches(db, NOW)
+    expect((await db.select().from(prediction))[0]!.baseTier).toBe('OUTCOME')
+
+    await db.update(match).set({ fullTimeHome: 3 }).where(eq(match.id, m))
+    expect((await finalizeMatches(db, NOW)).scored).toBe(1)
+    expect((await db.select().from(prediction))[0]!.baseTier).toBe('EXACT')
+    await client.close()
+  })
+
+  // STALE is how late-arriving odds force a rescore (markMatchesStaleForRescore);
+  // the filter has to let those back in.
+  it('rescores a match marked STALE', async () => {
+    const { db, client, competitionId, roundId } = await setup()
+    const m = await makeMatch(db, { competitionId, roundId, kickoffTime: KICKOFF, status: 'FINISHED', fullTimeHome: 2, fullTimeAway: 1 })
+    const u = await makeUser(db, 'stale')
+    await makePrediction(db, { userId: u, matchId: m, roundId, home: 2, away: 1, lockedAt: KICKOFF })
+
+    await finalizeMatches(db, NOW)
+    expect((await finalizeMatches(db, NOW)).scored).toBe(0)
+
+    await db.update(match).set({ scoringState: 'STALE' }).where(eq(match.id, m))
+    expect((await finalizeMatches(db, NOW)).scored).toBe(1)
+    await client.close()
+  })
+
+  // Narrowing the scoring scan must not stop the champion bonus, which is
+  // re-awarded every tick on purpose and now rides its own query.
+  it('keeps awarding the champion bonus after the final is settled', async () => {
+    const { db, client, competitionId, roundId } = await setup()
+    const finalId = await makeMatch(db, {
+      competitionId,
+      roundId,
+      kickoffTime: KICKOFF,
+      status: 'FINISHED',
+      stage: 'FINAL',
+      fullTimeHome: 2,
+      fullTimeAway: 1,
+      winner: 'HOME',
+      homeTeamCode: 'FRA',
+      awayTeamCode: 'BRA',
+    })
+    expect(finalId).toBeTruthy()
+
+    await finalizeMatches(db, NOW)
+    // Second tick settles nothing new, but must still run the champion pass
+    // rather than skip it along with the scoring scan.
+    const second = await finalizeMatches(db, NOW)
+    expect(second.scored).toBe(0)
+    await client.close()
+  })
+})
