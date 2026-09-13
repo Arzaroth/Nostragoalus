@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [5.0.2] - 2026-09-13
+
 ### Corrigé
 
 - Admin : l'écran des compétitions utilise les mêmes contrôles que le reste de l'application, et le bouton qui liste ce qu'un fournisseur diffuse ressemble enfin à un bouton. Ses menus étaient de simples listes du navigateur : l'écran semblait emprunté à un autre site et l'étape suivante passait inaperçue.

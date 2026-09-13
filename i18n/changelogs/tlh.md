@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [5.0.2] - 2026-09-13
+
 ### tI'lu'
 
 - che'wI': QujmeH HaSta rap lo'wI' Hoch De'wI'. 'ej tetlh 'angbogh SeH 'oH SeH'e' DaH. wa'DIch chovnatlh SeH neH lo'lu'pu'; latlh Sep HaSta rur, 'ej latlh nID So'lu'pu'.

@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [5.0.2] - 2026-09-13
+
 ### Fixed
 
 - Admin: the competitions screen uses the same controls as the rest of the app, and the button that lists what a provider carries now looks like one. Its dropdowns were plain browser selects, so the screen looked borrowed from another site and the next step was easy to miss.
