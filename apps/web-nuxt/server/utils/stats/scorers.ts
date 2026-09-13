@@ -10,12 +10,12 @@ import { goalEvent, match } from '../../../db/schema'
 async function aggregatePlayers(db: AppDatabase, competitionId: string): Promise<TopScorer[]> {
   const rows = await db.select().from(goalEvent).where(eq(goalEvent.competitionId, competitionId))
 
-  type Tally = { playerId: string; playerName: string; teamName: string; teamCode: string | null; goals: number; assists: number }
+  type Tally = { playerId: string; playerName: string; teamName: string; teamCode: string | null; goals: number; assists: number; points: number }
   const players = new Map<string, Tally>()
   const ensure = (id: string, name: string, teamName: string, teamCode: string | null) => {
     let p = players.get(id)
     if (!p) {
-      p = { playerId: id, playerName: name, teamName, teamCode, goals: 0, assists: 0 }
+      p = { playerId: id, playerName: name, teamName, teamCode, goals: 0, assists: 0, points: 0 }
       players.set(id, p)
     }
     return p
@@ -24,7 +24,13 @@ async function aggregatePlayers(db: AppDatabase, competitionId: string): Promise
   // Score goals first so a player's own name is authoritative; an assister seen
   // before they score must not get stuck with the assist-row placeholder name.
   for (const r of rows) {
-    if (!r.ownGoal && r.playerId) ensure(r.playerId, r.playerName, r.teamName, r.teamCode).goals += 1
+    if (r.ownGoal || !r.playerId) continue
+    const p = ensure(r.playerId, r.playerName, r.teamName, r.teamCode)
+    // A row with no points is football, where every goal counts once. A rugby
+    // row counts towards the scorer board only when it is a try; its points go
+    // to the points board either way.
+    if (r.points === null || countsAsScore(r.points)) p.goals += 1
+    p.points += r.points ?? 0
   }
   for (const r of rows) {
     if (r.assistPlayerId) ensure(r.assistPlayerId, r.assistPlayerName || 'Unknown', r.teamName, r.teamCode).assists += 1
@@ -37,8 +43,20 @@ async function aggregatePlayers(db: AppDatabase, competitionId: string): Promise
     goals: s.goals,
     assists: s.assists,
     penalties: null,
+    points: s.points > 0 ? s.points : null,
   }))
 }
+
+// A try is five points, a penalty try seven; the kicks are worth two or three.
+// So "worth at least a try" separates the plays a scorer board is about from the
+// goal-kicking that would otherwise dominate it.
+export const TRY_POINTS = 5
+export function countsAsScore(points: number): boolean {
+  return points >= TRY_POINTS
+}
+
+const byPoints = (a: TopScorer, b: TopScorer) =>
+  (b.points ?? 0) - (a.points ?? 0) || b.goals - a.goals || a.playerName.localeCompare(b.playerName)
 
 const byGoals = (a: TopScorer, b: TopScorer) =>
   b.goals - a.goals || (b.assists ?? 0) - (a.assists ?? 0) || a.playerName.localeCompare(b.playerName)
@@ -49,9 +67,13 @@ const byAssists = (a: TopScorer, b: TopScorer) =>
 // sliced on its own metric, so a high-assist/low-goal player who never made the
 // goals top-N still surfaces (re-ranking the goals-sliced set used to hide them).
 export function rankPlayers(players: TopScorer[], limit = 20): PlayerRankings {
+  const points = [...players].filter((s) => (s.points ?? 0) > 0).sort(byPoints).slice(0, limit)
   return {
     scorers: [...players].filter((s) => s.goals > 0).sort(byGoals).slice(0, limit),
     assists: [...players].filter((s) => (s.assists ?? 0) > 0).sort(byAssists).slice(0, limit),
+    // Only a sport that records points gets the third board; in football it
+    // would just restate the scorer board.
+    ...(points.length > 0 ? { points } : {}),
   }
 }
 

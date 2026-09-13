@@ -1,0 +1,1 @@
+ALTER TABLE "goal_event" ADD COLUMN "points" integer;

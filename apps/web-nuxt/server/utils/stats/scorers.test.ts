@@ -174,3 +174,57 @@ describe('getCompetitionPlayerRankings', () => {
     await client.close()
   })
 })
+
+describe('a sport that scores points', () => {
+  it('counts tries on the scorer board and sums points on its own', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    const md1 = (await findRoundId(db, competitionId, 'GROUP', 1)) as string
+    const matchId = await makeMatch(db, { competitionId, roundId: md1, kickoffTime: new Date('2026-06-11T16:00:00Z') })
+
+    // A winger who scored two tries, and the fly-half who kicked the rest.
+    await addGoal(db, competitionId, matchId, { playerId: 'w', playerName: 'Winger', points: 5 })
+    await addGoal(db, competitionId, matchId, { playerId: 'w', playerName: 'Winger', points: 5 })
+    await addGoal(db, competitionId, matchId, { playerId: 'k', playerName: 'Kicker', points: 2 })
+    await addGoal(db, competitionId, matchId, { playerId: 'k', playerName: 'Kicker', points: 2 })
+    await addGoal(db, competitionId, matchId, { playerId: 'k', playerName: 'Kicker', points: 3 })
+    await addGoal(db, competitionId, matchId, { playerId: 'k', playerName: 'Kicker', points: 3 })
+    await addGoal(db, competitionId, matchId, { playerId: 'k', playerName: 'Kicker', points: 3 })
+
+    const { scorers, points } = await getCompetitionPlayerRankings(db, competitionId)
+    // The kicker leads the points board on 13 without scoring a try, while the
+    // winger leads the try board - which is the whole reason they are separate.
+    expect(scorers.map((s) => [s.playerName, s.goals])).toEqual([['Winger', 2]])
+    expect(points!.map((s) => [s.playerName, s.points])).toEqual([['Kicker', 13], ['Winger', 10]])
+    await client.close()
+  })
+
+  it('gives football no points board at all', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    const md1 = (await findRoundId(db, competitionId, 'GROUP', 1)) as string
+    const matchId = await makeMatch(db, { competitionId, roundId: md1, kickoffTime: new Date('2026-06-11T16:00:00Z') })
+    await addGoal(db, competitionId, matchId, { playerId: 'a', playerName: 'Striker' })
+
+    const rankings = await getCompetitionPlayerRankings(db, competitionId)
+    expect(rankings.points).toBeUndefined()
+    // A goal with no point value still counts once, as it always did.
+    expect(rankings.scorers[0]).toMatchObject({ playerName: 'Striker', goals: 1 })
+    await client.close()
+  })
+
+  it('keeps a try with no point value on the scorer board', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    const md1 = (await findRoundId(db, competitionId, 'GROUP', 1)) as string
+    const matchId = await makeMatch(db, { competitionId, roundId: md1, kickoffTime: new Date('2026-06-11T16:00:00Z') })
+    await addGoal(db, competitionId, matchId, { playerId: 'w', playerName: 'Winger' })
+    await addGoal(db, competitionId, matchId, { playerId: 'k', playerName: 'Kicker', points: 3 })
+
+    const { scorers, points } = await getCompetitionPlayerRankings(db, competitionId)
+    expect(scorers.map((s) => s.playerName)).toEqual(['Winger'])
+    // The kicker's three points are the only ones on the board.
+    expect(points!.map((s) => [s.playerName, s.points])).toEqual([['Kicker', 3]])
+    await client.close()
+  })
+})

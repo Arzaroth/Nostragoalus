@@ -749,6 +749,8 @@
     "player": "Player",
     "topScorers": "Top scorers",
     "topAssists": "Top assists",
+    "topTryScorers": "Top try scorers",
+    "topPoints": "Most points",
     "empty": "No data yet"
   },
   "standings": {

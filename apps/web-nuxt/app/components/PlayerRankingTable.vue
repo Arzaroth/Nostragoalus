@@ -2,7 +2,7 @@
 import type { TopScorer } from '#shared/types/match'
 
 const props = withDefaults(
-  defineProps<{ rows: TopScorer[]; metric: 'goals' | 'assists'; limit?: number }>(),
+  defineProps<{ rows: TopScorer[]; metric: 'goals' | 'assists' | 'points'; limit?: number }>(),
   { limit: 15 },
 )
 const { t } = useI18n()
@@ -17,7 +17,8 @@ const ranked = computed(() => {
     .map((r) => ({
       row: r,
       flag: flagUrl(r.teamCode),
-      value: props.metric === 'goals' ? r.goals ?? 0 : r.assists ?? 0,
+      value: props.metric === 'goals' ? r.goals ?? 0 : props.metric === 'points' ? r.points ?? 0 : r.assists ?? 0,
+      // The points board breaks ties on tries, which is how rugby tables read.
       tiebreak: props.metric === 'goals' ? r.assists ?? 0 : r.goals ?? 0,
     }))
     .filter((e) => e.value > 0)

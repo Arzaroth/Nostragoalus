@@ -848,11 +848,15 @@ effort buckets; order within a bucket is not priority.
     shirt numbers, captain and head coach. (An earlier pass wrongly concluded
     there was no endpoint for these: the probe only tried `/lineups`-shaped
     paths. The RWC site shows them, which is what prompted looking again.)
-  - Rugby, still to do: a **points** scorer board beside the try one (the feed
-    has the points on every scoring event; the local aggregation counts rows,
-    so this needs its own query rather than more provider work). Rugby positions
-    (prop, hooker, ...) are still dropped - `SquadPlayer.position` only has
-    GK/DF/MF/FW, so carrying them needs the shared shape to learn about rugby. ESPN covers rugby under `sports/rugby/`. Sport switch
+  - [x] **Two boards: tries and points.** `goal_event.points` carries what a
+    play was worth (null for football), so rugby stores a row per score and the
+    Stats view ranks tries and points separately - a kicker can lead the points
+    board without scoring a try.
+  - Rugby, still to do: positions (prop, hooker, ...) are dropped, since
+    `SquadPlayer.position` only has GK/DF/MF/FW - carrying them needs the shared
+    shape to learn about rugby. Fergie time is inert for rugby rather than wrong:
+    it only fires on a minute containing "+", which the World Rugby clock never
+    produces. ESPN covers rugby under `sports/rugby/`. Sport switch
     drives theme or at least logo. Multi-sport is a MAJOR.
   - Basketball: wanted, but **NBA playoffs is not a smaller NBA** - best-of-7 is
     variable-length multi-leg, a generalization of the UCL problem rather than

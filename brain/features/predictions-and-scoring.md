@@ -53,6 +53,12 @@ Scoring is MPP-style and lives in `apps/web-nuxt/server/utils/scoring/`
    `apps/web-nuxt/server/utils/scoring/config.ts`; a non-football competition
    gets the preset as an ordinary, editable per-competition override the moment
    it is created (`competitions/service.ts`).
+
+   `goal_event.points` records what a scoring play was worth (null for
+   football, where every goal is one). Rugby stores a row per score, so the
+   Stats view can show two boards: tries (rows worth at least `TRY_POINTS`)
+   and points (their sum). The leading try scorer and the leading points
+   scorer are usually different people, and only one of them is a kicker.
 2. **Crowd-rarity bonus** - rewards going against the crowd, computed from the
    global locked histogram of all predictions for that match. The denominator is
    always global and never shrinks for league views; `crowdMinDenominator`

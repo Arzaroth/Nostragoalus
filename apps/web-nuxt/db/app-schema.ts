@@ -275,6 +275,11 @@ export const goalEvent = pgTable(
     playerName: text('player_name').notNull(),
     minute: text('minute'),
     goalType: integer('goal_type'),
+    // What the scoring play was worth. Null for football, where every goal is
+    // one; rugby writes a row per scoring event (try 5, penalty try 7, penalty
+    // and drop goal 3, conversion 2) so a points board can be summed and a try
+    // board still counted.
+    points: integer('points'),
     ownGoal: boolean('own_goal').notNull().default(false),
     assistPlayerId: text('assist_player_id'),
     assistPlayerName: text('assist_player_name'),

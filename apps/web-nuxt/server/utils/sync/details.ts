@@ -55,6 +55,7 @@ export async function syncMatchDetails(
             playerName: g.playerName,
             minute: g.minute,
             goalType: g.goalType,
+            points: g.points ?? null,
             ownGoal: g.ownGoal,
             assistPlayerId: g.assistPlayerId,
             assistPlayerName: g.assistPlayerName,

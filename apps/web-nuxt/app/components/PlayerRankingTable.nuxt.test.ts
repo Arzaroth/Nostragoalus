@@ -90,4 +90,25 @@ describe('PlayerRankingTable', () => {
     const ranks = wrapper.findAll('tr').slice(1).map((tr: DOMWrapper<Element>) => tr.findAll('td')[0].text())
     expect(ranks).toEqual(['1', '2', '2', '2', '5'])
   })
+
+  it('ranks the points board on points, breaking ties on tries', async () => {
+    // A kicker can lead on points without scoring a try at all, so the board
+    // must not fall back to ranking by the scorer metric.
+    const rows = [
+      { playerName: 'Winger', teamName: 'A', teamCode: 'AAA', goals: 2, assists: 0, penalties: null, points: 10 },
+      { playerName: 'Kicker', teamName: 'B', teamCode: 'BBB', goals: 0, assists: 0, penalties: null, points: 13 },
+      { playerName: 'Level', teamName: 'C', teamCode: 'CCC', goals: 1, assists: 0, penalties: null, points: 10 },
+      { playerName: 'Pointless', teamName: 'D', teamCode: 'DDD', goals: 0, assists: 0, penalties: null, points: 0 },
+    ]
+    wrapper = await mountSuspended(PlayerRankingTable, { props: { rows, metric: 'points' } })
+    const names = wrapper.findAll('tr').slice(1).map((tr: DOMWrapper<Element>) => tr.findAll('td')[1].text())
+    // Kicker 13, then the two on 10 split by tries; nobody on zero shows.
+    expect(names.map((n: string) => n.replace(/\s+/g, ' ').trim())).toEqual(
+      expect.arrayContaining(['Kicker']),
+    )
+    expect(names).toHaveLength(3)
+    expect(names[0]).toContain('Kicker')
+    expect(names[1]).toContain('Winger')
+    expect(names[2]).toContain('Level')
+  })
 })

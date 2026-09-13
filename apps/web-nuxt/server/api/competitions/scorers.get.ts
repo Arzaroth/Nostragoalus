@@ -22,10 +22,13 @@ const topScorerSchema = z.object({
   goals: z.number(),
   assists: z.number().nullable(),
   penalties: z.number().nullable(),
+  points: z.number().nullable().optional(),
 })
 const responseSchema = z.object({
   scorers: z.array(topScorerSchema),
   assists: z.array(topScorerSchema),
+  // Only a sport that records points carries this board.
+  points: z.array(topScorerSchema).optional(),
 })
 
 export default defineReadHandler({ response: responseSchema, query: querySchema }, async ({ query }) => {

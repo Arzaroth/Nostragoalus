@@ -6120,6 +6120,10 @@
                           "penalties": {
                             "nullable": true,
                             "type": "number"
+                          },
+                          "points": {
+                            "nullable": true,
+                            "type": "number"
                           }
                         },
                         "required": [
@@ -6156,6 +6160,52 @@
                             "type": "number"
                           },
                           "penalties": {
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "points": {
+                            "nullable": true,
+                            "type": "number"
+                          }
+                        },
+                        "required": [
+                          "playerName",
+                          "teamName",
+                          "teamCode",
+                          "goals",
+                          "assists",
+                          "penalties"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "points": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "playerName": {
+                            "type": "string"
+                          },
+                          "teamName": {
+                            "type": "string"
+                          },
+                          "teamCode": {
+                            "nullable": true,
+                            "type": "string"
+                          },
+                          "goals": {
+                            "type": "number"
+                          },
+                          "assists": {
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "penalties": {
+                            "nullable": true,
+                            "type": "number"
+                          },
+                          "points": {
                             "nullable": true,
                             "type": "number"
                           }

@@ -234,12 +234,15 @@ export function worldRugbyMinute(secs: number | null | undefined): string | null
   return `${Math.floor(secs / 60) + 1}'`
 }
 
-// Only a try is credited the way a goal is. Conversions and penalties are kicks,
-// almost always by one specialist, so counting them would turn the scorers board
-// into a kickers board - the local goal_event aggregation counts rows, not
-// points. Their points still move the running score below.
+// A try (or penalty try) is the play credited the way a goal is. The kicks are
+// scores too, and every one of them is stored, but only a try counts towards the
+// try board - the rest would turn it into a kickers board.
 export function isTryEvent(event: WrTimelineEvent): boolean {
   return (event.group ?? '').toLowerCase() === 'try'
+}
+
+export function isScoringEvent(event: WrTimelineEvent): boolean {
+  return typeof event.points === 'number' && event.points > 0
 }
 
 export interface WorldRugbyOptions {
@@ -394,7 +397,11 @@ export function worldRugbyProvider(options: WorldRugbyOptions): MatchDataProvide
         if (type === 'yellow') cards[side === 'HOME' ? 'home' : 'away'].yellow += 1
         else if (type === 'red') cards[side === 'HOME' ? 'home' : 'away'].red += 1
 
-        if (isTryEvent(event)) {
+        // Every scoring play is stored, not just tries: the points board sums
+        // them, and the try board counts the ones worth a try (see TRY_POINTS
+        // in stats/scorers.ts). A try with no point value in the feed is still
+        // a score, so it is kept - it just adds nothing to the points board.
+        if (isScoringEvent(event) || isTryEvent(event)) {
           goals.push({
             side,
             teamId: team?.id ?? null,
@@ -403,7 +410,8 @@ export function worldRugbyProvider(options: WorldRugbyOptions): MatchDataProvide
             playerId: event.playerId ?? null,
             playerName: (event.playerId && names.get(event.playerId)) || '',
             minute: worldRugbyMinute(event.time?.secs),
-            goalType: event.points ?? null,
+            goalType: null,
+            points: event.points ?? null,
             ownGoal: false,
             assistPlayerId: null,
             assistPlayerName: null,

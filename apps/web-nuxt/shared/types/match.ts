@@ -70,6 +70,9 @@ export interface TopScorer {
   goals: number
   assists: number | null
   penalties: number | null
+  // Total points scored, for a sport that counts them. Null for football, where
+  // it would only ever equal `goals`.
+  points?: number | null
 }
 
 // The two Stats boards, each ranked and sliced on its own metric so a
@@ -77,6 +80,10 @@ export interface TopScorer {
 export interface PlayerRankings {
   scorers: TopScorer[]
   assists: TopScorer[]
+  // A third board for a sport whose scores are worth different amounts: in
+  // rugby the leading try scorer and the leading points scorer are usually
+  // different people, and only one of them is a kicker. Absent for football.
+  points?: TopScorer[]
 }
 
 export interface NormalizedMatch {
@@ -103,6 +110,9 @@ export interface NormalizedGoal {
   playerName: string
   minute: string | null
   goalType: number | null
+  // Points the play was worth, for sports where scores are not all worth one.
+  // Null for football.
+  points?: number | null
   ownGoal: boolean
   assistPlayerId: string | null
   assistPlayerName: string | null

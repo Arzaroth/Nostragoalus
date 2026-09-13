@@ -744,6 +744,8 @@
     "player": "Joueur",
     "topScorers": "Meilleurs buteurs",
     "topAssists": "Meilleurs passeurs",
+    "topTryScorers": "Meilleurs marqueurs d'essais",
+    "topPoints": "Meilleurs réalisateurs",
     "empty": "Aucune donnée"
   },
   "standings": {

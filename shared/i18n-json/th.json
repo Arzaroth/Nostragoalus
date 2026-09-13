@@ -744,6 +744,8 @@
     "player": "ผู้เล่น",
     "topScorers": "ดาวซัลโว",
     "topAssists": "แอสซิสต์สูงสุด",
+    "topTryScorers": "ผู้ทำไทรสูงสุด",
+    "topPoints": "ทำแต้มสูงสุด",
     "empty": "ยังไม่มีข้อมูล"
   },
   "standings": {

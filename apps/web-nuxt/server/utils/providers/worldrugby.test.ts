@@ -471,15 +471,19 @@ describe('match detail, timeline and stats', () => {
   const full = () => stub({ '/timeline': TIMELINE, '/stats': STATS, '/squads': SQUADS, '/match/28766': MATCH })
   const make = (impl: typeof fetch) => worldRugbyProvider({ eventId: '1893', fetchImpl: impl, rateLimiter: nowait() })
 
-  it('records tries as the scoring plays, and nothing else', async () => {
+  it('records every scoring play with what it was worth', async () => {
+    // All four scores are stored so the points board can sum them; the try
+    // board counts only the ones worth a try (stats/scorers.ts TRY_POINTS).
     const d = await make(full().impl).getMatchDetail!({ matchId: '28766' })
-    expect(d!.goals).toHaveLength(1)
+    expect(d!.goals.map((g) => g.points)).toEqual([5, 2, 3, 3])
     expect(d!.goals[0]).toMatchObject({
       side: 'AWAY',
       teamCode: 'NZL',
       playerName: "Mark Tele'a",
       minute: "2'",
-      goalType: 5,
+      points: 5,
+      // goalType stays a football type code; points carry the value.
+      goalType: null,
       ownGoal: false,
     })
   })
@@ -521,7 +525,7 @@ describe('match detail, timeline and stats', () => {
     const d = await make(impl).getMatchDetail!({ matchId: '28766' })
     expect(d).not.toBeNull()
     expect(d!.possessionHome).toBeNull()
-    expect(d!.goals).toHaveLength(1)
+    expect(d!.goals).toHaveLength(4)
   })
 
   it('runs the score through every kick, but gives a conversion no line of its own', async () => {
@@ -596,6 +600,7 @@ describe('match detail, timeline and stats', () => {
     const d = await make(impl).getMatchDetail!({ matchId: '28766' })
     expect(d!.cards.away.red).toBe(1)
     // A player id the squads do not carry must not become the literal id.
+    expect(d!.goals).toHaveLength(1)
     expect(d!.goals[0]!.playerName).toBe('')
 
     const events = await make(impl).getMatchTimeline!({ matchId: '28766' })
@@ -645,7 +650,10 @@ describe('match detail, timeline and stats', () => {
     const { impl } = stub({ '/timeline': tl, '/stats': STATS, '/squads': SQUADS, '/match/28766': MATCH })
     const d = await make(impl).getMatchDetail!({ matchId: '28766' })
     expect(d!.cards.home.red).toBe(1)
-    expect(d!.goals[0]!.goalType).toBeNull()
+    // A try the feed gave no point value is still a score; it just adds
+    // nothing to the points board.
+    expect(d!.goals).toHaveLength(1)
+    expect(d!.goals[0]!.points).toBeNull()
     expect(d!.substitutions[0]!.side).toBe('AWAY')
   })
 
@@ -739,7 +747,7 @@ describe('match detail, timeline and stats', () => {
     // A tournament whose squads are not named yet, or a failing call.
     const { impl } = stub({ '/timeline': TIMELINE, '/stats': STATS, '/match/28766': MATCH })
     const d = await make(impl).getMatchDetail!({ matchId: '28766' })
-    expect(d!.goals).toHaveLength(1)
+    expect(d!.goals).toHaveLength(4)
     expect(d!.goals[0]!.playerName).toBe('')
   })
 })
