@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [5.0.1] - 2026-09-13
+
 ### tI'lu'
 
 - ragh may' QamqoS qun 'aghbe'choH. FIFA QamqoS qun lo'lu'; cha' QuQ Sep per rap, vaj FRA RSA ragh may' 'e' QamqoS may'mey lo'lu'pu'. DaH QamqoS neH.

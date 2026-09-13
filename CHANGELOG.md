@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [5.0.1] - 2026-09-13
+
 ### Fixed
 
 - A rugby match no longer shows the two sides' football history. Head-to-head and Form read FIFA's archive of international football, and the three-letter country codes are the same in both sports - so a rugby quarter-final between France and South Africa was illustrated with their football meetings, goals and all. Those panels are football-only now.
