@@ -1263,14 +1263,17 @@ describe('espnProvider.discoverCompetitions hardening', () => {
     expect(await provider(fetchImpl).discoverCompetitions!()).toEqual([])
   })
 
-  // Serial, not Promise.all: the shared RateLimiter paces off a single timestamp
-  // and has no queue, so a parallel map fires every request as one burst.
-  it('walks the catalog one request at a time', async () => {
+  // Bounded workers, not Promise.all: the shared RateLimiter paces off a single
+  // timestamp and has no queue, so a parallel map over the whole catalog fires
+  // every request as one burst. A handful of workers overlaps the round trips
+  // without raising the request rate, which the limiter still governs.
+  it('walks the catalog a few at a time, never all at once', async () => {
+    const slugs = Array.from({ length: 40 }, (_, i) => `l${i}.1`)
     let inFlight = 0
     let peak = 0
     const fetchImpl = vi.fn(async (url: string) => {
       if (url.includes('?limit=')) {
-        return jsonResponse({ items: ['a.1', 'b.1', 'c.1'].map((s) => ({ $ref: ref(s) })) })
+        return jsonResponse({ items: slugs.map((s) => ({ $ref: ref(s) })) })
       }
       inFlight += 1
       peak = Math.max(peak, inFlight)
@@ -1280,7 +1283,24 @@ describe('espnProvider.discoverCompetitions hardening', () => {
       return jsonResponse({ slug, displayName: slug, isTournament: true, season: { year: 2026 } })
     })
     const found = await provider(fetchImpl).discoverCompetitions!()
-    expect(found).toHaveLength(3)
-    expect(peak).toBe(1)
+    expect(found).toHaveLength(40)
+    expect(peak).toBeGreaterThan(1)
+    expect(peak).toBeLessThanOrEqual(6)
+  })
+
+  it('names the catalog in a stable order whichever worker wins the race', async () => {
+    // Positional writes, so a slow league does not shuffle the list: the result
+    // is sorted by name and must not depend on completion order.
+    const fetchImpl = vi.fn(async (url: string) => {
+      if (url.includes('?limit=')) {
+        return jsonResponse({ items: ['a.1', 'b.1', 'c.1'].map((s) => ({ $ref: ref(s) })) })
+      }
+      const slug = decodeURIComponent(url).split('/leagues/')[1]!
+      // 'a.1' answers last.
+      await new Promise((r) => setTimeout(r, slug === 'a.1' ? 20 : 1))
+      return jsonResponse({ slug, displayName: slug.toUpperCase(), season: { year: 2026 } })
+    })
+    const found = await provider(fetchImpl).discoverCompetitions!()
+    expect(found.map((c) => c.name)).toEqual(['A.1', 'B.1', 'C.1'])
   })
 })

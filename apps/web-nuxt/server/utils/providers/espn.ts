@@ -391,6 +391,10 @@ const MAX_LEADERS = 25
 // the cap is headroom rather than a limit - it exists so a changed or hostile
 // index cannot turn one admin click into an unbounded fan-out.
 const MAX_DISCOVERED = 400
+// ESPN names one league per request and carries ~218 of them. Six at a time
+// overlaps the round trips without raising the request rate, which the shared
+// refLimiter still governs.
+const DISCOVERY_CONCURRENCY = 6
 
 export function espnProvider(options: EspnOptions): MatchDataProvider {
   const baseUrl = options.baseUrl ?? DEFAULT_BASE_URL
@@ -623,34 +627,47 @@ export function espnProvider(options: EspnOptions): MatchDataProvider {
         if (slugs.length >= MAX_DISCOVERED) break
       }
 
-      // Walked in series, not Promise.all: RateLimiter spaces acquisitions off a
-      // single `lastAt` and has no queue, so a parallel map has every request
-      // read the same timestamp, sleep the same 60ms and then fire as one burst
-      // of 218 - which is what the limiter exists to prevent. Every other
-      // ref-limited read here is a serial loop for the same reason.
-      const found: DiscoveredCompetition[] = []
-      for (const slug of slugs) {
-        let doc: EspnLeagueDoc
-        try {
-          doc = await getJson<EspnLeagueDoc>(`${coreBaseUrl}/${encodeURIComponent(slug)}`, refLimiter)
-        } catch (e) {
-          // One dead league is dropped; being rate-limited is not "these
-          // competitions do not exist", and silently returning a short catalog
-          // would tell the admin exactly that.
-          if (e instanceof ProviderRateLimitError) throw e
-          continue
+      // A few workers pulling off one queue, NOT Promise.all over every slug:
+      // RateLimiter spaces acquisitions off a single `lastAt` and has no queue,
+      // so a parallel map has all 218 read the same timestamp, sleep the same
+      // 60ms and fire as one burst - which is what the limiter exists to
+      // prevent. Each worker still awaits the limiter, so the spacing between
+      // requests is unchanged; what overlaps is the round-trip latency, which is
+      // what made this a 21-second wait behind a button with nothing to show.
+      const found: (DiscoveredCompetition | null)[] = new Array(slugs.length).fill(null)
+      let cursor = 0
+      let rateLimited: unknown = null
+      async function worker(): Promise<void> {
+        for (;;) {
+          const i = cursor++
+          const slug = slugs[i]
+          // Stop the whole walk on a 429: a short catalog reads to the admin as
+          // "these competitions do not exist".
+          if (slug === undefined || rateLimited) return
+          try {
+            const doc = await getJson<EspnLeagueDoc>(`${coreBaseUrl}/${encodeURIComponent(slug)}`, refLimiter)
+            const name = doc.displayName ?? doc.name
+            // Positional, so the result does not depend on which worker won.
+            if (name) {
+              found[i] = {
+                externalCompetitionId: doc.slug ?? slug,
+                name,
+                seasonHint: doc.season?.year != null ? String(doc.season.year) : null,
+                isTournament: doc.isTournament ?? null,
+              }
+            }
+          } catch (e) {
+            // One dead league is dropped; a rate limit is not the league's fault.
+            if (e instanceof ProviderRateLimitError) rateLimited = e
+          }
         }
-        const name = doc.displayName ?? doc.name
-        if (!name) continue
-        found.push({
-          externalCompetitionId: doc.slug ?? slug,
-          name,
-          seasonHint: doc.season?.year != null ? String(doc.season.year) : null,
-          isTournament: doc.isTournament ?? null,
-        })
       }
+      await Promise.all(Array.from({ length: Math.min(DISCOVERY_CONCURRENCY, slugs.length) }, worker))
+      if (rateLimited) throw rateLimited
 
-      return found.sort((a, b) => a.name.localeCompare(b.name))
+      return found
+        .filter((c): c is DiscoveredCompetition => c !== null)
+        .sort((a, b) => a.name.localeCompare(b.name))
     },
 
     listFixtures({ season }: ListFixturesOptions) {
