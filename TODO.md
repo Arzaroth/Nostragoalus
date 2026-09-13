@@ -3492,3 +3492,11 @@ Deferred by the review fix pass (each was a deliberate call, not an oversight):
       provider serves canned football data only, so a rugby spec needs canned
       rugby fixtures (pools + the 2027 round of 16) before it can drive the
       Stats boards, the sport-aware mark or the admin sub-feed picker.
+- [ ] **The public copy still says "football prediction game".** `home.tagline`,
+      `landing.sub`, `landing.ctaSub`, `about.intro` and both
+      `share.*Landing.subtitle` describe the product as football-only, in all
+      five locales, and the banner alt text reads "the football oracle". True
+      while football is the only live competition, and narrow the moment a rugby
+      one is added. Deliberately not rewritten at release time: it is ~6 strings
+      x 5 languages of marketing copy, including Klingon and Arabic, and worth
+      doing properly rather than in a version-bump commit.

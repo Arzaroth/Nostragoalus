@@ -6,9 +6,14 @@
 
 ![Coverage](.github/coverage-badge.svg) ![License: MIT OR WTFPL](https://img.shields.io/badge/License-MIT%20OR%20WTFPL-brightgreen.svg)
 
-A football score-prediction game: friends predict match scores and earn points by how close they
+A score-prediction game: friends predict match scores and earn points by how close they
 get, ranked per competition and on a global leaderboard. Ships with the **FIFA World Cup 2026**
 (default), **World Cup 2022**, and **UEFA Euro 2024**.
+
+Football is the default, not the limit. A competition names the sport it is played at, and that
+decides where its fixtures come from, how a prediction is scored, which ranking prices a champion
+pick, and what the mark looks like. **Rugby union** is supported end to end, from World Rugby's own
+feed - see [brain/features/rugby.md](brain/features/rugby.md).
 
 Source: <https://git.arzaroth.com/Arzaroth/Nostragoalus>
 
