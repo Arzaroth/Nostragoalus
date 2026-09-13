@@ -3528,3 +3528,13 @@ Deferred by the review fix pass (each was a deliberate call, not an oversight):
       silently returns the football. Typing the map as `Record<string, Sport>`
       (the union already exists in `shared/sport.ts`) makes the whole client
       chain checked.
+- [ ] **`/api/matches/{id}/insights` is stale in the sampled API docs.** Its goal
+      objects gained `points` (so a score drawn from the insights fallback is not
+      always rendered as a try), but `server/utils/docs/response-schemas.json`
+      still shows the old shape. The regen
+      (`node scripts/gen-api-schemas.mjs` against a freshly seeded dev stack)
+      could not run at release time: the shared dev pgdata is wedged, a
+      migration failing on an already-existing `user.onboarding_tour_dismissed_at`
+      column and blocking every later one, so `competition.sport` is missing and
+      `/api/matches` 500s. Recreate the dev volume, then regen. The real contract
+      (`shared/contracts-openapi/openapi.snapshot.json`) is already in step.
