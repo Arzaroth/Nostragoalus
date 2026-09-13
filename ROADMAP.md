@@ -864,7 +864,79 @@ effort buckets; order within a bucket is not priority.
     an escape from it. No draws and 110-point scorelines collapse exact and diff
     both, leaving outcome near a coin flip, so it needs a third (spread) scoring
     model. Parked until rugby proves the per-sport preset works.
-  - Esports: series scores (3-1 in maps) fit the existing score model.
+  - **Esports (LoL + CS)**: series scores (3-1 in maps) fit the existing score
+    model. Providers probed 2026-09-13 and settled; the remaining cost is
+    app-side, not provider-side.
+    - **LoL (MSI + Worlds) reads Riot's own `esports-api.lolesports.com`**,
+      keyless in practice (the public web key lolesports.com itself ships,
+      stable since 2020). Best fit since World Rugby: `getLeagues` is discovery
+      (Worlds `98767975604431411`, MSI `98767991325878492`),
+      `getStandings?tournamentId=` returns the whole tournament in one call,
+      `getLive` covers in-play, and `blockName` types the stage (Worlds 2025:
+      Swiss 33, Quarterfinals 4, Semifinals 2, Finals 1). Teams carry a short
+      code (`T1`, `KT`) and a logo. Worlds 2026 already reads in full
+      (`115660540725177488`, 2026-10-20 to 11-20: Play-Ins 6, Swiss 33,
+      Knockouts 7). `feed.lolesports.com/livestats/v1` adds keyless per-game
+      gold/kills/towers frames if a stats view is ever wanted.
+    - **CS majors read `api.blast.tv/v2`**, keyless and far wider than BLAST's
+      own events (562 tournaments, 101 CS, PGL and IEM included).
+      `/v2/tournaments/{id}/matches` is the whole tournament in one call:
+      `stageName`, `matchName`, `matchType` (BO1/BO3/BO5), `scheduledAt`, teams
+      with `shortName` + nationality, and a `metadata.liquipedia` cross-ref.
+      Verified against IEM Cologne Major 2026 (all 106 matches scored) and PGL
+      Major Singapore 2026, which publishes all 107 fixtures with the stage tree
+      intact months ahead of its 2026-11-25 start. Playoff names map straight
+      onto the app ladder (`Quarter Final 1-4`, `Semi Final 1-2`, `Grand Final`)
+      plus a typed `3rd Place Playoff`, and `/stages` names the format
+      (`double-elim-8-groups`), so double elim is detectable, not guessed.
+    - **The Swiss matchday falls out of the match name.** blast.tv names Swiss
+      matches by record (`0-0` x8, `1-0` x4, `0-1` x4, `2-0` x2, ...), so the
+      round is wins+losses+1; Liquipedia states it outright
+      (`matchsection=Round 1`). This looked like the fatal blocker (a null
+      matchday is silently dropped at insert, the same trap that still blocks
+      domestic leagues) and it is not.
+    - **No keyless live feed on blast.tv**: `/v2/matches/live`,
+      `/v2/matches/{id}` and `/v2/games` are 401/403, and match rows carry no
+      status, so in-play is either inferred (scores present past `scheduledAt`)
+      or supplemented from Sofascore, which does carry esports live (sport 72;
+      LoL 1571, CS 1572) and is already reachable through the shared cycletls
+      engine. Sofascore has no round info whatsoever (`roundInfo` null across
+      all 74 events of a major, `cuptrees` 404), so it is a live supplement,
+      never the structure source.
+    - **Liquipedia is the backfill and cross-check.** Its MediaWiki API is
+      keyless (custom UA + gzip + 1 req/2s, ~5 pages per major) and carries the
+      richest structure found: explicit bracket keys (`R1M1..R3M1`), Swiss round
+      sections, per-map scores split by side, and HLTV match ids. Costs wikitext
+      parsing and CC-BY-SA attribution. LPDB (the clean JSON) needs an approved
+      key, 60 req/h, non-commercial only.
+    - **Rejected, with reasons.** HLTV direct: a full Cloudflare JS challenge
+      ("Just a moment..."), which a Chrome JA3 through cycletls does not beat,
+      and every public HLTV wrapper drives a headless browser, so it would be
+      the app's first browser-driving dependency. bo3.gg: keyless but with no
+      filtering at all, so one tournament costs ~8k requests. PandaScore: free
+      tier is fixtures + results but needs a key, live is EUR 400-1000/mo per
+      game. Abios and GRID: sales-gated. csapi.de: keyless and fresh, but
+      results-only with zero future fixtures, so it cannot open picks.
+    - **Champion tiers need a ranking source per game.** CS has one: Valve
+      Regional Standings, published keyless by `api.csapi.de/rankings/` with
+      rank and points. LoL has no official global table, so Worlds seeding is
+      the likely stand-in, else the flat-bonus path that already exists for a
+      FIFA ranking outage.
+    - **The real blockers are all app-side.** Teams are orgs, not countries:
+      `flagUrl()` hardcodes the FIFA flag CDN and `app-schema` stores only a
+      team code with no crest column, so crests, the world map and the share
+      cards all need answers. MSI is double elimination (14 bracket matches, all
+      labelled `Knockouts` with no round names) against a single-elim `AppStage`
+      ladder and `bracketFromKnockoutMatches`, while Worlds' 7-match knockout
+      maps cleanly. A Bo5 has no draw, and exact-score picking over 3-0/3-1/3-2
+      wants its own scoring preset and closeness tiers (the rugby margin-band
+      work is the precedent). There is no Golden Boot analogue.
+    - **Direction**: take **Worlds first** as the spike, exactly as rugby World
+      Cup was - single elimination, one provider, stage names already typed, so
+      it exercises the sport abstraction and nothing else. Then a **CS major on
+      blast.tv**, which adds only the Swiss-record matchday and the third-place
+      tie. Leave **MSI until double elimination is modelled**: it shares a shape
+      with the two-legged UCL problem above rather than being a separate one.
   - UX: the default never changes - football internationals, zero questions
     asked, no onboarding quiz. Per-user **followed competitions** set; pill
     switcher shows followed + "more..." browser; following is the lazy opt-in.
