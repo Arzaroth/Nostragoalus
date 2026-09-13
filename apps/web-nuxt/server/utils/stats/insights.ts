@@ -42,6 +42,10 @@ export interface MatchGoalView {
   minute: string | null
   ownGoal: boolean
   assistPlayerName: string | null
+  // What the play was worth; null in football, where every goal is one. The
+  // match page falls back to these goals when live-detail has nothing, and
+  // without the value every rugby kick is drawn as a try.
+  points: number | null
 }
 
 export interface MatchInsights {
@@ -188,6 +192,7 @@ export async function getMatchInsights(db: AppDatabase, matchId: string, now: Da
       minute: g.minute,
       ownGoal: g.ownGoal,
       assistPlayerName: g.assistPlayerName,
+      points: g.points ?? null,
     }))
     .sort((a, b) => minuteValue(a.minute) - minuteValue(b.minute))
 

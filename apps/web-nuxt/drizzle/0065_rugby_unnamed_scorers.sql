@@ -6,6 +6,9 @@
 -- detail sync only visits a match whose details_fetched_at is null. Clearing it
 -- for exactly the affected matches makes the next sync re-fetch and replace
 -- their goal events with named ones.
+-- Deliberately sport-agnostic: a football feed that ever shipped a goal with an
+-- empty scorer name left the same blank row, and the re-sync is cheap and
+-- self-terminating (details_fetched_at is set again either way).
 UPDATE "match" SET "details_fetched_at" = NULL
 WHERE "id" IN (
 	SELECT "match_id" FROM "goal_event"

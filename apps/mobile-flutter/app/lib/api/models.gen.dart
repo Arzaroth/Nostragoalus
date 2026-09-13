@@ -3900,6 +3900,7 @@ class MatchInsightsResponseGoal {
   final String? minute;
   final bool ownGoal;
   final String? assistPlayerName;
+  final double? points;
 
   const MatchInsightsResponseGoal({
     required this.side,
@@ -3909,6 +3910,7 @@ class MatchInsightsResponseGoal {
     this.minute,
     required this.ownGoal,
     this.assistPlayerName,
+    this.points,
   });
 
   factory MatchInsightsResponseGoal.fromJson(Map<String, dynamic> json) =>
@@ -3920,6 +3922,7 @@ class MatchInsightsResponseGoal {
         minute: json['minute'] as String?,
         ownGoal: json['ownGoal'] as bool,
         assistPlayerName: json['assistPlayerName'] as String?,
+        points: (json['points'] as num?)?.toDouble(),
       );
 
   Map<String, dynamic> toJson() => {
@@ -3930,6 +3933,7 @@ class MatchInsightsResponseGoal {
     'minute': minute,
     'ownGoal': ownGoal,
     'assistPlayerName': assistPlayerName,
+    'points': points,
   };
 }
 

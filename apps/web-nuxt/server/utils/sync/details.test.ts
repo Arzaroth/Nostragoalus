@@ -115,6 +115,37 @@ describe('syncMatchDetails', () => {
     await client.close()
   })
 
+  it('never replaces stored goals with nothing', async () => {
+    // The repair migration puts already-detailed matches back through here. A
+    // thin timeline document answers with a non-null detail carrying no goals,
+    // and deleting first would wipe the match's scorers for good.
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    const md1 = (await findRoundId(db, competitionId, 'GROUP', 1)) as string
+    const mid = await makeMatch(db, {
+      competitionId,
+      roundId: md1,
+      kickoffTime: new Date('2026-06-11T16:00:00Z'),
+      status: 'FINISHED',
+      fullTimeHome: 0,
+      fullTimeAway: 1,
+    })
+    await db.update(match).set({ providerStageId: 's' }).where(eq(match.id, mid))
+    await syncMatchDetails(db, competitionId, providerWith(DETAIL))
+    expect((await db.select().from(goalEvent).where(eq(goalEvent.matchId, mid))).length).toBe(1)
+
+    // Re-open it the way the migration does, then answer with an empty detail.
+    await db.update(match).set({ detailsFetchedAt: null }).where(eq(match.id, mid))
+    const res = await syncMatchDetails(db, competitionId, providerWith({ possessionHome: null, possessionAway: null, goals: [] }))
+
+    expect(res).toMatchObject({ fetched: 1, goals: 0 })
+    const kept = await db.select().from(goalEvent).where(eq(goalEvent.matchId, mid))
+    expect(kept.map((g) => g.playerName)).toEqual(['Valencia'])
+    // Still marked done, so it does not come back round every run.
+    expect((await db.select().from(match).where(eq(match.id, mid)))[0].detailsFetchedAt).not.toBeNull()
+    await client.close()
+  })
+
   it('returns zeros when the provider exposes no match detail', async () => {
     const { db, client } = await createTestDb()
     const competitionId = await seedCompetition(db)

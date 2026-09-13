@@ -485,6 +485,10 @@ describe('mapWorldRugbyTimelineKind', () => {
   it('reports the misses, which decide matches at two and three points', () => {
     expect(mapWorldRugbyTimelineKind({ type: 'Miss Con' })).toBe('conversion-missed')
     expect(mapWorldRugbyTimelineKind({ type: 'Miss Pen' })).toBe('penalty-missed')
+    // The shape the feed actually sends: a miss carries its OWN group ("M Con",
+    // not "Con"), so the group tests above cannot claim it as a made kick.
+    expect(mapWorldRugbyTimelineKind({ group: 'M Con', type: 'Miss Con' })).toBe('conversion-missed')
+    expect(mapWorldRugbyTimelineKind({ group: 'M Pen', type: 'Miss Pen' })).toBe('penalty-missed')
   })
 
   it('carries cards and the player coming on', () => {
@@ -607,10 +611,58 @@ describe('match detail, timeline and stats', () => {
     expect(calls.filter((u) => u.includes('/player/p2')).length).toBe(1)
   })
 
+  it('does not try to name a whole tournament one player at a time', async () => {
+    // An empty squad document is not a gap to fill, it is every player missing
+    // (RWC 2027 answers 24 squads and 0 players). Filling it per player would
+    // be a serial run of rate-limited calls inside one request.
+    const { impl, calls } = stub({
+      '/timeline': TIMELINE,
+      '/stats': STATS,
+      '/squads': { squads: [] },
+      '/match/28766': MATCH,
+    })
+    const d = await make(impl).getMatchDetail!({ matchId: '28766' })
+    expect(d!.goals.every((g) => g.playerName === '')).toBe(true)
+    expect(calls.filter((u) => u.includes('/player/')).length).toBe(0)
+  })
+
+  it('caps how many players one match can look up', async () => {
+    // Named squads with many unknown actors means something is wrong upstream,
+    // not that there are many call-ups. Six is the bound.
+    const many = { timeline: Array.from({ length: 20 }, (_, i) => ({
+      type: 'T5', group: 'Try', points: 5, teamIndex: 0, playerId: `x${i}`, time: { secs: 60 * (i + 1) },
+    })) }
+    const { impl, calls } = stub({
+      '/timeline': many, '/stats': STATS, '/squads': SQUADS, '/match/28766': MATCH,
+    })
+    await make(impl).getMatchDetail!({ matchId: '28766' })
+    expect(calls.filter((u) => u.includes('/player/')).length).toBe(6)
+  })
+
   it('leaves a player the lookup cannot resolve unnamed rather than failing the detail', async () => {
-    const d = await make(full().impl).getMatchDetail!({ matchId: '28766' })
+    const { impl, calls } = stub({ '/timeline': TIMELINE, '/stats': STATS, '/squads': SQUADS, '/match/28766': MATCH })
+    const p = make(impl)
+    const d = await p.getMatchDetail!({ matchId: '28766' })
     expect(d!.goals[1]!.playerName).toBe('')
     expect(d!.goals[0]!.playerName).toBe("Mark Tele'a")
+    // The miss is remembered: the second read of the same document does not pay
+    // for the doomed lookup again.
+    await p.getMatchTimeline!({ matchId: '28766' })
+    expect(calls.filter((u) => u.includes('/player/p2')).length).toBe(1)
+  })
+
+  it('records a card the feed does not attribute to anyone', async () => {
+    // A card shown to the bench or to nobody in particular: it still counts and
+    // still belongs on the timeline, with no name rather than a blank one.
+    const impl = stub({
+      '/timeline': { timeline: [{ type: 'Red', teamIndex: 0, time: { secs: 3000 } }] },
+      '/stats': STATS,
+      '/squads': SQUADS,
+      '/match/28766': MATCH,
+    }).impl
+    const d = await make(impl).getMatchDetail!({ matchId: '28766' })
+    expect(d!.cards).toEqual({ home: { yellow: 0, red: 1 }, away: { yellow: 0, red: 0 } })
+    expect(d!.bookings).toEqual([{ side: 'HOME', playerId: null, playerName: '', minute: "51'", card: 'RED' }])
   })
 
   it('re-arms the timeline fetch after a failure instead of caching the error', async () => {
@@ -779,8 +831,9 @@ describe('match detail, timeline and stats', () => {
     // Six scoring/discipline/sub entries out of the fixture; the Ruck is not an
     // event the timeline reports.
     const tl = await make(full().impl).getMatchTimeline!({ matchId: '28766' })
-    expect(tl).toHaveLength(6)
-    expect(tl.some((e) => e.kind === undefined)).toBe(false)
+    // The kinds themselves, in order: asserting that none is undefined proves
+    // nothing, since getMatchTimeline skips anything it could not map.
+    expect(tl.map((e) => e.kind)).toEqual(['try', 'conversion', 'penalty-kick', 'drop-goal', 'sub', 'yellow'])
   })
 
   it('keys match stats by team id and leaves the football-only fields null', async () => {

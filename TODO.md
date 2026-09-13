@@ -3500,3 +3500,31 @@ Deferred by the review fix pass (each was a deliberate call, not an oversight):
       one is added. Deliberately not rewritten at release time: it is ~6 strings
       x 5 languages of marketing copy, including Klingon and Arabic, and worth
       doing properly rather than in a version-bump commit.
+
+### Deferred by the fix/rugby-match-view review
+
+- [ ] **The World Rugby event vocabulary is decoded twice.**
+      `mapWorldRugbyTimelineKind` tests `group`/`type` for the play-by-play,
+      while `getMatchDetail` re-tests the same strings inline
+      (`isTryEvent`/`isScoringEvent`, `type === 'yellow'`, `'sub on'`,
+      `'sub off'`). If the feed renames one, the play-by-play keeps working
+      while the stored `goal_event`/`bookings` rows silently lose the play, and
+      a test over the mapper alone would not notice. `getMatchDetail` should
+      classify once through the mapper and switch on the kind.
+- [ ] **The points board is still chosen from data presence, not the sport.**
+      `rankPlayers` emits the third board only when some row carries points
+      (`points.length > 0 ? { points } : {}`). Harmless today because the client
+      branches on `competition.sport`, but it is the same anti-pattern the
+      Stats headings and `scoreIcon` were both fixed for. Thread the sport
+      through `getMatchPlayerRankings`/`getCompetitionPlayerRankings` instead.
+- [ ] **The team page and the map are only half sport-aware.** Both got the
+      sport's ball, but `teams/[code].vue` and `map.vue` still label it
+      `match.topScorer` (the match page now says `stats.topTryScorers` for
+      rugby) and still show an assists count next to a 👟 that rugby can never
+      fill. Same treatment as the match Players tab: points in place of assists.
+- [ ] **The sport never becomes a type.** `CompetitionMeta.sportBySlug` is
+      `Record<string, string>`, so `useSelectedSport()` yields a bare string and
+      `scoreIcon(sport, points)` takes one. `scoreIcon('RUGBY', p)` compiles and
+      silently returns the football. Typing the map as `Record<string, Sport>`
+      (the union already exists in `shared/sport.ts`) makes the whole client
+      chain checked.

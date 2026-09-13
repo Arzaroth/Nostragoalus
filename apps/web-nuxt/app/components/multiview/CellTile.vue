@@ -1,9 +1,6 @@
 <script setup lang="ts">
-import { scoreIcon } from '../../utils/match-view'
 
-// The ball of the sport being played; a football beside a rugby try is the tell
-// that a view never asked. See scoreIcon.
-const ball = computed(() => scoreIcon(useSelectedSport().value, null))
+const ball = useSportBall()
 import { matchHasStarted, matchIsInPlay, type MatchStatus } from '#shared/types/match'
 import { liveClockSpec } from '../../utils/match-view'
 import type { MatchListItem } from '../../composables/useMatches'

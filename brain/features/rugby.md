@@ -109,13 +109,20 @@ a player called up mid-tournament and then scoring is not in it: Makazole Mapimp
 is absent from the RWC 2023 document, and his three tries against Romania stored
 with an empty `playerName` and rendered as a blank line with a score beside it.
 Ids the squad map does not answer are now resolved one at a time from
-`/player/{id}` and memoised for the life of the adapter - rare by construction,
-so the saving the bulk document buys is kept.
+`/player/{id}`, memoised including the misses, and capped at six per adapter -
+rare by construction, so the saving the bulk document buys is kept. A squad
+document that comes back empty is not a gap and is skipped: that is the whole
+tournament unnamed (RWC 2027 answers 24 squads and 0 players), and the lookups
+are serial behind the rate limiter.
 
 Stored rows do not heal on their own, because the detail sync only visits a match
 whose `details_fetched_at` is null. `drizzle/0065_rugby_unnamed_scorers.sql`
 clears it for exactly the matches holding a nameless scoring row, so the next sync
-re-fetches and replaces them. Belt and braces, `aggregatePlayers` drops a player
+re-fetches and replaces them. That re-opens matches that already have their
+scorers, so [sync/details.ts](../../apps/web-nuxt/server/utils/sync/details.ts)
+will not replace something with nothing: a thin timeline document answers with a
+non-null detail carrying no goals, and the old delete-then-insert would have wiped
+them permanently. Belt and braces, `aggregatePlayers` drops a player
 it cannot name from every board: a board is a list of names, and a tally with no
 name beside it tells the reader nothing.
 

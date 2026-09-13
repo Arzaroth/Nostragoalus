@@ -38,9 +38,25 @@ const timelineIcons = <String, String>{
   'shot': '🥅',
   'var': '📺',
   'period': '⏱️',
+  // Rugby. A football on a try is the tell that the view has not noticed the
+  // sport; the kicks get the posts, and a missed one the cross.
+  'try': '🏉',
+  'conversion': '🥅',
+  'conversion-missed': '❌',
+  'penalty-kick': '🥅',
+  'drop-goal': '🦶',
 };
 
-const _goalKinds = {'goal', 'own-goal', 'penalty-goal'};
+// Every rugby kick counts as a score, which is why a conversion is in here.
+const _goalKinds = {
+  'goal',
+  'own-goal',
+  'penalty-goal',
+  'try',
+  'conversion',
+  'penalty-kick',
+  'drop-goal',
+};
 
 bool isGoalKind(String kind) => _goalKinds.contains(kind);
 
@@ -60,6 +76,11 @@ const _kindLabelKeys = <String, String>{
   'corner': 'corner',
   'var': 'var',
   'period': 'period',
+  'try': 'try',
+  'conversion': 'conversion',
+  'conversion-missed': 'conversionMissed',
+  'penalty-kick': 'penaltyKick',
+  'drop-goal': 'dropGoal',
 };
 
 const _pbpPlayerKeys = <String, String>{
@@ -74,6 +95,11 @@ const _pbpPlayerKeys = <String, String>{
   'shot': 'shot',
   'foul': 'foul',
   'corner': 'corner',
+  'try': 'try',
+  'conversion': 'conversion',
+  'conversion-missed': 'conversionMissed',
+  'penalty-kick': 'penaltyKick',
+  'drop-goal': 'dropGoal',
 };
 
 const _periodKeys = <String, String>{

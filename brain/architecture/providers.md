@@ -310,9 +310,11 @@ typed bronze final, and the World Rugby rankings that will drive champion tiers.
 - **The squad list is the initial selection**, so a scorer can be missing from
   it: Makazole Mapimpi is not among RWC 2023's 658 squad players, and his tries
   stored with an empty name. Ids the bulk map does not answer are resolved one at
-  a time from `/player/{id}` (`name.display`) and memoised, which also covers the
-  empty-squads tournament above. See
-  [../features/rugby.md](../features/rugby.md).
+  a time from `/player/{id}` (`name.display`), memoised including the misses, and
+  capped at six per adapter. The cap matters because the lookups are serial
+  behind the rate limiter: an empty squad document is skipped outright rather
+  than named player by player, which would be a minute inside one request and a
+  429 at the end of it. See [../features/rugby.md](../features/rugby.md).
 - **`providerStageId` carries the event id**, though the feed addresses a match
   by its own id alone. Without it `sync/details.ts` - which selects on
   `providerStageId IS NOT NULL` - skips every rugby match silently, and the

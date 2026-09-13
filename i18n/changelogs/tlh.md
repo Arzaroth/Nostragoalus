@@ -9,15 +9,15 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 - ragh may' QamqoS qun 'aghbe'choH. FIFA QamqoS qun lo'lu'; cha' QuQ Sep per rap, vaj FRA RSA ragh may' 'e' QamqoS may'mey lo'lu'pu'. DaH QamqoS neH.
 - ragh may'Daq ngan tu'lu'. toghlu'pu' 'ach tetlhDaq tu'lu'be'pu'; ngan Doq je So'lu'pu'.
-- ragh may' chaHDaq Hoch mI' chenmoHwI' tu'lu', T5 chenmoHwI' neH tu'lu'be'. ghom mI' Hoch pup loD tu'lu'be'pu'. Hoch chaH T5 mI' je 'aghlu', 'ej ghom mI' pIn 'oH nob pIn'e' - ragh nob toghbe'.
+- ragh may' chaHDaq Hoch mI' chenmoHwI' tu'lu', moQ lanwI' neH tu'lu'be'. ghom mI' Hoch pup loD tu'lu'be'pu'. Hoch chaH moQ lan mI' je 'aghlu', 'ej ghom mI' pIn 'oH nob pIn'e' - ragh nob toghbe'.
 - ragh mI' chenmoHwI' ghom tetlhDaq tu'lu'be'bogh chImDaq 'aghlu'pu'. DaH wa'logh wa' nejlu', 'ej may'mey wISovbogh wIlaDqa' 'e' pong 'ang.
-- ragh tetlh ragh rur: choH, qaD, je pum pup - Hoch nID Sep ghaj. je mI' moQ 'oH ragh moQ'e', QamqoS moQ 'oHbe'.
+- ragh tetlh ragh rur: naQmoH pup, bortaS pup, je pum pup - Hoch nID Sep ghaj. je mI' moQ 'oH ragh moQ'e', QamqoS moQ 'oHbe'.
 
 ## [5.0.0] - 2026-09-13
 
 ### chel
 
-- ragh may'mey De' naQ tu'lu': T5 chenmoHwI' je poH, nganmey, choHmey, moQ SeH, bIQtIq, je QujmeH yotlh. je may' lut: Hoch Qav mI' chIq. T5 chenmoHwI' patlh ngeDqu'; 'ej DaH chenmoHwI' Qav wIvmeH mangghom tu'lu' - 33 QuQwI' je ghojmoHwI'. je may' mangghom tu'lu': 23 mI', chenwI'pu', loQwI'pu', je la'. je mI' HaSta: cha' patlh tu'lu' - T5 law' je mI' law' - rapbe' chaH.
+- ragh may'mey De' naQ tu'lu': moQ lanwI' je poH, nganmey, choHmey, moQ SeH, bIQtIq, je QujmeH yotlh. je may' lut: Hoch Qav mI' chIq. moQ lanwI' patlh ngeDqu'; 'ej DaH chenmoHwI' Qav wIvmeH mangghom tu'lu' - 33 QuQwI' je ghojmoHwI'. je may' mangghom tu'lu': 23 mI', chenwI'pu', loQwI'pu', je la'. je mI' HaSta: cha' patlh tu'lu' - moQ lan law' je mI' law' - rapbe' chaH.
 - ragh charghwI' wIv: World Rugby patlh lo'lu', FIFA patlh lo'be'. loSDIch patlh Dung wIvlu'chugh, puS pop; cha'maH patlh retlh wIvlu'chugh, law' pop.
 - ragh qaDDaq SoHtaHvIS, nagh Sor moQDaq ragh moQ tu'lu'. 'ach HaSta poSmoHpu'bogh yIQaw': 'oH DaSampu'.
 - ragh: chev toblu', mI' pIn'a' toqbe'. 27-24 luHarbe' Hoch. DaH chev Daq lugh (1-7, 8-14, 15 nIteb) 'oH pop'e'. mI' pIn'a' 'oH Do'Ha' pop neH. je motlhHa' pop choHlu': 'Iv Sovbe' net toq, qaDHom charghwI' Sovbogh Hoch pop nobbe'. qaD chelDI', DaH Hoch tu'lu'; che'wI' Hoch choHlaH.

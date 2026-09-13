@@ -627,6 +627,206 @@
       }
     },
     {
+      "fn": "timelineIcon",
+      "args": [
+        "try"
+      ],
+      "expected": "🏉"
+    },
+    {
+      "fn": "isGoalKind",
+      "args": [
+        "try"
+      ],
+      "expected": true
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "try"
+        }
+      ],
+      "expected": {
+        "key": "match.pbpKind.try"
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "try",
+          "playerName": "VAN DIJK"
+        }
+      ],
+      "expected": {
+        "key": "match.pbp.try",
+        "params": {
+          "player": "Van Dijk"
+        }
+      }
+    },
+    {
+      "fn": "timelineIcon",
+      "args": [
+        "conversion"
+      ],
+      "expected": "🥅"
+    },
+    {
+      "fn": "isGoalKind",
+      "args": [
+        "conversion"
+      ],
+      "expected": true
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "conversion"
+        }
+      ],
+      "expected": {
+        "key": "match.pbpKind.conversion"
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "conversion",
+          "playerName": "VAN DIJK"
+        }
+      ],
+      "expected": {
+        "key": "match.pbp.conversion",
+        "params": {
+          "player": "Van Dijk"
+        }
+      }
+    },
+    {
+      "fn": "timelineIcon",
+      "args": [
+        "conversion-missed"
+      ],
+      "expected": "❌"
+    },
+    {
+      "fn": "isGoalKind",
+      "args": [
+        "conversion-missed"
+      ],
+      "expected": false
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "conversion-missed"
+        }
+      ],
+      "expected": {
+        "key": "match.pbpKind.conversionMissed"
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "conversion-missed",
+          "playerName": "VAN DIJK"
+        }
+      ],
+      "expected": {
+        "key": "match.pbp.conversionMissed",
+        "params": {
+          "player": "Van Dijk"
+        }
+      }
+    },
+    {
+      "fn": "timelineIcon",
+      "args": [
+        "penalty-kick"
+      ],
+      "expected": "🥅"
+    },
+    {
+      "fn": "isGoalKind",
+      "args": [
+        "penalty-kick"
+      ],
+      "expected": true
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "penalty-kick"
+        }
+      ],
+      "expected": {
+        "key": "match.pbpKind.penaltyKick"
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "penalty-kick",
+          "playerName": "VAN DIJK"
+        }
+      ],
+      "expected": {
+        "key": "match.pbp.penaltyKick",
+        "params": {
+          "player": "Van Dijk"
+        }
+      }
+    },
+    {
+      "fn": "timelineIcon",
+      "args": [
+        "drop-goal"
+      ],
+      "expected": "🦶"
+    },
+    {
+      "fn": "isGoalKind",
+      "args": [
+        "drop-goal"
+      ],
+      "expected": true
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "drop-goal"
+        }
+      ],
+      "expected": {
+        "key": "match.pbpKind.dropGoal"
+      }
+    },
+    {
+      "fn": "pbpTextSpec",
+      "args": [
+        {
+          "kind": "drop-goal",
+          "playerName": "VAN DIJK"
+        }
+      ],
+      "expected": {
+        "key": "match.pbp.dropGoal",
+        "params": {
+          "player": "Van Dijk"
+        }
+      }
+    },
+    {
       "fn": "pbpTextSpec",
       "args": [
         {

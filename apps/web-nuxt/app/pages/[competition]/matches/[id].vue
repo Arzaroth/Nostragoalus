@@ -3,6 +3,7 @@ import { buildTimeline, h2hSummaryOf, liveClockSpec, scoreIcon } from '../../../
 
 // The sport picks which ball a score is drawn with; see scoreIcon.
 const selectedSport = useSelectedSport()
+const ball = useSportBall()
 const isRugby = computed(() => selectedSport.value === 'RUGBY_UNION')
 import { liveHeaderScore } from '../../../utils/live-score'
 import { visibleMediaForStatus, type MatchMediaKind } from '#shared/match-media'
@@ -868,7 +869,7 @@ function toggleFormInfo(side: string, i: number | string) {
                 </div>
                 <div v-if="teamPlayers(side).length" class="text-sm flex flex-col gap-1">
                   <div style="color: var(--p-text-muted-color)">
-                    {{ isRugby ? t('stats.topTryScorers') : t('match.topScorer') }}: <b style="color: var(--p-text-color)">{{ formatPlayerName(bestBy(side, 'goals')?.playerName) || '-' }}</b><span v-if="bestBy(side, 'goals')"> ({{ bestBy(side, 'goals').goals }}{{ scoreIcon(selectedSport, 5) }})</span>
+                    {{ isRugby ? t('stats.topTryScorers') : t('match.topScorer') }}: <b style="color: var(--p-text-color)">{{ formatPlayerName(bestBy(side, 'goals')?.playerName) || '-' }}</b><span v-if="bestBy(side, 'goals')"> ({{ bestBy(side, 'goals').goals }}{{ ball }})</span>
                   </div>
                   <!-- Rugby has a try-assist statistic, but this feed carries no
                        assist at all - so the slot shows points, which it does
@@ -882,7 +883,7 @@ function toggleFormInfo(side: string, i: number | string) {
                   <div class="border-t mt-1 pt-2 flex flex-col gap-1" style="border-color: var(--p-content-border-color)">
                     <div v-for="(p, i) in teamPlayers(side)" :key="i" class="flex items-center justify-between gap-2">
                       <span class="truncate">{{ formatPlayerName(p.playerName) }}</span>
-                      <span v-if="isRugby" class="tabular-nums shrink-0" style="color: var(--p-text-muted-color)">{{ p.goals ?? 0 }}{{ scoreIcon(selectedSport, 5) }} · {{ p.points ?? 0 }} {{ t('match.pointsShort') }}</span>
+                      <span v-if="isRugby" class="tabular-nums shrink-0" style="color: var(--p-text-muted-color)">{{ p.goals ?? 0 }}{{ ball }} · {{ p.points ?? 0 }} {{ t('match.pointsShort') }}</span>
                       <span v-else class="tabular-nums shrink-0" style="color: var(--p-text-muted-color)">{{ p.goals ?? 0 }}⚽ · {{ p.assists ?? 0 }}👟</span>
                     </div>
                   </div>

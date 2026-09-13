@@ -2270,8 +2270,20 @@
             "championBonus": 10,
             "championTiers": [
               {
-                "maxRank": null,
+                "maxRank": 4,
                 "points": 10
+              },
+              {
+                "maxRank": 10,
+                "points": 15
+              },
+              {
+                "maxRank": 20,
+                "points": 25
+              },
+              {
+                "maxRank": null,
+                "points": 40
               }
             ],
             "bestScorerBonus": 10,
@@ -2408,8 +2420,20 @@
             "championBonus": 10,
             "championTiers": [
               {
-                "maxRank": null,
+                "maxRank": 4,
                 "points": 10
+              },
+              {
+                "maxRank": 10,
+                "points": 15
+              },
+              {
+                "maxRank": 20,
+                "points": 25
+              },
+              {
+                "maxRank": null,
+                "points": 40
               }
             ],
             "bestScorerBonus": 10,
@@ -2514,8 +2538,20 @@
             "championBonus": 10,
             "championTiers": [
               {
-                "maxRank": null,
+                "maxRank": 4,
                 "points": 10
+              },
+              {
+                "maxRank": 10,
+                "points": 15
+              },
+              {
+                "maxRank": 20,
+                "points": 25
+              },
+              {
+                "maxRank": null,
+                "points": 40
               }
             ],
             "bestScorerBonus": 10,

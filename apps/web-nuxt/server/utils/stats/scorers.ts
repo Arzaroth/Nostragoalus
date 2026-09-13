@@ -18,9 +18,6 @@ async function aggregatePlayers(db: AppDatabase, competitionId: string): Promise
       p = { playerId: id, playerName: name, teamName, teamCode, goals: 0, assists: 0, points: 0 }
       players.set(id, p)
     }
-    // One unnamed row must not condemn the player: any row that does carry a
-    // name wins, whichever order they come in.
-    if (!p.playerName && name) p.playerName = name
     return p
   }
 
@@ -29,6 +26,11 @@ async function aggregatePlayers(db: AppDatabase, competitionId: string): Promise
   for (const r of rows) {
     if (r.ownGoal || !r.playerId) continue
     const p = ensure(r.playerId, r.playerName, r.teamName, r.teamCode)
+    // One unnamed row must not condemn the player: any scoring row that does
+    // carry a name wins, whichever order they come in. Only a real name heals -
+    // the assist pass below substitutes a placeholder, which would put the row
+    // back on the board reading "Unknown".
+    if (!p.playerName && r.playerName) p.playerName = r.playerName
     // A row with no points is football, where every goal counts once. A rugby
     // row counts towards the scorer board only when it is a try; its points go
     // to the points board either way.

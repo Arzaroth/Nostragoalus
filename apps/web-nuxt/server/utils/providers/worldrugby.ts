@@ -266,6 +266,12 @@ export function isScoringEvent(event: WrTimelineEvent): boolean {
 // a converted try is a try AND a conversion, two plays by two players, and
 // collapsing them into one "goal" line loses the second. A missed conversion is
 // reported too: at 2 points a game it decides matches.
+// Per-player lookups are a gap filler, not a substitute for the squad document:
+// they are serial behind the rate limiter, so an unbounded run of them would
+// spend a minute inside one request and earn the 429 that empties the
+// play-by-play. Six covers a realistic number of call-ups without that risk.
+const MAX_PLAYER_LOOKUPS = 6
+
 export function mapWorldRugbyTimelineKind(event: WrTimelineEvent): TimelineEventKind | null {
   const group = (event.group ?? '').toLowerCase()
   const type = (event.type ?? '').toLowerCase()
@@ -362,20 +368,31 @@ export function worldRugbyProvider(options: WorldRugbyOptions): MatchDataProvide
   // selection, and a mid-tournament call-up who then scores is absent from it.
   // Those players used to reach goal_event with an empty name and rendered as a
   // blank row with a score beside it, so the gaps are filled one player at a
-  // time from /player/{id}. Rare by construction, and memoised.
+  // time from /player/{id}.
   const extraNames = new Map<string, string>()
   async function namesFor(ids: (string | null | undefined)[]): Promise<Map<string, string>> {
     const known = await playerNames()
-    const missing = [...new Set(ids)].filter((id): id is string => !!id && !known.has(id) && !extraNames.has(id))
+    // An empty squad map is not a gap, it is the whole tournament unnamed (RWC
+    // 2027 answers 24 squads and 0 players). Filling that one player at a time
+    // is the storm this cap exists to prevent, and it would buy a name for
+    // every actor in the document rather than the few the list is missing.
+    if (known.size === 0) return known
+    const missing = [...new Set(ids)]
+      .filter((id): id is string => !!id && !known.has(id) && !extraNames.has(id))
+      .slice(0, MAX_PLAYER_LOOKUPS)
     for (const id of missing) {
+      // The miss is remembered too, or an id the feed cannot resolve is paid
+      // for again on every call - twice per play-by-play request alone.
+      let name = ''
       try {
         const doc = await getJson<{ name?: { display?: string | null } | null }>(
           `${baseUrl}/player/${encodeURIComponent(id)}`,
         )
-        if (doc.name?.display) extraNames.set(id, doc.name.display)
+        name = doc.name?.display ?? ''
       } catch {
         // Leave it unnamed rather than fail the whole detail for one player.
       }
+      extraNames.set(id, name)
     }
     return new Map([...known, ...extraNames])
   }

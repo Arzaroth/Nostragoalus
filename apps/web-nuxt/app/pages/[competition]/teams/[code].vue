@@ -1,9 +1,6 @@
 <script setup lang="ts">
-import { scoreIcon } from '../../../utils/match-view'
 
-// The ball of the sport being played; a football beside a rugby try is the tell
-// that a view never asked. See scoreIcon.
-const ball = computed(() => scoreIcon(useSelectedSport().value, null))
+const ball = useSportBall()
 const route = useRoute()
 const { t, locale } = useI18n()
 const slug = useSelectedCompetition()

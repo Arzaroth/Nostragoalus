@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { TopScorer } from '#shared/types/match'
-import { scoreIcon } from '../utils/match-view'
 
 const props = withDefaults(
   defineProps<{ rows: TopScorer[]; metric: 'goals' | 'assists' | 'points'; limit?: number }>(),
@@ -12,13 +11,11 @@ const { t } = useI18n()
 // under a football was the giveaway that this table never knew the sport. The
 // points column is a count of points, not of plays, so it is labelled rather
 // than drawn.
-const sport = useSelectedSport()
-const metricIcon = computed(() =>
-  props.metric === 'goals'
-    ? scoreIcon(sport.value, null)
-    : props.metric === 'points'
-      ? t('match.pointsShort')
-      : '👟',
+// Keyed, not a ternary: a two-way ternary over three metrics put the assists
+// boot above a column of rugby points.
+const ball = useSportBall()
+const metricIcon = computed<string>(
+  () => ({ goals: ball.value, points: t('match.pointsShort'), assists: '👟' })[props.metric],
 )
 
 // Rank by the board's metric, drop zero rows, and slice. Ties break on the other

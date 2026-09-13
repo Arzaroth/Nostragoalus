@@ -12962,6 +12962,10 @@
                           "assistPlayerName": {
                             "nullable": true,
                             "type": "string"
+                          },
+                          "points": {
+                            "nullable": true,
+                            "type": "number"
                           }
                         },
                         "required": [
@@ -12971,7 +12975,8 @@
                           "playerName",
                           "minute",
                           "ownGoal",
-                          "assistPlayerName"
+                          "assistPlayerName",
+                          "points"
                         ],
                         "additionalProperties": false
                       }

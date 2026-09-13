@@ -7,8 +7,8 @@ interface RawCase {
   args: unknown[]
 }
 
-// Every kind the feed emits, incl. the ones with no icon (foul, corner) and one
-// the client has never heard of.
+// Every kind the feed emits, football then rugby, incl. the ones with no icon
+// (foul, corner) and one the client has never heard of.
 const KINDS = [
   'goal',
   'own-goal',
@@ -26,6 +26,11 @@ const KINDS = [
   'var',
   'period',
   'meteorite',
+  'try',
+  'conversion',
+  'conversion-missed',
+  'penalty-kick',
+  'drop-goal',
 ]
 
 const PERIOD_KINDS = [

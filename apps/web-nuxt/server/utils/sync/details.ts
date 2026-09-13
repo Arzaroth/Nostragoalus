@@ -41,7 +41,15 @@ export async function syncMatchDetails(
         continue
       }
 
-      await db.delete(goalEvent).where(eq(goalEvent.matchId, m.id))
+      // Replace, but never replace something with nothing: a thin or partial
+      // timeline document answers with a non-null detail carrying no goals at
+      // all, and this runs on matches that already have their scorers (the
+      // repair migration puts them back through here). Deleting first would
+      // wipe them for good, since detailsFetchedAt is set either way.
+      const stored = await db.select({ id: goalEvent.id }).from(goalEvent).where(eq(goalEvent.matchId, m.id))
+      if (detail.goals.length > 0 || stored.length === 0) {
+        await db.delete(goalEvent).where(eq(goalEvent.matchId, m.id))
+      }
       if (detail.goals.length > 0) {
         await db.insert(goalEvent).values(
           detail.goals.map((g) => ({

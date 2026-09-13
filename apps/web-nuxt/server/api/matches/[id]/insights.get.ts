@@ -37,6 +37,7 @@ const matchGoalViewSchema = z.object({
   minute: z.string().nullable(),
   ownGoal: z.boolean(),
   assistPlayerName: z.string().nullable(),
+  points: z.number().nullable(),
 })
 const allTimeMeetingSchema = z.object({
   date: z.string(),
