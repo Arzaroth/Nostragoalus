@@ -117,10 +117,13 @@ Two different renderers show a match's events, and both had to learn the sport:
 
 - The **timeline column** on the match page is built client-side by
   `buildTimeline` from the live detail's goals, bookings and substitutions. Its
-  score glyph comes from `scoreIcon(points)` - a rugby ball for a try, the posts
-  for a kick, a football when there are no points (`NormalizedGoal.points` has
-  to survive the response schema for this to work; omitting it there stripped it
-  on the way out and drew a football beside a conversion).
+  score glyph comes from `scoreIcon(sport, points)`: the **sport** picks the
+  vocabulary and the points only pick within it - a rugby ball for a try, the
+  posts for a kick. Deciding from the points alone infers the sport from the
+  data, and a try whose point value the feed omitted (which the adapter
+  deliberately keeps) was then drawn with a football. `NormalizedGoal.points`
+  also has to survive the response schema for the kick/try split to work;
+  omitting it there stripped it on the way out.
 - The **Play-by-play tab** is the provider's own timeline, where each rugby play
   carries its own `TimelineEventKind` (`try`, `conversion`, `conversion-missed`,
   `penalty-kick`, `drop-goal`). A conversion is a second player's play seconds

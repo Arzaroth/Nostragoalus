@@ -156,17 +156,27 @@ describe('isGoalKind', () => {
 })
 
 describe('scoreIcon', () => {
-  it('marks a score with the ball the sport is played with', () => {
-    // Football scores carry no point value; rugby's do.
-    expect(scoreIcon(null)).toBe('⚽')
-    expect(scoreIcon(undefined)).toBe('⚽')
-    expect(scoreIcon(5)).toBe('🏉')
-    expect(scoreIcon(7)).toBe('🏉')
+  it('picks the ball from the sport, not from the data', () => {
+    expect(scoreIcon('FOOTBALL', null)).toBe('⚽')
+    expect(scoreIcon('RUGBY_UNION', 5)).toBe('🏉')
+    // A football competition keeps its ball whatever the points say, and an
+    // unknown sport is not rugby.
+    expect(scoreIcon('FOOTBALL', 5)).toBe('⚽')
+    expect(scoreIcon(null, 5)).toBe('⚽')
+    expect(scoreIcon(undefined, null)).toBe('⚽')
   })
 
   it('gives the kicks the posts, since a try is the only five-pointer', () => {
-    expect(scoreIcon(2)).toBe('🥅')
-    expect(scoreIcon(3)).toBe('🥅')
+    expect(scoreIcon('RUGBY_UNION', 2)).toBe('🥅')
+    expect(scoreIcon('RUGBY_UNION', 3)).toBe('🥅')
+    expect(scoreIcon('RUGBY_UNION', 7)).toBe('🏉')
+  })
+
+  it('falls to the try, never to the other sport, when the points are unknown', () => {
+    // The adapter deliberately keeps a try whose point value the feed omitted;
+    // deciding from points alone drew a football on a rugby match.
+    expect(scoreIcon('RUGBY_UNION', null)).toBe('🏉')
+    expect(scoreIcon('RUGBY_UNION', undefined)).toBe('🏉')
   })
 })
 

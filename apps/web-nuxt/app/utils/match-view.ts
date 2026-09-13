@@ -180,14 +180,17 @@ const PERIOD_KEYS: Record<string, string> = {
   'full-time': 'fullTime',
 }
 
-// The glyph for a score, by what it was worth. Football scores are all worth one
-// and carry no points, so they keep the ball; rugby gets the ball it is played
-// with, and its kicks the posts. Penalty and drop goal are both three, and the
-// feed does not distinguish them here - one kick glyph covers both rather than
-// guessing.
-export function scoreIcon(points: number | null | undefined): string {
-  if (points == null) return '⚽'
-  return points >= 5 ? '🏉' : '🥅'
+// The glyph for a score. The SPORT picks the vocabulary and the points only pick
+// within it - deciding from the points alone would infer the sport from the
+// data, and a rugby try whose point value the feed omitted (which the adapter
+// deliberately keeps) would then be drawn with a football.
+// Within rugby: a try is the only five-pointer, the rest are kicks. Penalty and
+// drop goal are both three and the feed does not separate them here, so one kick
+// glyph covers both rather than guessing. Unknown points fall to the try, never
+// to the other sport's ball.
+export function scoreIcon(sport: string | null | undefined, points: number | null | undefined): string {
+  if (sport !== 'RUGBY_UNION') return '⚽'
+  return points != null && points < 5 ? '🥅' : '🏉'
 }
 
 export function isGoalKind(kind: string): boolean {
