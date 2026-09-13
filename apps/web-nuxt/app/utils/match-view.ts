@@ -21,7 +21,7 @@ export function minuteVal(minute: string | null): number {
 }
 
 export type TimelineEvent =
-  | { kind: 'goal'; side: string; minute: string | null; playerName: string; ownGoal?: boolean }
+  | { kind: 'goal'; side: string; minute: string | null; playerName: string; ownGoal?: boolean; points?: number | null }
   | { kind: 'card'; side: string; minute: string | null; playerName: string; card: string; coach: boolean; teamCode: string | null | undefined }
   | { kind: 'sub'; side: string; minute: string | null; playerName: string; offName: string }
 
@@ -108,8 +108,25 @@ export const TIMELINE_ICONS: Record<string, string> = {
   shot: '🥅',
   var: '📺',
   period: '⏱️',
+  // Rugby. A football on a try is the tell that the view has not noticed the
+  // sport; the kicks get the posts, and a missed one the cross.
+  try: '🏉',
+  conversion: '🥅',
+  'conversion-missed': '❌',
+  'penalty-kick': '🥅',
+  'drop-goal': '🦶',
 }
-const GOAL_KINDS = new Set(['goal', 'own-goal', 'penalty-goal'])
+// The kinds that read as "a score happened": bolded, and carrying the running
+// scoreline. Every rugby kick counts, which is why a conversion is in here.
+const GOAL_KINDS = new Set([
+  'goal',
+  'own-goal',
+  'penalty-goal',
+  'try',
+  'conversion',
+  'penalty-kick',
+  'drop-goal',
+])
 // Nameless fallback label per kind, so a row with no resolved actor (e.g. a
 // penalty award, a coach booking) is never blank.
 const KIND_LABEL_KEYS: Record<string, string> = {
@@ -128,6 +145,11 @@ const KIND_LABEL_KEYS: Record<string, string> = {
   corner: 'corner',
   var: 'var',
   period: 'period',
+  try: 'try',
+  conversion: 'conversion',
+  'conversion-missed': 'conversionMissed',
+  'penalty-kick': 'penaltyKick',
+  'drop-goal': 'dropGoal',
 }
 // Player-actor kinds -> their templated key (carries a {player} placeholder).
 const PBP_PLAYER_KEYS: Record<string, string> = {
@@ -142,6 +164,11 @@ const PBP_PLAYER_KEYS: Record<string, string> = {
   shot: 'shot',
   foul: 'foul',
   corner: 'corner',
+  try: 'try',
+  conversion: 'conversion',
+  'conversion-missed': 'conversionMissed',
+  'penalty-kick': 'penaltyKick',
+  'drop-goal': 'dropGoal',
 }
 const PERIOD_KEYS: Record<string, string> = {
   kickoff: 'kickoff',
@@ -151,6 +178,16 @@ const PERIOD_KEYS: Record<string, string> = {
   'extra-time': 'extraTime',
   'extra-time-end': 'extraTimeEnd',
   'full-time': 'fullTime',
+}
+
+// The glyph for a score, by what it was worth. Football scores are all worth one
+// and carry no points, so they keep the ball; rugby gets the ball it is played
+// with, and its kicks the posts. Penalty and drop goal are both three, and the
+// feed does not distinguish them here - one kick glyph covers both rather than
+// guessing.
+export function scoreIcon(points: number | null | undefined): string {
+  if (points == null) return '⚽'
+  return points >= 5 ? '🏉' : '🥅'
 }
 
 export function isGoalKind(kind: string): boolean {

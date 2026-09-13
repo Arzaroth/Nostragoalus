@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '../../../../db'
-import { match } from '../../../../db/schema'
+import { competition, match } from '../../../../db/schema'
 import { standingRowSchema } from '../../../schemas/match'
 import { getMatchInsights } from '../../../utils/stats/insights'
 import { getAllTimeHeadToHead, getTeamRecentResults } from '../../../utils/stats/alltime-h2h'
@@ -81,14 +81,26 @@ export default defineReadHandler({ response: responseSchema }, async ({ event })
 
   // All-time tally (incl. friendlies/qualifiers) from FIFA's full calendar,
   // from the home side's perspective. Optional enrichment - never blocks.
+  //
+  // Football only, and the guard is the point: the source is FIFA's archive of
+  // senior men's international FOOTBALL, and the three-letter codes are shared
+  // across sports. Without it a rugby tie between FRA and RSA was answered with
+  // their football history - "France 5-0 South Africa, Friendly" under a 28-29
+  // rugby scoreline - and the Form tab showed football form for the same reason.
   let h2hAll = null
   let formAll = null
   const rows = await db
-    .select({ home: match.homeTeamCode, away: match.awayTeamCode, kickoff: match.kickoffTime })
+    .select({
+      home: match.homeTeamCode,
+      away: match.awayTeamCode,
+      kickoff: match.kickoffTime,
+      sport: competition.sport,
+    })
     .from(match)
+    .innerJoin(competition, eq(competition.id, match.competitionId))
     .where(eq(match.id, id))
     .limit(1)
-  if (rows[0]?.home && rows[0]?.away) {
+  if (rows[0]?.home && rows[0]?.away && rows[0].sport === 'FOOTBALL') {
     const before = new Date(rows[0].kickoff).toISOString()
     const [all, homeForm, awayForm] = await Promise.all([
       getAllTimeHeadToHead(rows[0].home, rows[0].away, fetch, Date.now(), before),

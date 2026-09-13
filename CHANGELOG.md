@@ -5,6 +5,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+
+- A rugby match no longer shows the two sides' football history. Head-to-head and Form read FIFA's archive of international football, and the three-letter country codes are the same in both sports - so a rugby quarter-final between France and South Africa was illustrated with their football meetings, goals and all. Those panels are football-only now.
+- Cards are reported in a rugby match. They were counted in the summary but never listed, so the timeline showed no bookings at all - including a red card, which is usually the story of the match.
+- A rugby timeline reads like rugby: conversions, penalties and drop goals each get their own line instead of being folded into the try or dropped, and a score is marked with a rugby ball rather than a football.
+
 ## [5.0.0] - 2026-09-13
 
 ### Added

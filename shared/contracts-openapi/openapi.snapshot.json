@@ -13682,6 +13682,10 @@
                                 "nullable": true,
                                 "type": "number"
                               },
+                              "points": {
+                                "nullable": true,
+                                "type": "number"
+                              },
                               "ownGoal": {
                                 "type": "boolean"
                               },

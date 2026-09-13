@@ -111,6 +111,28 @@ SSR, so the right mark is in the first paint.
 Only the in-app header switches. The static emblem on the login, about and
 share-card surfaces is still the football one - see `TODO.md`.
 
+## The match view
+
+Two different renderers show a match's events, and both had to learn the sport:
+
+- The **timeline column** on the match page is built client-side by
+  `buildTimeline` from the live detail's goals, bookings and substitutions. Its
+  score glyph comes from `scoreIcon(points)` - a rugby ball for a try, the posts
+  for a kick, a football when there are no points (`NormalizedGoal.points` has
+  to survive the response schema for this to work; omitting it there stripped it
+  on the way out and drew a football beside a conversion).
+- The **Play-by-play tab** is the provider's own timeline, where each rugby play
+  carries its own `TimelineEventKind` (`try`, `conversion`, `conversion-missed`,
+  `penalty-kick`, `drop-goal`). A conversion is a second player's play seconds
+  after the try; folding it into the try loses it, and calling all three "goal"
+  is how the football kinds read a rugby match.
+
+**Head-to-head and Form are football-only.** They read FIFA's archive of senior
+men's international football, and the three-letter country codes are shared
+across sports - so a rugby France-South Africa tie was illustrated with their
+football meetings until the endpoint learned to check
+`competition.sport`.
+
 ## What rugby deliberately does not have
 
 - **Assists.** The feed has no assist concept, so that board is replaced rather

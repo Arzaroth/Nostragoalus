@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { buildTimeline, h2hSummaryOf, liveClockSpec } from '../../../utils/match-view'
+import { buildTimeline, h2hSummaryOf, liveClockSpec, scoreIcon } from '../../../utils/match-view'
 import { liveHeaderScore } from '../../../utils/live-score'
 import { visibleMediaForStatus, type MatchMediaKind } from '#shared/match-media'
 import { EXTRA_TIME_BREAK_MINUTE, matchHasStarted, matchIsInPlay } from '#shared/types/match'
@@ -533,7 +533,7 @@ function toggleFormInfo(side: string, i: number | string) {
           </span>
           <span class="w-4 flex justify-center">
             <template v-if="e.side === 'HOME'">
-              <template v-if="e.kind === 'goal'">⚽</template>
+              <template v-if="e.kind === 'goal'">{{ scoreIcon(e.points) }}</template>
               <template v-else-if="e.kind === 'sub'">🔄</template>
               <span v-else-if="e.card === 'SECOND_YELLOW'" v-tooltip.top="t('match.secondYellow')" class="relative inline-block w-3 h-3"><span class="absolute left-0 top-0 w-2 h-3 rounded-[2px]" style="background: #eab308" /><span class="absolute left-1 top-0 w-2 h-3 rounded-[2px]" style="background: var(--ng-danger)" /></span>
               <span v-else class="inline-block w-2 h-3 rounded-[2px]" :style="`background:${e.card === 'RED' ? 'var(--ng-danger)' : '#eab308'}`" />
@@ -542,7 +542,7 @@ function toggleFormInfo(side: string, i: number | string) {
           <span class="tabular-nums text-center w-12 opacity-70">{{ minuteLabel(e.minute) }}</span>
           <span class="w-4 flex justify-center">
             <template v-if="e.side === 'AWAY'">
-              <template v-if="e.kind === 'goal'">⚽</template>
+              <template v-if="e.kind === 'goal'">{{ scoreIcon(e.points) }}</template>
               <template v-else-if="e.kind === 'sub'">🔄</template>
               <span v-else-if="e.card === 'SECOND_YELLOW'" v-tooltip.top="t('match.secondYellow')" class="relative inline-block w-3 h-3"><span class="absolute left-0 top-0 w-2 h-3 rounded-[2px]" style="background: #eab308" /><span class="absolute left-1 top-0 w-2 h-3 rounded-[2px]" style="background: var(--ng-danger)" /></span>
               <span v-else class="inline-block w-2 h-3 rounded-[2px]" :style="`background:${e.card === 'RED' ? 'var(--ng-danger)' : '#eab308'}`" />

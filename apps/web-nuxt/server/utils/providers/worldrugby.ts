@@ -4,6 +4,7 @@ import type {
   MatchLineups,
   MatchStatus,
   NormalizedBracket,
+  BookingEvent,
   NormalizedGoal,
   NormalizedMatch,
   Score,
@@ -261,6 +262,25 @@ export function isScoringEvent(event: WrTimelineEvent): boolean {
   return typeof event.points === 'number' && event.points > 0
 }
 
+// Rugby plays get rugby kinds. The kicks are named events in their own right -
+// a converted try is a try AND a conversion, two plays by two players, and
+// collapsing them into one "goal" line loses the second. A missed conversion is
+// reported too: at 2 points a game it decides matches.
+export function mapWorldRugbyTimelineKind(event: WrTimelineEvent): TimelineEventKind | null {
+  const group = (event.group ?? '').toLowerCase()
+  const type = (event.type ?? '').toLowerCase()
+  if (group === 'try') return 'try'
+  if (group === 'con') return 'conversion'
+  if (group === 'pen') return 'penalty-kick'
+  if (group === 'dg') return 'drop-goal'
+  if (type === 'miss con') return 'conversion-missed'
+  if (type === 'miss pen') return 'penalty-missed'
+  if (type === 'yellow') return 'yellow'
+  if (type === 'red') return 'red'
+  if (type === 'sub on') return 'sub'
+  return null
+}
+
 export interface WorldRugbyOptions {
   // The feed's event id: numeric for legacy seasons ("1893"), a uuid for 2025
   // onwards. Both resolve on the same route, so this stays opaque text.
@@ -286,7 +306,23 @@ export function worldRugbyProvider(options: WorldRugbyOptions): MatchDataProvide
     return (await response.json()) as T
   }
 
-  async function timelineOf(matchId: string): Promise<WrTimelineEvent[]> {
+  // Memoised per match for the life of the adapter: the timeline route asks for
+  // the detail and then the timeline, and both read this document, so without it
+  // every play-by-play request fetched the same thing twice - doubling the load
+  // on an upstream that rate-limits.
+  const timelines = new Map<string, Promise<WrTimelineEvent[]>>()
+  function timelineOf(matchId: string): Promise<WrTimelineEvent[]> {
+    const hit = timelines.get(matchId)
+    if (hit) return hit
+    const pending = fetchTimeline(matchId).catch((error) => {
+      timelines.delete(matchId)
+      throw error
+    })
+    timelines.set(matchId, pending)
+    return pending
+  }
+
+  async function fetchTimeline(matchId: string): Promise<WrTimelineEvent[]> {
     const doc = await getJson<{ timeline?: WrTimelineEvent[] | null }>(
       `${baseUrl}/match/${encodeURIComponent(matchId)}/timeline?language=en`,
     )
@@ -409,6 +445,7 @@ export function worldRugbyProvider(options: WorldRugbyOptions): MatchDataProvide
       ])
       const sides = [match.teams?.[0], match.teams?.[1]]
       const cards = { home: { yellow: 0, red: 0 }, away: { yellow: 0, red: 0 } }
+      const bookings: BookingEvent[] = []
       const goals: NormalizedGoal[] = []
       const substitutions: SubstitutionEvent[] = []
       const subsOff = new Map<string, WrTimelineEvent>()
@@ -422,8 +459,19 @@ export function worldRugbyProvider(options: WorldRugbyOptions): MatchDataProvide
         const team = sides[index]
         const type = (event.type ?? '').toLowerCase()
 
-        if (type === 'yellow') cards[side === 'HOME' ? 'home' : 'away'].yellow += 1
-        else if (type === 'red') cards[side === 'HOME' ? 'home' : 'away'].red += 1
+        if (type === 'yellow' || type === 'red') {
+          cards[side === 'HOME' ? 'home' : 'away'][type === 'red' ? 'red' : 'yellow'] += 1
+          // Counting the card into `cards` is not the same as reporting it: the
+          // match view lists bookings from here, so leaving this empty hid every
+          // card in the game - a red card is usually the story of the match.
+          bookings.push({
+            side,
+            playerId: event.playerId ?? null,
+            playerName: (event.playerId && names.get(event.playerId)) || '',
+            minute: worldRugbyMinute(event.time?.secs),
+            card: type === 'red' ? 'RED' : 'YELLOW',
+          })
+        }
 
         // Every scoring play is stored, not just tries: the points board sums
         // them, and the try board counts the ones worth a try (see TRY_POINTS
@@ -500,7 +548,7 @@ export function worldRugbyProvider(options: WorldRugbyOptions): MatchDataProvide
         stadium: match.venue?.name ?? null,
         cards,
         goals,
-        bookings: [],
+        bookings,
         substitutions,
         playerNames: Object.fromEntries(names),
         homeTeamId: sides[0]?.id ?? null,
@@ -521,26 +569,9 @@ export function worldRugbyProvider(options: WorldRugbyOptions): MatchDataProvide
         const index = event.teamIndex
         const side = index === 1 ? ('AWAY' as const) : ('HOME' as const)
         const type = (event.type ?? '').toLowerCase()
-        // Every scoring entry moves the running score, including the conversion
-        // that does not get a line of its own.
         if (typeof event.points === 'number' && event.points > 0) running[index] += event.points
 
-        const kind: TimelineEventKind | null = isTryEvent(event)
-          ? 'goal'
-          : (event.group ?? '').toLowerCase() === 'pen'
-            ? 'penalty-goal'
-            : (event.group ?? '').toLowerCase() === 'dg'
-              ? 'goal'
-              : type === 'yellow'
-                ? 'yellow'
-                : type === 'red'
-                  ? 'red'
-                  : type === 'sub on'
-                    ? 'sub'
-                    : null
-        // Conversions have no line of their own: they follow a try by seconds
-        // and would read as a second score for the same move. Their points are
-        // already in the running score above.
+        const kind = mapWorldRugbyTimelineKind(event)
         if (!kind) continue
 
         out.push({

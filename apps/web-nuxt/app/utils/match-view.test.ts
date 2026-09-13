@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildTimeline, h2hSummaryOf, minuteVal, HALFTIME_VAL, ET_HALFTIME_VAL, liveClockSpec, isGoalKind, pbpTextSpec, pbpFlagCode } from './match-view'
+import { buildTimeline, h2hSummaryOf, minuteVal, HALFTIME_VAL, ET_HALFTIME_VAL, liveClockSpec, isGoalKind, pbpTextSpec, pbpFlagCode, scoreIcon } from './match-view'
 import { EXTRA_TIME_BREAK_MINUTE } from '#shared/types/match'
 
 describe('minuteVal', () => {
@@ -152,6 +152,58 @@ describe('isGoalKind', () => {
     expect(isGoalKind('penalty-goal')).toBe(true)
     expect(isGoalKind('penalty-missed')).toBe(false)
     expect(isGoalKind('yellow')).toBe(false)
+  })
+})
+
+describe('scoreIcon', () => {
+  it('marks a score with the ball the sport is played with', () => {
+    // Football scores carry no point value; rugby's do.
+    expect(scoreIcon(null)).toBe('⚽')
+    expect(scoreIcon(undefined)).toBe('⚽')
+    expect(scoreIcon(5)).toBe('🏉')
+    expect(scoreIcon(7)).toBe('🏉')
+  })
+
+  it('gives the kicks the posts, since a try is the only five-pointer', () => {
+    expect(scoreIcon(2)).toBe('🥅')
+    expect(scoreIcon(3)).toBe('🥅')
+  })
+})
+
+describe('rugby play-by-play', () => {
+  it('phrases each rugby play, with the player', () => {
+    expect(pbpTextSpec({ kind: 'try', playerName: 'Mark Telea' })).toEqual({
+      key: 'match.pbp.try',
+      params: { player: 'Mark Telea' },
+    })
+    expect(pbpTextSpec({ kind: 'conversion', playerName: 'Handre Pollard' })).toEqual({
+      key: 'match.pbp.conversion',
+      params: { player: 'Handre Pollard' },
+    })
+    expect(pbpTextSpec({ kind: 'penalty-kick', playerName: 'Handre Pollard' })).toEqual({
+      key: 'match.pbp.penaltyKick',
+      params: { player: 'Handre Pollard' },
+    })
+    expect(pbpTextSpec({ kind: 'drop-goal', playerName: 'Handre Pollard' })).toEqual({
+      key: 'match.pbp.dropGoal',
+      params: { player: 'Handre Pollard' },
+    })
+  })
+
+  it('falls back to a nameless label when the actor is unknown', () => {
+    expect(pbpTextSpec({ kind: 'try' })).toEqual({ key: 'match.pbpKind.try' })
+    expect(pbpTextSpec({ kind: 'conversion-missed' })).toEqual({ key: 'match.pbpKind.conversionMissed' })
+  })
+
+  it('treats every rugby score as a score, so it carries the running line', () => {
+    // A conversion is two points; if it does not count as a score the timeline
+    // shows a scoreline that skips them.
+    expect(isGoalKind('try')).toBe(true)
+    expect(isGoalKind('conversion')).toBe(true)
+    expect(isGoalKind('penalty-kick')).toBe(true)
+    expect(isGoalKind('drop-goal')).toBe(true)
+    // A miss is not a score.
+    expect(isGoalKind('conversion-missed')).toBe(false)
   })
 })
 

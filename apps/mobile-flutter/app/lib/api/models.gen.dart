@@ -2000,6 +2000,7 @@ class DetailGoal {
   final String playerName;
   final String? minute;
   final double? goalType;
+  final double? points;
   final bool ownGoal;
   final String? assistPlayerId;
   final String? assistPlayerName;
@@ -2013,6 +2014,7 @@ class DetailGoal {
     required this.playerName,
     this.minute,
     this.goalType,
+    this.points,
     required this.ownGoal,
     this.assistPlayerId,
     this.assistPlayerName,
@@ -2027,6 +2029,7 @@ class DetailGoal {
     playerName: json['playerName'] as String,
     minute: json['minute'] as String?,
     goalType: (json['goalType'] as num?)?.toDouble(),
+    points: (json['points'] as num?)?.toDouble(),
     ownGoal: json['ownGoal'] as bool,
     assistPlayerId: json['assistPlayerId'] as String?,
     assistPlayerName: json['assistPlayerName'] as String?,
@@ -2041,6 +2044,7 @@ class DetailGoal {
     'playerName': playerName,
     'minute': minute,
     'goalType': goalType,
+    'points': points,
     'ownGoal': ownGoal,
     'assistPlayerId': assistPlayerId,
     'assistPlayerName': assistPlayerName,

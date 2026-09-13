@@ -7,6 +7,7 @@ import {
   worldRugbyProvider,
   worldRugbyMinute,
   isTryEvent,
+  mapWorldRugbyTimelineKind,
   type WrMatch,
 } from './worldrugby'
 import { ProviderRateLimitError, ProviderUpstreamError } from './types'
@@ -473,6 +474,32 @@ describe('isTryEvent', () => {
   })
 })
 
+describe('mapWorldRugbyTimelineKind', () => {
+  it('names each rugby play rather than calling them all a goal', () => {
+    expect(mapWorldRugbyTimelineKind({ group: 'Try', type: 'T5' })).toBe('try')
+    expect(mapWorldRugbyTimelineKind({ group: 'Con', type: 'C2' })).toBe('conversion')
+    expect(mapWorldRugbyTimelineKind({ group: 'Pen', type: 'P3' })).toBe('penalty-kick')
+    expect(mapWorldRugbyTimelineKind({ group: 'DG', type: 'D3' })).toBe('drop-goal')
+  })
+
+  it('reports the misses, which decide matches at two and three points', () => {
+    expect(mapWorldRugbyTimelineKind({ type: 'Miss Con' })).toBe('conversion-missed')
+    expect(mapWorldRugbyTimelineKind({ type: 'Miss Pen' })).toBe('penalty-missed')
+  })
+
+  it('carries cards and the player coming on', () => {
+    expect(mapWorldRugbyTimelineKind({ type: 'Yellow' })).toBe('yellow')
+    expect(mapWorldRugbyTimelineKind({ type: 'Red' })).toBe('red')
+    expect(mapWorldRugbyTimelineKind({ type: 'Sub On' })).toBe('sub')
+  })
+
+  it('ignores the phases of play', () => {
+    expect(mapWorldRugbyTimelineKind({ type: 'Ruck' })).toBeNull()
+    expect(mapWorldRugbyTimelineKind({ type: 'Sub Off' })).toBeNull()
+    expect(mapWorldRugbyTimelineKind({})).toBeNull()
+  })
+})
+
 describe('match detail, timeline and stats', () => {
   const MATCH = {
     matchId: '28766',
@@ -548,6 +575,56 @@ describe('match detail, timeline and stats', () => {
     expect(d!.cards).toEqual({ home: { yellow: 0, red: 0 }, away: { yellow: 1, red: 0 } })
     expect(d!.homeTeamId).toBe('42')
     expect(d!.awayTeamId).toBe('37')
+  })
+
+  it('reads the timeline document once, however many methods want it', async () => {
+    // The timeline route asks for the detail then the timeline, and both read
+    // this document; fetching it twice doubled the load on an upstream that
+    // rate-limits, and a 429 there empties the whole play-by-play.
+    const { impl, calls } = stub({ '/timeline': TIMELINE, '/stats': STATS, '/squads': SQUADS, '/match/28766': MATCH })
+    const p = make(impl)
+    await p.getMatchDetail!({ matchId: '28766' })
+    await p.getMatchTimeline!({ matchId: '28766' })
+    expect(calls.filter((u) => u.includes('/timeline')).length).toBe(1)
+  })
+
+  it('re-arms the timeline fetch after a failure instead of caching the error', async () => {
+    // A memo that keeps a rejected promise turns one transient upstream blip
+    // into a permanently empty play-by-play for that match.
+    let calls = 0
+    const impl = vi.fn(async (url: string | URL) => {
+      const href = String(url)
+      if (href.includes('/timeline')) {
+        calls += 1
+        if (calls === 1) return new Response('nope', { status: 503 })
+        return new Response(JSON.stringify(TIMELINE), { status: 200 })
+      }
+      if (href.includes('/squads')) return new Response(JSON.stringify(SQUADS), { status: 200 })
+      return new Response(JSON.stringify(MATCH), { status: 200 })
+    }) as unknown as typeof fetch
+    const p = make(impl)
+    await expect(p.getMatchTimeline!({ matchId: '28766' })).rejects.toBeTruthy()
+    const events = await p.getMatchTimeline!({ matchId: '28766' })
+    expect(events.length).toBeGreaterThan(0)
+  })
+
+  it('reports the cards, not just counts them', async () => {
+    // cards{} feeds a summary badge; bookings[] is what the match view lists.
+    // Leaving it empty hid every card in the game - including a red card, which
+    // is usually the story of the match.
+    const tl = {
+      timeline: [
+        { type: 'Yellow', teamIndex: 1, playerId: 'p1', time: { secs: 600 } },
+        { type: 'Red', teamIndex: 0, playerId: 'p3', time: { secs: 1800 } },
+      ],
+    }
+    const { impl } = stub({ '/timeline': tl, '/stats': STATS, '/squads': SQUADS, '/match/28766': MATCH })
+    const d = await make(impl).getMatchDetail!({ matchId: '28766' })
+    expect(d!.cards).toEqual({ home: { yellow: 0, red: 1 }, away: { yellow: 1, red: 0 } })
+    expect(d!.bookings).toEqual([
+      { side: 'AWAY', playerId: 'p1', playerName: "Mark Tele'a", minute: "11'", card: 'YELLOW' },
+      { side: 'HOME', playerId: 'p3', playerName: 'Thomas Ramos', minute: "31'", card: 'RED' },
+    ])
   })
 
   it('pairs a substitution on its link, not its timestamp', async () => {
@@ -661,20 +738,24 @@ describe('match detail, timeline and stats', () => {
     expect(d!.goals).toHaveLength(4)
   })
 
-  it('runs the score through every kick, but gives a conversion no line of its own', async () => {
+  it('gives every rugby play its own kind and its own line', async () => {
     const tl = await make(full().impl).getMatchTimeline!({ matchId: '28766' })
     // Clock order, not feed order: the sub is at 49' and the yellow at 67',
-    // and the fixture lists them the other way round on purpose.
-    expect(tl.map((e) => e.kind)).toEqual(['goal', 'penalty-goal', 'goal', 'sub', 'yellow'])
-    // The try is 5; the conversion's 2 lands on the next entry's running score.
-    expect(tl[0]).toMatchObject({ homeScore: 0, awayScore: 5, minute: "2'", playerName: "Mark Tele'a" })
-    expect(tl[1]).toMatchObject({ kind: 'penalty-goal', homeScore: 3, awayScore: 7 })
-    expect(tl[2]).toMatchObject({ kind: 'goal', homeScore: 6, awayScore: 7 })
+    // and the fixture lists them the other way round on purpose. A conversion
+    // is a play by a second player, so collapsing it into the try loses it.
+    expect(tl.map((e) => e.kind)).toEqual(['try', 'conversion', 'penalty-kick', 'drop-goal', 'sub', 'yellow'])
+    expect(tl[0]).toMatchObject({ kind: 'try', homeScore: 0, awayScore: 5, minute: "2'", playerName: "Mark Tele'a" })
+    expect(tl[1]).toMatchObject({ kind: 'conversion', homeScore: 0, awayScore: 7 })
+    expect(tl[2]).toMatchObject({ kind: 'penalty-kick', homeScore: 3, awayScore: 7 })
+    expect(tl[3]).toMatchObject({ kind: 'drop-goal', homeScore: 6, awayScore: 7 })
   })
 
   it('drops the phases of play that are not events', async () => {
+    // Six scoring/discipline/sub entries out of the fixture; the Ruck is not an
+    // event the timeline reports.
     const tl = await make(full().impl).getMatchTimeline!({ matchId: '28766' })
-    expect(tl).toHaveLength(5)
+    expect(tl).toHaveLength(6)
+    expect(tl.some((e) => e.kind === undefined)).toBe(false)
   })
 
   it('keys match stats by team id and leaves the football-only fields null', async () => {
@@ -741,7 +822,7 @@ describe('match detail, timeline and stats', () => {
     const events = await make(impl).getMatchTimeline!({ matchId: '28766' })
     // The try is at 2' and the red at 50', so the try leads however the feed
     // ordered them.
-    expect(events.map((e) => e.kind)).toEqual(['goal', 'red'])
+    expect(events.map((e) => e.kind)).toEqual(['try', 'red'])
     expect(events[1]!.playerName).toBeNull()
   })
 
@@ -773,7 +854,7 @@ describe('match detail, timeline and stats', () => {
     expect(d!.ifesId).toBe('28766')
 
     const tl = await p.getMatchTimeline!({ matchId: '28766' })
-    expect(tl.map((e) => e.kind)).toEqual(['goal'])
+    expect(tl.map((e) => e.kind)).toEqual(['try'])
     expect(tl[0]).toMatchObject({ minute: null, playerName: null, homeScore: 5, awayScore: 0 })
 
     expect(await p.getMatchStats!({ ifesId: '28766' })).toBeNull()

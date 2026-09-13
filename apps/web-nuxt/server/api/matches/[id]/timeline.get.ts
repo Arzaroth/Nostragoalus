@@ -74,7 +74,13 @@ export default defineReadHandler({ response: responseSchema }, async ({ event })
     // transient empty result must stay refetchable rather than stick forever.
     cache.set(cacheKey, { at: Date.now(), final: rows[0].status === 'FINISHED' && events.length > 0, events })
     return { events }
-  } catch {
+  } catch (error) {
+    // Degrading to an empty play-by-play is right - it is an enrichment, and a
+    // provider outage must not 500 the match page. Swallowing it in silence was
+    // not: a tab that renders nothing and logs nothing is indistinguishable
+    // from a match with no events, and left an empty rugby play-by-play
+    // undiagnosable in production.
+    console.warn(`[timeline] ${competition.provider} timeline failed for match ${id}:`, error)
     return { events: [] }
   }
 })

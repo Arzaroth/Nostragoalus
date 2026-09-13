@@ -1101,6 +1101,11 @@
     },
     "playByPlayEmpty": "لا يوجد سرد لحظة بلحظة لهذه المباراة بعد.",
     "pbpKind": {
+      "try": "محاولة",
+      "conversion": "تحويلة",
+      "conversionMissed": "تحويلة ضائعة",
+      "penaltyKick": "ركلة جزاء",
+      "dropGoal": "ركلة ثابتة",
       "goal": "هدف",
       "ownGoal": "هدف عكسي",
       "penaltyGoal": "هدف من ركلة جزاء",
@@ -1118,6 +1123,11 @@
       "period": "مرحلة"
     },
     "pbp": {
+      "try": "{player} يسجّل محاولة",
+      "conversion": "{player} ينجح في التحويلة",
+      "conversionMissed": "{player} يخطئ التحويلة",
+      "penaltyKick": "{player} يسجّل ركلة الجزاء",
+      "dropGoal": "{player} يسجّل بركلة ثابتة",
       "goal": "{player} يسجّل",
       "ownGoal": "{player} يسجّل هدفاً في مرمى فريقه",
       "penaltyGoal": "{player} يسجّل من ركلة جزاء",

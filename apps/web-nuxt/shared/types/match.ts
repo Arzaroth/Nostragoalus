@@ -137,6 +137,14 @@ export type TimelineEventKind =
   | 'corner'
   | 'var'
   | 'period'
+  // Rugby. A try is not a goal (it is worth five and is followed by a kick), and
+  // the kicks are named plays of their own - showing them as "goal" three times
+  // for one move is how the football kinds read a rugby match.
+  | 'try'
+  | 'conversion'
+  | 'conversion-missed'
+  | 'penalty-kick'
+  | 'drop-goal'
 
 // Which period marker a 'period' event represents, so the client labels it in
 // its own language rather than echoing the provider's English commentary.

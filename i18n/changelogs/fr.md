@@ -5,6 +5,12 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Corrigé
+
+- Un match de rugby n'affiche plus l'historique football des deux équipes. Le face-à-face et la forme s'appuient sur les archives du football international de la FIFA, et les codes pays à trois lettres sont identiques dans les deux sports : un quart de finale France - Afrique du Sud était donc illustré par leurs rencontres de football, buts compris. Ces panneaux sont désormais réservés au football.
+- Les cartons sont signalés dans un match de rugby. Ils étaient comptés dans le résumé mais jamais listés : la frise n'affichait aucun carton, pas même un carton rouge.
+- La frise d'un match de rugby se lit comme du rugby : transformations, pénalités et drops ont chacun leur ligne au lieu d'être fondus dans l'essai ou omis, et un score porte un ballon de rugby et non de football.
+
 ## [5.0.0] - 2026-09-13
 
 ### Ajouté

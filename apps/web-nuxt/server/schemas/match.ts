@@ -75,6 +75,11 @@ export const liveDetailGoalSchema = z.object({
   playerName: z.string(),
   minute: z.string().nullable(),
   goalType: z.number().nullable(),
+  // What the play was worth, for a sport whose scores are not all worth one.
+  // Null for football. Omitting it here stripped it on the way out, so the
+  // client could not tell a five-point try from a two-point conversion and drew
+  // a football beside both.
+  points: z.number().nullable().optional(),
   ownGoal: z.boolean(),
   assistPlayerId: z.string().nullable(),
   assistPlayerName: z.string().nullable(),

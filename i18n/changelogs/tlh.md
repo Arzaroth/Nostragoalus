@@ -5,6 +5,12 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### tI'lu'
+
+- ragh may' QamqoS qun 'aghbe'choH. FIFA QamqoS qun lo'lu'; cha' QuQ Sep per rap, vaj FRA RSA ragh may' 'e' QamqoS may'mey lo'lu'pu'. DaH QamqoS neH.
+- ragh may'Daq ngan tu'lu'. toghlu'pu' 'ach tetlhDaq tu'lu'be'pu'; ngan Doq je So'lu'pu'.
+- ragh tetlh ragh rur: choH, qaD, je pum pup - Hoch nID Sep ghaj. je mI' moQ 'oH ragh moQ'e', QamqoS moQ 'oHbe'.
+
 ## [5.0.0] - 2026-09-13
 
 ### chel
