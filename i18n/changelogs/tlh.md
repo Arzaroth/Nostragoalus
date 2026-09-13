@@ -5,6 +5,14 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### tI'lu'
+
+- che'wI': QujmeH HaSta rap lo'wI' Hoch De'wI'. 'ej tetlh 'angbogh SeH 'oH SeH'e' DaH. wa'DIch chovnatlh SeH neH lo'lu'pu'; latlh Sep HaSta rur, 'ej latlh nID So'lu'pu'.
+- che'wI': FIFA UEFA je wIv DaH. tetlh 'angbe' chaH, 'ej tetlh 'angbogh nobwI'pu' neH 'angpu' HaSta - 'ach reH chaH laj noH lajwI' je. QujmeH per yIlan; rap noH.
+- QujmeH tetlh 'ang: loSlogh nom law'. ESPN wa' ghom pong wa' tlhob, 'ej cha'vatlh ghom ghaj; cha'maH lup 'oH, 'ej pagh 'ang SeH. Qaw'pu' rur.
+- che'wI': Hoch qun tetlh wa' tetlh 'oHbe'. World Rugby cha'vatlh may'mey ghaj, 2019 vo': poH chu' 'anglu', latlh wa' 'uy', 'ej tetlhDaq yIghItlh 'e' yISam.
+- che'wI': nobwI' ghap Sep DachoHDI', wa'DIch QujmeH tetlh Qaw'lu'. tetlh ngo' ratlhpu'; vaj World Rugby may' ESPN ghom rur noHlu'.
+
 ## [5.0.1] - 2026-09-13
 
 ### tI'lu'

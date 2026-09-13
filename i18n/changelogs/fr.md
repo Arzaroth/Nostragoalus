@@ -5,6 +5,14 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+### Corrigé
+
+- Admin : l'écran des compétitions utilise les mêmes contrôles que le reste de l'application, et le bouton qui liste ce qu'un fournisseur diffuse ressemble enfin à un bouton. Ses menus étaient de simples listes du navigateur : l'écran semblait emprunté à un autre site et l'étape suivante passait inaperçue.
+- Admin : la FIFA et l'UEFA peuvent à nouveau être choisies comme fournisseur. Ni l'une ni l'autre ne publie la liste de ce qu'elle diffuse, et l'écran ne proposait que les fournisseurs qui le font, alors que la vérification et l'enregistrement les ont toujours acceptées. Collez l'identifiant de la compétition : le même essai à blanc tranche.
+- Admin : lister les compétitions d'un fournisseur est environ quatre fois plus rapide. ESPN nomme une ligue par requête et en diffuse plus de deux cents, soit vingt secondes derrière un bouton sans rien à afficher : cela passait pour une panne.
+- Admin : l'archive complète d'un fournisseur n'est plus un menu unique. World Rugby diffuse plus de deux cents épreuves depuis 2019 : les saisons récentes s'affichent par défaut, le reste à un clic, et la liste se cherche en tapant.
+- Admin : changer de fournisseur ou de sous-flux efface les compétitions listées pour le précédent. L'ancienne liste restait affichée : une épreuve de World Rugby pouvait être vérifiée comme s'il s'agissait d'une ligue ESPN.
+
 ## [5.0.1] - 2026-09-13
 
 ### Corrigé

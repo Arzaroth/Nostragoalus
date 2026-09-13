@@ -846,3 +846,44 @@ decides whether a competition can be created at all. It reported 52 fixtures, 16
 ingestible, 36 dropped, `supported: false`. The Rugby World Cup could not have
 been added. Verifying a provider's output is not the same as verifying the path
 that consumes it.
+
+## A provider with no catalog is not a lesser provider
+
+`DISCOVERABLE_PROVIDERS` is the subset that can enumerate what it carries; the
+admin screen used it as the provider list outright, so FIFA and UEFA could not be
+selected at all. But `probe` and `create` both take the full `MATCH_PROVIDERS`
+enum and always have: the restriction was the picker's, not the system's, and it
+made the two providers the app was actually built on unreachable from its own
+admin screen.
+
+The screen now offers every provider and swaps the picker for a typed-in id when
+there is no catalog. The dry-run probe is unchanged and still decides, so nothing
+is saved on the strength of a pasted id alone. It opens on a discoverable
+provider because that is the guided path - opening on one that can only take an
+id reads as the harder way being the only way.
+
+## Catalog concurrency is bounded workers, not Promise.all, and not serial
+
+ESPN names one league per request and carries ~218 of them, so the catalog is
+inherently N+1. It was walked serially because `RateLimiter` paces off a single
+`lastAt` with no queue: a parallel map has every request read the same timestamp,
+sleep the same 60ms, and fire as one burst - the exact thing the limiter exists
+to prevent.
+
+Serial made the walk latency-bound instead: ~163ms per league, ~21s in total,
+behind a button with nothing to show, which read as broken rather than slow. Six
+workers pulling off one queue, each still awaiting the shared limiter, leaves the
+request RATE untouched and overlaps only the round trips: ~6s. The results are
+written positionally so the list does not depend on which worker won, and a 429
+stops the whole walk, because a short catalog tells the admin those competitions
+do not exist.
+
+## Catalog recency is filtered on the client
+
+World Rugby carries ~208 men's union events back to 2019. Trimming them belongs
+on the client, not in the endpoint: `discovery.ts` caches one full catalog per
+provider and sub-feed for 10 minutes, and a recency parameter would fragment that
+cache per cutoff while making "show me the older ones" a round trip. The full
+catalog is fetched once and the screen shows recent seasons with a count and a
+toggle, over a type-to-search picker. An entry the provider gave no season is
+kept: it cannot be judged old.

@@ -71,11 +71,31 @@ Which competitions exist is admin-managed, not a code constant. Two pieces:
 
 - **Discovery** - `discoverCompetitions()` is an optional method on
   `MatchDataProvider` (`server/utils/providers/types.ts`), implemented for ESPN
-  against the core API's league catalog. The index carries `$ref` links only, so
-  each league's name, season and `isTournament` flag costs one hop; they go
-  through the tight ref limiter rather than the scoreboard's one-per-second. ~218
-  leagues, ~2s. Not every provider can enumerate (UEFA's ids are a curated
-  handful, the offline `fixture` provider has one), and that is a normal answer.
+  against the core API's league catalog and for World Rugby against its event
+  list. The ESPN index carries `$ref` links only, so each league's name, season
+  and `isTournament` flag costs one hop; they go through the tight ref limiter
+  rather than the scoreboard's one-per-second, six workers at a time off one
+  queue. The workers overlap the round trips without raising the request rate,
+  which the shared limiter still governs: ~218 leagues in ~6s, against ~21s when
+  the walk was serial and looked to the admin like a button that did nothing.
+  Not every provider can enumerate (UEFA's ids are a curated handful, the offline
+  `fixture` provider has one), and that is a normal answer, not a lesser one:
+  probe and create accept every provider in `MATCH_PROVIDERS`, so the admin
+  screen offers a typed-in id where there is no catalog to pick from. The list
+  endpoint returns both sets (`providers` and `discoverableProviders`) and the
+  screen opens on a discoverable one, since that is the guided path.
+- **Too much catalog** - a provider's whole archive is not a menu: World Rugby
+  carries ~208 men's union events back to 2019 and ESPN ~218 leagues. The
+  filtering is client-side in `AdminCompetitionsSection.vue` (the server caches
+  one full catalog per provider and sub-feed, so a recency parameter would only
+  fragment that cache): recent seasons by default, a count with a toggle for the
+  rest, and the picker itself is type-to-search. An entry the provider gave no
+  season is kept either way - it cannot be judged old.
+- **Switching provider drops the catalog.** The list, the choice, the typed id
+  and the probe verdict all clear when `provider` or `providerSport` changes.
+  Leaving them up let a World Rugby event be probed as an ESPN league, and a
+  sub-feed switch kept the men's list on screen while every request went to the
+  women's feed.
 - **The probe** - `summarizeFixtures()` in
   `server/utils/competitions/probe.ts`. `isTournament` cannot gate anything (ESPN
   marks the Champions League a tournament though its league phase is a single

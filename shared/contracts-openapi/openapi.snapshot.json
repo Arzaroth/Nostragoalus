@@ -412,10 +412,10 @@
           "Admin (internal)"
         ],
         "summary": "Every competition, archived ones included",
-        "description": "The admin competition list: provider binding, season and active state for every competition, plus the resolved default and which providers can enumerate their catalog. Unlike /api/competitions this includes archived rows, since the admin screen is where they are restored.",
+        "description": "The admin competition list: provider binding, season and active state for every competition, plus the resolved default, every provider a competition can be bound to, and the subset that can enumerate its own catalog. Unlike /api/competitions this includes archived rows, since the admin screen is where they are restored.",
         "responses": {
           "200": {
-            "description": "{ competitions, defaultSlug, discoverableProviders }.",
+            "description": "{ competitions, defaultSlug, providers, discoverableProviders }.",
             "content": {
               "application/json": {
                 "schema": {
@@ -464,6 +464,12 @@
                     "defaultSlug": {
                       "type": "string"
                     },
+                    "providers": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
                     "discoverableProviders": {
                       "type": "array",
                       "items": {
@@ -474,6 +480,7 @@
                   "required": [
                     "competitions",
                     "defaultSlug",
+                    "providers",
                     "discoverableProviders"
                   ],
                   "additionalProperties": false

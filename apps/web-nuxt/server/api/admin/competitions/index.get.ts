@@ -3,6 +3,7 @@ import { db } from '../../../../db'
 import { defineReadHandler } from '../../../utils/read-handler'
 import { getDefaultCompetitionSlug, listCompetitions } from '../../../utils/competitions/store'
 import { DISCOVERABLE_PROVIDERS } from '../../../utils/competitions/discovery'
+import { MATCH_PROVIDERS } from '../../../utils/providers/factory'
 
 const responseSchema = z.object({
   competitions: z.array(
@@ -17,6 +18,10 @@ const responseSchema = z.object({
     }),
   ),
   defaultSlug: z.string(),
+  // Every provider a competition can be bound to, and the subset that can list
+  // its own catalog. The rest are not second-class: probe and create take any of
+  // them, so the screen offers a typed-in id instead of a picker.
+  providers: z.array(z.string()),
   discoverableProviders: z.array(z.string()),
 })
 
@@ -35,6 +40,7 @@ export default defineReadHandler({ response: responseSchema, auth: 'admin' }, as
       isActive: c.isActive,
     })),
     defaultSlug,
+    providers: [...MATCH_PROVIDERS],
     discoverableProviders: [...DISCOVERABLE_PROVIDERS],
   }
 })
@@ -45,9 +51,9 @@ defineRouteMeta({
       "Admin (internal)"
     ],
     "summary": "Every competition, archived ones included",
-    "description": "The admin competition list: provider binding, season and active state for every competition, plus the resolved default and which providers can enumerate their catalog. Unlike /api/competitions this includes archived rows, since the admin screen is where they are restored.",
+    "description": "The admin competition list: provider binding, season and active state for every competition, plus the resolved default, every provider a competition can be bound to, and the subset that can enumerate its own catalog. Unlike /api/competitions this includes archived rows, since the admin screen is where they are restored.",
     "responses": {
-      "200": { "description": "{ competitions, defaultSlug, discoverableProviders }." },
+      "200": { "description": "{ competitions, defaultSlug, providers, discoverableProviders }." },
       "403": { "description": "Not an admin." }
     }
   },

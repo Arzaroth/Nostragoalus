@@ -20,6 +20,7 @@ interface AdminCompetition {
 interface AdminCompetitions {
   competitions: AdminCompetition[]
   defaultSlug: string
+  providers: string[]
   discoverableProviders: string[]
 }
 interface Discovered {
@@ -76,6 +77,11 @@ watch(
   },
   { immediate: true },
 )
+const defaultOptions = computed(() =>
+  (data.value?.competitions ?? [])
+    .filter((c) => c.isActive)
+    .map((c) => ({ label: `${c.name} (${c.slug})`, value: c.slug })),
+)
 const defaultDirty = computed(() => !!data.value && selectedDefault.value !== data.value.defaultSlug)
 const savedDefault = ref(false)
 
@@ -119,7 +125,12 @@ const adding = ref(false)
 const provider = ref('')
 // Only World Rugby splits its catalog; for every other provider this stays null
 // and is never sent.
-const subFeeds = computed(() => PROVIDER_SPORTS[provider.value] ?? null)
+// Copied, not passed through: PROVIDER_SPORTS is readonly and Select's options
+// prop is not.
+const subFeeds = computed(() => {
+  const feeds = PROVIDER_SPORTS[provider.value]
+  return feeds ? feeds.map((f) => ({ label: f.label, value: f.value })) : null
+})
 const providerSport = ref('')
 watch(subFeeds, (feeds) => { providerSport.value = feeds?.[0]?.value ?? '' }, { immediate: true })
 const sportParam = computed(() => (subFeeds.value && providerSport.value ? { providerSport: providerSport.value } : {}))
@@ -128,14 +139,68 @@ const chosen = ref('')
 const probe = ref<Probe | null>(null)
 const draftSlug = ref('')
 const draftName = ref('')
+// FIFA and UEFA carry no catalog endpoint, but probe and create take them like
+// any other provider, so the id is typed in instead of picked.
+const manualId = ref('')
+const manualSeason = ref('')
+const showOlder = ref(false)
+
+const providerOptions = computed(() => (data.value?.providers ?? []).map((p) => ({ label: p, value: p })))
+const canDiscover = computed(() => !!data.value?.discoverableProviders.includes(provider.value))
 
 watch(
-  () => data.value?.discoverableProviders,
-  (list) => {
-    if (list?.length && !provider.value) provider.value = list[0]!
+  () => data.value,
+  (cfg) => {
+    // A provider that can list its own catalog first: that is the guided path,
+    // and opening on one that can only take a typed-in id reads as the harder
+    // way being the only way.
+    if (!cfg || provider.value) return
+    provider.value = cfg.discoverableProviders[0] ?? cfg.providers[0] ?? ''
   },
   { immediate: true },
 )
+
+// Nothing picked against one provider's catalog means anything against the
+// next: leaving the old list up let a World Rugby event be probed as an ESPN
+// league, and the sub-feed switch silently kept the men's list on screen while
+// querying the women's.
+watch([provider, providerSport], () => {
+  catalog.value = null
+  chosen.value = ''
+  probe.value = null
+  manualId.value = ''
+  manualSeason.value = ''
+  draftName.value = ''
+  draftSlug.value = ''
+  showOlder.value = false
+  err.value = ''
+})
+
+// A provider's whole archive is not a menu: World Rugby carries ~208 events back
+// to 2019 and ESPN ~218 leagues. Recent seasons by default, the rest a click
+// away, and the list itself is type-to-search.
+const RECENT_YEARS = 1
+const catalogVisible = computed(() => {
+  const all = catalog.value ?? []
+  if (showOlder.value) return all
+  const floor = new Date().getFullYear() - RECENT_YEARS
+  // An entry the provider gave no season is kept: it cannot be judged old.
+  return all.filter((c) => !c.seasonHint || Number(c.seasonHint) >= floor)
+})
+const catalogHidden = computed(() => (catalog.value?.length ?? 0) - catalogVisible.value.length)
+const catalogOptions = computed(() =>
+  catalogVisible.value.map((c) => ({
+    label: c.seasonHint ? `${c.name} (${c.seasonHint})` : c.name,
+    value: c.externalCompetitionId,
+  })),
+)
+
+// What actually gets probed and created, whichever way it was chosen.
+const externalId = computed(() => (canDiscover.value ? chosen.value : manualId.value.trim()))
+const seasonHintParam = computed(() => {
+  const hint = canDiscover.value ? chosenEntry.value?.seasonHint : manualSeason.value.trim() || null
+  return hint ? { seasonHint: hint } : {}
+})
 
 const chosenEntry = computed(() => catalog.value?.find((c) => c.externalCompetitionId === chosen.value) ?? null)
 const takenSlugs = computed(() => new Set((data.value?.competitions ?? []).map((c) => c.slug)))
@@ -166,19 +231,21 @@ const runProbe = useMutation({
     $fetch<Probe>('/api/admin/competitions/probe', {
       params: {
         provider: provider.value,
-        externalCompetitionId: chosen.value,
+        externalCompetitionId: externalId.value,
         ...sportParam.value,
-        ...(chosenEntry.value?.seasonHint ? { seasonHint: chosenEntry.value.seasonHint } : {}),
+        ...seasonHintParam.value,
       },
     }),
   onSuccess: (res) => {
     err.value = ''
     probe.value = res
+    // A typed-in id has no catalog entry to name it, so the id seeds both
+    // fields and the admin renames it before saving.
     const entry = chosenEntry.value
-    if (entry) {
-      draftName.value = entry.name
-      draftSlug.value = suggestSlug(entry.name, entry.seasonHint)
-    }
+    const name = entry?.name ?? externalId.value
+    const season = entry?.seasonHint ?? (manualSeason.value.trim() || null)
+    draftName.value = name
+    draftSlug.value = suggestSlug(name, season)
   },
   onError: (e) => {
     probe.value = null
@@ -194,8 +261,8 @@ const create = useMutation({
         slug: draftSlug.value.trim(),
         name: draftName.value.trim(),
         provider: provider.value,
-        externalCompetitionId: chosen.value,
-        seasonHint: chosenEntry.value?.seasonHint ?? null,
+        externalCompetitionId: externalId.value,
+        seasonHint: chosenEntry.value?.seasonHint ?? (manualSeason.value.trim() || null),
         ...sportParam.value,
       },
     }),
@@ -228,23 +295,21 @@ const canCreate = computed(
         <div class="flex flex-wrap items-end gap-3">
           <label class="flex flex-col gap-1">
             <span class="text-xs font-semibold" style="color: var(--p-text-muted-color)">{{ t('admin.competitions.defaultLabel') }}</span>
-            <select
+            <Select
               v-model="selectedDefault"
-              class="rounded-lg border px-2 py-1.5 text-sm w-64"
-              style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
-            >
-              <option v-for="c in data.competitions.filter((x) => x.isActive)" :key="c.id" :value="c.slug">{{ c.name }} ({{ c.slug }})</option>
-            </select>
+              :options="defaultOptions"
+              option-label="label"
+              option-value="value"
+              class="w-72"
+            />
           </label>
-          <button
-            type="button"
-            :disabled="!defaultDirty || saveDefault.isPending.value"
-            class="px-3 py-1.5 rounded-lg font-semibold text-sm disabled:opacity-50"
-            style="background: var(--p-primary-color); color: var(--p-primary-contrast-color)"
+          <Button
+            :label="t('admin.competitions.save')"
+            icon="pi pi-check"
+            :disabled="!defaultDirty"
+            :loading="saveDefault.isPending.value"
             @click="saveDefault.mutate()"
-          >
-            {{ t('admin.competitions.save') }}
-          </button>
+          />
           <span v-if="savedDefault && !defaultDirty" class="text-xs" style="color: var(--p-text-muted-color)">{{ t('admin.competitions.saved') }}</span>
         </div>
 
@@ -271,15 +336,15 @@ const canCreate = computed(
                 {{ c.provider }} / {{ c.externalCompetitionId }}<span v-if="c.seasonHint"> / {{ c.seasonHint }}</span>
               </td>
               <td class="text-end">
-                <button
-                  type="button"
+                <Button
+                  :label="c.isActive ? t('admin.competitions.archive') : t('admin.competitions.restore')"
+                  :icon="c.isActive ? 'pi pi-box' : 'pi pi-undo'"
+                  size="small"
+                  severity="secondary"
+                  outlined
                   :disabled="setActive.isPending.value || (c.isActive && c.slug === data.defaultSlug)"
-                  class="px-3 py-1.5 rounded-lg text-sm border disabled:opacity-50"
-                  style="border-color: var(--p-content-border-color)"
                   @click="setActive.mutate({ slug: c.slug, isActive: !c.isActive })"
-                >
-                  {{ c.isActive ? t('admin.competitions.archive') : t('admin.competitions.restore') }}
-                </button>
+                />
                 <!-- Spelled out, not a tooltip: a disabled button shows none. -->
                 <div v-if="c.isActive && c.slug === data.defaultSlug" class="text-xs mt-1" style="color: var(--p-text-muted-color)">
                   {{ t('admin.competitions.cantArchiveDefault') }}
@@ -291,15 +356,13 @@ const canCreate = computed(
 
         <!-- Add a competition -->
         <div class="border-t pt-4" style="border-color: var(--p-content-border-color)">
-          <button
+          <Button
             v-if="!adding"
-            type="button"
-            class="px-3 py-1.5 rounded-lg font-semibold text-sm"
-            style="background: var(--p-primary-color); color: var(--p-primary-contrast-color)"
+            :label="t('admin.competitions.add')"
+            icon="pi pi-plus"
+            size="small"
             @click="adding = true"
-          >
-            {{ t('admin.competitions.add') }}
-          </button>
+          />
 
           <div v-else class="flex flex-col gap-3">
             <p class="text-xs" style="color: var(--p-text-muted-color)">{{ t('admin.competitions.addIntro') }}</p>
@@ -307,59 +370,78 @@ const canCreate = computed(
             <div class="flex flex-wrap items-end gap-3">
               <label class="flex flex-col gap-1">
                 <span class="text-xs font-semibold" style="color: var(--p-text-muted-color)">{{ t('admin.competitions.colProvider') }}</span>
-                <select
-                  v-model="provider"
-                  class="rounded-lg border px-2 py-1.5 text-sm w-40"
-                  style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
-                >
-                  <option v-for="p in data.discoverableProviders" :key="p" :value="p">{{ p }}</option>
-                </select>
+                <Select v-model="provider" :options="providerOptions" option-label="label" option-value="value" class="w-44" />
               </label>
               <label v-if="subFeeds" class="flex flex-col gap-1">
                 <span class="text-xs font-semibold" style="color: var(--p-text-muted-color)">{{ t('admin.competitions.colSubFeed') }}</span>
-                <select
-                  v-model="providerSport"
-                  class="rounded-lg border px-2 py-1.5 text-sm w-48"
-                  style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
-                >
-                  <option v-for="f in subFeeds" :key="f.value" :value="f.value">{{ f.label }}</option>
-                </select>
+                <Select v-model="providerSport" :options="subFeeds" option-label="label" option-value="value" class="w-52" />
               </label>
-              <button
-                type="button"
-                :disabled="!provider || discover.isPending.value"
-                class="px-3 py-1.5 rounded-lg text-sm border disabled:opacity-50"
-                style="border-color: var(--p-content-border-color)"
+              <Button
+                v-if="canDiscover"
+                :label="discover.isPending.value ? t('admin.competitions.discovering') : t('admin.competitions.discover')"
+                icon="pi pi-search"
+                :loading="discover.isPending.value"
                 @click="discover.mutate()"
-              >
-                {{ discover.isPending.value ? t('admin.competitions.discovering') : t('admin.competitions.discover') }}
-              </button>
+              />
             </div>
 
-            <div v-if="catalog" class="flex flex-wrap items-end gap-3">
-              <label class="flex flex-col gap-1">
-                <span class="text-xs font-semibold" style="color: var(--p-text-muted-color)">{{ t('admin.competitions.colCompetition') }}</span>
-                <select
-                  v-model="chosen"
-                  class="rounded-lg border px-2 py-1.5 text-sm w-80"
-                  style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
-                  @change="probe = null"
-                >
-                  <option value="">{{ t('admin.competitions.choose') }}</option>
-                  <option v-for="c in catalog" :key="c.externalCompetitionId" :value="c.externalCompetitionId">
-                    {{ c.name }}<span v-if="c.seasonHint"> ({{ c.seasonHint }})</span>
-                  </option>
-                </select>
-              </label>
-              <button
-                type="button"
-                :disabled="!chosen || runProbe.isPending.value"
-                class="px-3 py-1.5 rounded-lg text-sm border disabled:opacity-50"
-                style="border-color: var(--p-content-border-color)"
-                @click="runProbe.mutate()"
-              >
-                {{ runProbe.isPending.value ? t('admin.competitions.probing') : t('admin.competitions.probe') }}
-              </button>
+            <!-- A provider with no catalog endpoint is still addable: the id is
+                 typed in, and the same dry-run probe decides whether it works. -->
+            <div v-if="!canDiscover" class="flex flex-col gap-2">
+              <p class="text-xs" style="color: var(--p-text-muted-color)">{{ t('admin.competitions.manualIntro') }}</p>
+              <div class="flex flex-wrap items-end gap-3">
+                <label class="flex flex-col gap-1">
+                  <span class="text-xs font-semibold" style="color: var(--p-text-muted-color)">{{ t('admin.competitions.manualIdLabel') }}</span>
+                  <InputText v-model="manualId" maxlength="64" class="w-72" @update:model-value="probe = null" />
+                </label>
+                <label class="flex flex-col gap-1">
+                  <span class="text-xs font-semibold" style="color: var(--p-text-muted-color)">{{ t('admin.competitions.manualSeasonLabel') }}</span>
+                  <InputText v-model="manualSeason" maxlength="16" class="w-28" @update:model-value="probe = null" />
+                </label>
+                <Button
+                  :label="runProbe.isPending.value ? t('admin.competitions.probing') : t('admin.competitions.probe')"
+                  icon="pi pi-bolt"
+                  severity="secondary"
+                  outlined
+                  :disabled="!externalId"
+                  :loading="runProbe.isPending.value"
+                  @click="runProbe.mutate()"
+                />
+              </div>
+            </div>
+
+            <div v-else-if="catalog" class="flex flex-col gap-2">
+              <div class="flex flex-wrap items-end gap-3">
+                <label class="flex flex-col gap-1">
+                  <span class="text-xs font-semibold" style="color: var(--p-text-muted-color)">{{ t('admin.competitions.colCompetition') }}</span>
+                  <Select
+                    v-model="chosen"
+                    :options="catalogOptions"
+                    option-label="label"
+                    option-value="value"
+                    filter
+                    :filter-placeholder="t('admin.competitions.search')"
+                    :placeholder="t('admin.competitions.choose')"
+                    class="w-96"
+                    @change="probe = null"
+                  />
+                </label>
+                <Button
+                  :label="runProbe.isPending.value ? t('admin.competitions.probing') : t('admin.competitions.probe')"
+                  icon="pi pi-bolt"
+                  severity="secondary"
+                  outlined
+                  :disabled="!externalId"
+                  :loading="runProbe.isPending.value"
+                  @click="runProbe.mutate()"
+                />
+              </div>
+              <div class="text-xs" style="color: var(--p-text-muted-color)">
+                {{ t('admin.competitions.catalogCount', { shown: catalogOptions.length, total: catalog.length }) }}
+                <button v-if="catalogHidden > 0 || showOlder" type="button" class="underline ms-1" @click="showOlder = !showOlder">
+                  {{ showOlder ? t('admin.competitions.showRecent') : t('admin.competitions.showOlder', { n: catalogHidden }) }}
+                </button>
+              </div>
             </div>
 
             <!-- The verdict: what would actually land, before anything is saved -->
@@ -388,40 +470,31 @@ const canCreate = computed(
             <div v-if="probe?.supported" class="flex flex-wrap items-end gap-3">
               <label class="flex flex-col gap-1">
                 <span class="text-xs font-semibold" style="color: var(--p-text-muted-color)">{{ t('admin.competitions.nameLabel') }}</span>
-                <input
-                  v-model="draftName"
-                  type="text"
-                  maxlength="120"
-                  class="rounded-lg border px-2 py-1.5 text-sm w-64"
-                  style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
-                >
+                <InputText v-model="draftName" maxlength="120" class="w-64" />
               </label>
               <label class="flex flex-col gap-1">
                 <span class="text-xs font-semibold" style="color: var(--p-text-muted-color)">{{ t('admin.competitions.slugLabel') }}</span>
-                <input
-                  v-model="draftSlug"
-                  type="text"
-                  maxlength="64"
-                  class="rounded-lg border px-2 py-1.5 text-sm w-64"
-                  style="background: var(--p-content-background); border-color: var(--p-content-border-color)"
-                >
+                <InputText v-model="draftSlug" maxlength="64" class="w-64" :invalid="slugTaken" />
               </label>
-              <button
-                type="button"
-                :disabled="!canCreate || create.isPending.value"
-                class="px-3 py-1.5 rounded-lg font-semibold text-sm disabled:opacity-50"
-                style="background: var(--p-primary-color); color: var(--p-primary-contrast-color)"
+              <Button
+                :label="t('admin.competitions.create')"
+                icon="pi pi-plus"
+                :disabled="!canCreate"
+                :loading="create.isPending.value"
                 @click="create.mutate()"
-              >
-                {{ t('admin.competitions.create') }}
-              </button>
+              />
               <span v-if="slugTaken" class="text-xs" style="color: var(--ng-danger)">{{ t('admin.competitions.slugTaken') }}</span>
               <span v-else class="text-xs" style="color: var(--p-text-muted-color)">{{ t('admin.competitions.slugPermanent') }}</span>
             </div>
 
-            <button type="button" class="text-xs underline self-start" style="color: var(--p-text-muted-color)" @click="adding = false">
-              {{ t('admin.competitions.cancel') }}
-            </button>
+            <Button
+              :label="t('admin.competitions.cancel')"
+              size="small"
+              severity="secondary"
+              text
+              class="self-start"
+              @click="adding = false"
+            />
           </div>
         </div>
       </template>

@@ -44,21 +44,24 @@ test('an admin changes the default competition and a cookie-less landing follows
   await page.waitForLoadState('networkidle')
 
   // Scoped to the competitions section: the admin page keeps every other
-  // section mounted, so an unscoped `select` or `Save` can match a neighbour.
+  // section mounted, so an unscoped combobox or `Save` can match a neighbour.
   const section = page.locator('section', { has: page.getByText('Default competition') })
-  const picker = section.locator('select').first()
+  // A PrimeVue Select, not a native <select>: it is a combobox whose chosen
+  // option is the label text, and whose options live in an overlay.
+  const picker = section.getByRole('combobox').first()
   const saveBtn = section.getByRole('button', { name: 'Save', exact: true })
 
   // Nothing stored, so the resolver falls back to the newest season: e2e-cup.
   await expect(picker).toBeVisible()
-  await expect(picker).toHaveValue(seeded.slug)
+  await expect(picker).toContainText(seeded.slug)
   await expect(saveBtn).toBeDisabled()
 
   // SSR-rendered, so the control can exist before hydration wires v-model:
   // retry until the choice sticks and arms Save.
   await expect(async () => {
-    await picker.selectOption(E2E_ALT_SLUG)
-    await expect(picker).toHaveValue(E2E_ALT_SLUG)
+    await picker.click()
+    await page.getByRole('option', { name: new RegExp(E2E_ALT_SLUG) }).click({ timeout: 5_000 })
+    await expect(picker).toContainText(E2E_ALT_SLUG)
     await expect(saveBtn).toBeEnabled()
   }).toPass({ timeout: 15_000 })
 
@@ -68,7 +71,7 @@ test('an admin changes the default competition and a cookie-less landing follows
   // Reloading proves it persisted rather than only moving the local draft.
   await page.reload()
   await page.waitForLoadState('networkidle')
-  await expect(section.locator('select').first()).toHaveValue(E2E_ALT_SLUG)
+  await expect(section.getByRole('combobox').first()).toContainText(E2E_ALT_SLUG)
 
   // The payoff: a visitor with no remembered competition is pointed at the new
   // default, even though it is NOT the newest season - which is what proves the
