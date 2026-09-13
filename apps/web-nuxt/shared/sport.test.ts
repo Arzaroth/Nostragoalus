@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { PROVIDER_SPORTS, SPORTS, sportForProvider } from './sport'
+import { isProviderSport, PROVIDER_SPORTS, SPORTS, sportForProvider } from './sport'
 import { MATCH_PROVIDERS } from '../server/utils/providers/factory'
 
 describe('sportForProvider', () => {
@@ -19,6 +19,26 @@ describe('sportForProvider', () => {
 
   it('falls back to football for an unknown provider', () => {
     expect(sportForProvider('nope')).toBe('FOOTBALL')
+  })
+})
+
+describe('isProviderSport', () => {
+  it('accepts a feed a provider actually offers', () => {
+    expect(isProviderSport('mru')).toBe(true)
+    expect(isProviderSport('wrs')).toBe(true)
+  })
+
+  it('rejects anything else, so it cannot reach a provider URL', () => {
+    // The value is interpolated into a path and stored on the competition row.
+    expect(isProviderSport('xyz')).toBe(false)
+    expect(isProviderSport('MRU')).toBe(false)
+    expect(isProviderSport('')).toBe(false)
+  })
+
+  it('covers every feed the picker offers', () => {
+    for (const feed of PROVIDER_SPORTS.worldrugby ?? []) {
+      expect(isProviderSport(feed.value), feed.value).toBe(true)
+    }
   })
 })
 

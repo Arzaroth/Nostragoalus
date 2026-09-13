@@ -178,3 +178,15 @@ the code. Alphabetical.
   that provisions/deprovisions users over `/api/auth/scim/v2/*`.
 - **Deprovision** - SCIM `active:false`: ban the user (block login + revoke
   sessions) while keeping their data; `active:true` reactivates.
+- **Margin band** - the winning margins the `DIFF` scoring tier treats as one
+  and the same. `scoringConfig.marginBands` holds the upper bounds; null means
+  football, where every margin is its own band and `DIFF` is the exact goal
+  difference. Rugby uses `[7, 14]`. See [features/rugby.md](features/rugby.md).
+- **Sub-feed** (`competition.providerSport`) - which catalog within a provider a
+  competition is bound to, for a provider that serves several. World Rugby
+  splits men's, women's, age-grade and sevens; football providers have one feed
+  and leave it null. Distinct from `competition.sport`, the sport itself.
+- **Try board / points board** - rugby's two scorer rankings. The try board
+  counts scoring plays worth at least a try; the points board sums
+  `goal_event.points`. The leaders are usually different people, and only one of
+  them is a kicker.

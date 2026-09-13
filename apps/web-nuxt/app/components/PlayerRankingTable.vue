@@ -7,6 +7,14 @@ const props = withDefaults(
 )
 const { t } = useI18n()
 
+// Keyed, not a ternary: a two-way ternary over three metrics put the assists
+// boot above a column of rugby points.
+const METRIC_ICON: Record<'goals' | 'assists' | 'points', string> = {
+  goals: '⚽',
+  assists: '👟',
+  points: '🏉',
+}
+
 // Rank by the board's metric, drop zero rows, and slice. Ties break on the other
 // metric then name (matching the endpoint's order); the displayed rank, though,
 // is standard competition ranking ("1224") - players level on the metric share a
@@ -41,7 +49,7 @@ const ranked = computed(() => {
       <tr style="color: var(--p-text-muted-color)">
         <th class="py-1 text-start">#</th>
         <th class="text-start">{{ t('stats.player') }}</th>
-        <th class="text-center">{{ metric === 'goals' ? '⚽' : '👟' }}</th>
+        <th class="text-center">{{ METRIC_ICON[metric] }}</th>
       </tr>
     </thead>
     <tbody>

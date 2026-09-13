@@ -53,6 +53,7 @@ use the indexes.
 | Doc | What's here |
 |---|---|
 | [competitions.md](features/competitions.md) | Multi-competition model + the `/[competition]/` routing. |
+| [rugby.md](features/rugby.md) | Multi-sport: what `competition.sport` changes, and what rugby deliberately does not have. |
 | [bracket.md](features/bracket.md) | The knockout tree: provider-sourced, projected qualifiers, hover journey lines. |
 | [predictions-and-scoring.md](features/predictions-and-scoring.md) | The core loop: predict, lock, finalize, score. |
 | [pick-guard.md](features/pick-guard.md) | Outstanding-picks nudge + outlandish-score confirm. |

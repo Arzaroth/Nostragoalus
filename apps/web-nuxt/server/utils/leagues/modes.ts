@@ -1,7 +1,7 @@
 import { and, eq, lte } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
 import { match } from '../../../db/schema'
-import { basePointsFor, classifyTier, outcomeOf, type BasePoints, type Outcome, type Scoreline } from '../scoring/tiers'
+import { basePointsFor, classifyTier, outcomeOf, type BasePoints, type MarginBands, type Outcome, type Scoreline } from '../scoring/tiers'
 import { ConflictError } from '../errors'
 
 export type LeagueMode = 'NORMAL' | 'EASY' | 'HARD' | 'HARDCORE'
@@ -62,6 +62,10 @@ export interface EffectivePick {
 export interface ModeScoreContext {
   base: BasePoints
   jokerMultiplier: number
+  // Carried so a league board classifies a pick exactly as the global ladder
+  // does. Dropping it scored rugby with football semantics on league boards
+  // only, and the two disagreed with no error anywhere.
+  marginBands: MarginBands
 }
 
 // A correct EASY call is always worth at least this, with the configured odds
@@ -111,7 +115,7 @@ export function hardPoints(pick: EffectivePick, actual: Scoreline): number {
 // bonus). An override is scored on the base tier alone - it forfeits the global
 // crowd-rarity bonus, which has no per-league meaning. See TODO.md.
 export function normalPoints(pick: EffectivePick, actual: Scoreline, ctx: ModeScoreContext): number {
-  const pts = basePointsFor(classifyTier({ home: pick.home, away: pick.away }, actual), ctx.base)
+  const pts = basePointsFor(classifyTier({ home: pick.home, away: pick.away }, actual, ctx.marginBands), ctx.base)
   return pick.isJoker ? pts * ctx.jokerMultiplier : pts
 }
 

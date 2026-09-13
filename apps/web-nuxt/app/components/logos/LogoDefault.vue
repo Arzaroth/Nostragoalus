@@ -81,28 +81,3 @@
   overflow: visible;
 }
 </style>
-
-<!-- Unscoped on purpose: Vue's scoped compiler mangles
-     ":global(ancestor) .child" selectors (drops the child part). -->
-<style>
-.logo-mark .sec {
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  pointer-events: visible; /* hover works even while transparent */
-}
-/* each section glows when YOU touch it, paint-bucket style */
-.logo-mark .sec:hover {
-  opacity: 0.6;
-  transition-duration: 0.12s;
-}
-.logo-mark .sec-core:hover {
-  opacity: 0.85;
-}
-.logo-mark .sec-ring:hover {
-  opacity: 0.3; /* the big ring stays subtle so it doesn't swallow the orb */
-}
-/* the decorative layers above the sections must not steal the hover */
-.logo-mark .lm-sections ~ g {
-  pointer-events: none;
-}
-</style>

@@ -127,7 +127,7 @@ export async function probeCompetition(target: ProbeTarget, deps: ProbeDeps = {}
     deps.makeProvider ??
     ((t: ProbeTarget, seasonId?: string) =>
       providerForCompetition(
-        { provider: t.provider, externalCompetitionId: t.externalCompetitionId, seasonHint: t.seasonHint, sport: t.providerSport },
+        { provider: t.provider, externalCompetitionId: t.externalCompetitionId, seasonHint: t.seasonHint, providerSport: t.providerSport },
         seasonId,
       ))
   const resolveSeason = deps.resolveSeason ?? defaultResolveSeason

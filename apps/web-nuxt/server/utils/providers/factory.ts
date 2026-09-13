@@ -13,6 +13,7 @@ export interface ProviderSelection {
   fifaSeasonId?: string
   footballDataToken?: string
   apiFootballKey?: string
+  // The provider's sub-feed, where it has several (World Rugby).
   sport?: string | null
   fetchImpl?: typeof fetch
 }

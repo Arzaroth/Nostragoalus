@@ -199,6 +199,37 @@ describe('a sport that scores points', () => {
     await client.close()
   })
 
+  it('breaks a points tie on tries, then on name', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    const md1 = (await findRoundId(db, competitionId, 'GROUP', 1)) as string
+    const matchId = await makeMatch(db, { competitionId, roundId: md1, kickoffTime: new Date('2026-06-11T16:00:00Z') })
+
+    // Both on 5: the try scorer ranks above the kicker.
+    await addGoal(db, competitionId, matchId, { playerId: 'a', playerName: 'Zed Try', points: 5 })
+    await addGoal(db, competitionId, matchId, { playerId: 'b', playerName: 'Abe Kick', points: 3 })
+    await addGoal(db, competitionId, matchId, { playerId: 'b', playerName: 'Abe Kick', points: 2 })
+
+    const { points } = await getCompetitionPlayerRankings(db, competitionId)
+    expect(points!.map((s) => s.playerName)).toEqual(['Zed Try', 'Abe Kick'])
+    await client.close()
+  })
+
+  it('falls back to the name when points and tries are both level', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    const md1 = (await findRoundId(db, competitionId, 'GROUP', 1)) as string
+    const matchId = await makeMatch(db, { competitionId, roundId: md1, kickoffTime: new Date('2026-06-11T16:00:00Z') })
+
+    await addGoal(db, competitionId, matchId, { playerId: 'z', playerName: 'Zulu', points: 5 })
+    await addGoal(db, competitionId, matchId, { playerId: 'a', playerName: 'Alpha', points: 5 })
+
+    const { points, scorers } = await getCompetitionPlayerRankings(db, competitionId)
+    expect(points!.map((s) => s.playerName)).toEqual(['Alpha', 'Zulu'])
+    expect(scorers.map((s) => s.playerName)).toEqual(['Alpha', 'Zulu'])
+    await client.close()
+  })
+
   it('gives football no points board at all', async () => {
     const { db, client } = await createTestDb()
     const competitionId = await seedCompetition(db)

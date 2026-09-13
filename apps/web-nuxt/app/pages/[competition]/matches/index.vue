@@ -84,11 +84,13 @@ const viewOptions = computed(() => [
 // Both Stats boards share the same card chrome; only the heading and which
 // ranked list they draw from differ, so render them from one v-for (mirrors the
 // standings v-for). Each list is already ranked/sliced server-side per metric.
-// A sport that records points gets a third board, and its scorer board is a try
-// board - so it is named one. Football has no points board and keeps assists.
+// Driven by the competition's sport, not by whether points data happens to have
+// arrived: inferring it from the payload showed football headings (and an
+// assists board rugby can never fill) until the first scoring event landed, then
+// flipped the labels mid-tournament.
+const selectedSport = useSelectedSport()
 const statBoards = computed(() => {
-  const hasPoints = (rankings.value?.points?.length ?? 0) > 0
-  return hasPoints
+  return selectedSport.value === 'RUGBY_UNION'
     ? [
         { title: 'stats.topTryScorers', metric: 'goals' as const, key: 'scorers' as const },
         { title: 'stats.topPoints', metric: 'points' as const, key: 'points' as const },

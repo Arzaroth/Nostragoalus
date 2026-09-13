@@ -396,7 +396,7 @@ export async function getLeagueModeBoard(db: AppDatabase, opts: LeagueModeBoardO
     loadAwardPoints(db, opts.competitionId, championPick),
     loadAwardPoints(db, opts.competitionId, bestScorerPick),
   ])
-  const ctx: ModeScoreContext = { base: rules.base, jokerMultiplier: rules.jokerMultiplier }
+  const ctx: ModeScoreContext = { base: rules.base, jokerMultiplier: rules.jokerMultiplier, marginBands: rules.marginBands }
   return {
     kind: 'points',
     mode: opts.mode,

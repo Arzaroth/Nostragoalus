@@ -10,8 +10,15 @@ const topScorerSchema = z.object({
   goals: z.number(),
   assists: z.number().nullable(),
   penalties: z.number().nullable(),
+  points: z.number().nullable().optional(),
 })
-const responseSchema = z.object({ scorers: z.array(topScorerSchema), assists: z.array(topScorerSchema) })
+// Zod strips what it does not declare, so omitting `points` here would silently
+// drop the whole board on the way out while the server had it in hand.
+const responseSchema = z.object({
+  scorers: z.array(topScorerSchema),
+  assists: z.array(topScorerSchema),
+  points: z.array(topScorerSchema).optional(),
+})
 
 export default defineReadHandler({ response: responseSchema }, async ({ event }) => {
   const id = getRouterParam(event, 'id') as string

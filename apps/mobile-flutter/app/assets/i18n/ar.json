@@ -869,6 +869,8 @@
     "player": "اللاعب",
     "topScorers": "أفضل الهدافين",
     "topAssists": "أكثر التمريرات الحاسمة",
+    "topTryScorers": "أبرز مسجّلي المحاولات",
+    "topPoints": "الأكثر تسجيلًا للنقاط",
     "empty": "لا بيانات بعد"
   },
   "standings": {
@@ -1308,6 +1310,7 @@
       "colCompetition": "البطولة",
       "colSource": "المصدر",
       "colProvider": "المزوّد",
+      "colSubFeed": "التغذية الفرعية",
       "archived": "مؤرشفة",
       "isDefault": "الافتراضية",
       "archive": "أرشفة",
@@ -1538,6 +1541,9 @@
       "outcome": "النتيجة الصحيحة",
       "miss": "النتيجة الخاطئة",
       "joker": "الجوكر",
+      "marginBands": "نطاقات الفارق",
+      "marginBandsPlaceholder": "مثال 7, 14",
+      "marginBandsHint": "فوارق النتيجة التي تُحتسب نتيجةً واحدة في مستوى «الفارق الصحيح». الفراغ يعني وجوب تطابق الفارق تمامًا (كرة القدم). الرغبي يستخدم 7, 14.",
       "jokerMultiplier": "المضاعِف",
       "jokerAppliesToBonus": "المضاعِف يطبَّق على المكافأة أيضًا",
       "bonusEngine": "محرّك المكافآت",

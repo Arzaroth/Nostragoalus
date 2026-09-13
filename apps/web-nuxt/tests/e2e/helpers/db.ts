@@ -236,6 +236,77 @@ export async function deleteUserByEmail(email: string): Promise<void> {
 // cards just render without a link. Seasoned older than E2E_SLUG so it never
 // displaces the default competition (active list is newest-season-first), but
 // still active, which /api/competitions requires for the slug to validate.
+export const E2E_RUGBY_SLUG = 'e2e-rugby'
+
+// A finished rugby competition with a scored match and its try/kick events, so
+// the sport-aware surfaces (the header mark, the two Stats boards) have
+// something real to render. Seeded directly rather than through a provider: the
+// isolated stack's `fixture` provider serves football only.
+export async function seedRugbyCompetition(): Promise<{ competitionId: string; matchId: string; slug: string }> {
+  await cleanupRugby()
+  const kickoff = new Date(Date.now() - 3 * 60 * 60 * 1000)
+  const { rows } = await db().query<{ competition_id: string; match_id: string }>(
+    `
+    with c as (
+      insert into competition (id, slug, name, provider, external_competition_id, season_hint,
+                               is_active, sport, provider_sport)
+      -- An old season on purpose: getDefaultCompetitionSlug takes the head of
+      -- the active list ordered by season_hint desc, so a 2027 rugby cup would
+      -- quietly become the app-wide default for every other spec.
+      values (gen_random_uuid(), $1, 'E2E Rugby Cup', 'worldrugby', 'e2e-rugby', '2019', true,
+              'RUGBY_UNION', 'mru')
+      returning id
+    ),
+    r as (
+      insert into round (id, competition_id, kind, stage, matchday, label, sort_order)
+      select gen_random_uuid(), c.id, 'GROUP_MATCHDAY', 'GROUP', 1, 'Matchday 1', 1 from c
+      returning id, competition_id
+    )
+    insert into match (id, competition_id, provider_match_id, round_id, stage, group_name,
+                       home_team, away_team, home_team_code, away_team_code, kickoff_time,
+                       status, full_time_home, full_time_away, winner)
+    select gen_random_uuid(), r.competition_id, 'e2e-rugby-m1', r.id, 'GROUP', 'A',
+           'France', 'New Zealand', 'FRA', 'NZL', $2, 'FINISHED', 27, 13, 'HOME'
+    from r
+    returning id as match_id, competition_id
+    `,
+    [E2E_RUGBY_SLUG, kickoff.toISOString()],
+  )
+  const competitionId = rows[0].competition_id
+  const matchId = rows[0].match_id
+
+  // A winger with two tries and a fly-half whose kicks outscore them: exactly
+  // the case the two boards exist to separate.
+  const scores: [string, string, number][] = [
+    ['rw-1', 'E2E Winger', 5],
+    ['rw-1', 'E2E Winger', 5],
+    ['rw-2', 'E2E Kicker', 2],
+    ['rw-2', 'E2E Kicker', 2],
+    ['rw-2', 'E2E Kicker', 3],
+    ['rw-2', 'E2E Kicker', 3],
+    ['rw-2', 'E2E Kicker', 3],
+  ]
+  for (const [playerId, playerName, points] of scores) {
+    await db().query(
+      `insert into goal_event (id, match_id, competition_id, side, team_name, team_code,
+                               player_id, player_name, minute, points, own_goal)
+       values (gen_random_uuid(), $1, $2, 'HOME', 'France', 'FRA', $3, $4, '20', $5, false)`,
+      [matchId, competitionId, playerId, playerName, points],
+    )
+  }
+  return { competitionId, matchId, slug: E2E_RUGBY_SLUG }
+}
+
+export async function cleanupRugby(): Promise<void> {
+  await db().query(`delete from match where competition_id in (select id from competition where slug = $1)`, [
+    E2E_RUGBY_SLUG,
+  ])
+  await db().query(`delete from round where competition_id in (select id from competition where slug = $1)`, [
+    E2E_RUGBY_SLUG,
+  ])
+  await db().query(`delete from competition where slug = $1`, [E2E_RUGBY_SLUG])
+}
+
 export const E2E_ALT_SLUG = 'e2e-alt'
 
 // A second, older-season competition, so a spec can prove the default MOVES.

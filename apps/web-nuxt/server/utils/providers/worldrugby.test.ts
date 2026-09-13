@@ -82,6 +82,15 @@ describe('mapWorldRugbyStage', () => {
     expect(mapWorldRugbyStage(null, 'Pool C')).toBe('GROUP')
   })
 
+  it('does not treat a placing match as the final', () => {
+    // World Rugby's age-grade and sevens events carry "5th Place Final" and the
+    // like; a second FINAL would be taken for the real one by the bracket and
+    // by the final-counts-double rule.
+    expect(mapWorldRugbyStage(null, '5th Place Final')).not.toBe('FINAL')
+    expect(mapWorldRugbyStage(null, '7th Place Final')).not.toBe('FINAL')
+    expect(mapWorldRugbyStage(null, 'Final')).toBe('FINAL')
+  })
+
   it('defaults to the group stage when nothing identifies the phase', () => {
     expect(mapWorldRugbyStage(null, null)).toBe('GROUP')
   })
@@ -395,6 +404,48 @@ describe('team codes', () => {
   })
 })
 
+describe('fixtures the app can actually ingest', () => {
+  const pool = (id: string, group: string, millis: number): WrMatch => ({
+    matchId: id,
+    eventPhase: `Pool ${group}`,
+    eventPhaseId: { type: 'Pool', subType: group },
+    time: { millis },
+    status: 'U',
+    teams: [{ name: 'A', abbreviation: 'AAA' }, { name: 'B', abbreviation: 'BBB' }],
+    scores: [0, 0],
+  })
+
+  it('numbers the pool matchdays, or the probe drops every pool fixture', () => {
+    // isIngestible rejects GROUP with a null matchday, so without this the
+    // admin probe reports fixtures_dropped and refuses to create the
+    // competition at all.
+    const day = 86_400_000
+    const matches = [
+      pool('1', 'A', day * 1),
+      pool('2', 'A', day * 1),
+      pool('3', 'A', day * 3),
+      pool('4', 'A', day * 3),
+    ]
+    const { impl } = stub({ '/schedule': { matches } })
+    return worldRugbyProvider({ eventId: '1893', fetchImpl: impl, rateLimiter: nowait() })
+      .listFixtures({ season: '2027' })
+      .then((fixtures) => {
+        expect(fixtures.map((m) => m.matchday)).toEqual([1, 1, 2, 2])
+      })
+  })
+
+  it('leaves out a fixture the feed has not timed yet', async () => {
+    // `?? 0` would date it to 1970, which reads as long past - closing the
+    // competition's champion window before it opened.
+    const untimed = { ...pool('9', 'A', 0), time: null }
+    const { impl } = stub({ '/schedule': { matches: [pool('1', 'A', 86_400_000), untimed] } })
+    const fixtures = await worldRugbyProvider({ eventId: '1893', fetchImpl: impl, rateLimiter: nowait() })
+      .listFixtures({ season: '2027' })
+    expect(fixtures.map((m) => m.providerMatchId)).toEqual(['1'])
+    expect(normalizeWorldRugbyMatch(untimed).kickoffTime).toBe('')
+  })
+})
+
 describe('worldRugbyMinute', () => {
   it('reads seconds from kick-off as the minute being played', () => {
     // 92s is 1:32, which is during the second minute.
@@ -520,6 +571,88 @@ describe('match detail, timeline and stats', () => {
     expect(d!.substitutions[0]!.playerOffName).toBe('')
   })
 
+  it('ships a player who left the field with no replacement', async () => {
+    // A red card or an injury with no cover leaves a Sub Off with no partner;
+    // dropping it loses the fact that they went off at all.
+    const tl = {
+      timeline: [
+        { type: 'Sub Off', teamIndex: 1, playerId: 'p1', link: 77, time: { secs: 600 } },
+        { type: 'Sub On', teamIndex: 0, playerId: 'p4', link: 78, time: { secs: 900 } },
+      ],
+    }
+    const { impl } = stub({ '/timeline': tl, '/stats': STATS, '/squads': SQUADS, '/match/28766': MATCH })
+    const d = await make(impl).getMatchDetail!({ matchId: '28766' })
+    const lone = d!.substitutions.find((x) => x.playerOnName === '')
+    expect(lone).toMatchObject({ side: 'AWAY', minute: "11'", playerOnId: null })
+    expect(lone!.playerOffName).toBe("Mark Tele'a")
+  })
+
+  it('leaves an unpaired sub-off unnamed when the squads do not carry the player', async () => {
+    const tl = { timeline: [{ type: 'Sub Off', teamIndex: 0, link: 5, time: { secs: 600 } }] }
+    const { impl } = stub({ '/timeline': tl, '/stats': STATS, '/squads': SQUADS, '/match/28766': MATCH })
+    const d = await make(impl).getMatchDetail!({ matchId: '28766' })
+    expect(d!.substitutions).toEqual([
+      { side: 'HOME', minute: "11'", playerOffId: null, playerOffName: '', playerOnId: null, playerOnName: '' },
+    ])
+  })
+
+  it('names the player coming on in the timeline, and nobody for a card', async () => {
+    const tl = {
+      timeline: [
+        { type: 'Sub On', teamIndex: 0, playerId: 'p4', link: 1, time: { secs: 600 } },
+        { type: 'Yellow', teamIndex: 0, time: { secs: 700 } },
+      ],
+    }
+    const { impl } = stub({ '/timeline': tl, '/stats': STATS, '/squads': SQUADS, '/match/28766': MATCH })
+    const events = await make(impl).getMatchTimeline!({ matchId: '28766' })
+    expect(events[0]).toMatchObject({ kind: 'sub', playerInName: 'Romain Taofifenua' })
+    expect(events[1]).toMatchObject({ kind: 'yellow', playerName: null, playerInName: null })
+  })
+
+  it('falls back to a side-and-second key when the feed omits the sub link', async () => {
+    const tl = {
+      timeline: [
+        { type: 'Sub On', teamIndex: 0, playerId: 'p4', time: { secs: 600 } },
+        { type: 'Sub Off', teamIndex: 0, playerId: 'p3', time: { secs: 600 } },
+      ],
+    }
+    const { impl } = stub({ '/timeline': tl, '/stats': STATS, '/squads': SQUADS, '/match/28766': MATCH })
+    const d = await make(impl).getMatchDetail!({ matchId: '28766' })
+    expect(d!.substitutions).toHaveLength(1)
+    expect(d!.substitutions[0]).toMatchObject({ playerOffName: 'Thomas Ramos', playerOnName: 'Romain Taofifenua' })
+  })
+
+  it('ignores substitution halves the feed did not attribute or time', async () => {
+    const tl = {
+      timeline: [
+        // No side at all: cannot be credited to anyone.
+        { type: 'Sub On', playerId: 'p4', link: 3 },
+        // No clock: the fallback key still has to be a string.
+        { type: 'Sub Off', teamIndex: 0, playerId: 'p3' },
+        // No type at all.
+        { teamIndex: 0, playerId: 'p3', time: { secs: 10 } },
+      ],
+    }
+    const { impl } = stub({ '/timeline': tl, '/stats': STATS, '/squads': SQUADS, '/match/28766': MATCH })
+    const p = make(impl)
+    const d = await p.getMatchDetail!({ matchId: '28766' })
+    // Only the timed, attributed Sub Off survives, as a player who left.
+    expect(d!.substitutions).toEqual([
+      { side: 'HOME', minute: null, playerOffId: 'p3', playerOffName: 'Thomas Ramos', playerOnId: null, playerOnName: '' },
+    ])
+    expect(await p.getMatchTimeline!({ matchId: '28766' })).toEqual([])
+  })
+
+  it('has no line-ups document to read', async () => {
+    const { impl } = stub({ '/summary': {} })
+    const l = await make(impl).getMatchLineups!({ matchId: '28766' })
+    expect(l).toEqual({
+      available: false,
+      home: { formation: null, coach: null, startingXI: [], bench: [] },
+      away: { formation: null, coach: null, startingXI: [], bench: [] },
+    })
+  })
+
   it('survives a match whose stats call fails', async () => {
     const { impl } = stub({ '/timeline': TIMELINE, '/squads': SQUADS, '/match/28766': MATCH })
     const d = await make(impl).getMatchDetail!({ matchId: '28766' })
@@ -530,7 +663,9 @@ describe('match detail, timeline and stats', () => {
 
   it('runs the score through every kick, but gives a conversion no line of its own', async () => {
     const tl = await make(full().impl).getMatchTimeline!({ matchId: '28766' })
-    expect(tl.map((e) => e.kind)).toEqual(['goal', 'penalty-goal', 'goal', 'yellow', 'sub'])
+    // Clock order, not feed order: the sub is at 49' and the yellow at 67',
+    // and the fixture lists them the other way round on purpose.
+    expect(tl.map((e) => e.kind)).toEqual(['goal', 'penalty-goal', 'goal', 'sub', 'yellow'])
     // The try is 5; the conversion's 2 lands on the next entry's running score.
     expect(tl[0]).toMatchObject({ homeScore: 0, awayScore: 5, minute: "2'", playerName: "Mark Tele'a" })
     expect(tl[1]).toMatchObject({ kind: 'penalty-goal', homeScore: 3, awayScore: 7 })
@@ -604,8 +739,10 @@ describe('match detail, timeline and stats', () => {
     expect(d!.goals[0]!.playerName).toBe('')
 
     const events = await make(impl).getMatchTimeline!({ matchId: '28766' })
-    expect(events.map((e) => e.kind)).toEqual(['red', 'goal'])
-    expect(events[0]!.playerName).toBeNull()
+    // The try is at 2' and the red at 50', so the try leads however the feed
+    // ordered them.
+    expect(events.map((e) => e.kind)).toEqual(['goal', 'red'])
+    expect(events[1]!.playerName).toBeNull()
   })
 
   it('survives a feed with every optional field missing', async () => {
@@ -613,16 +750,22 @@ describe('match detail, timeline and stats', () => {
     // no actor and no group. None of it should throw or invent a value.
     const ragged = {
       timeline: [
+        // No teamIndex: the feed did not say whose it was.
         { type: 'T5', group: 'Try', points: 5 },
         { type: 'Sub On' },
         { type: 'Sub Off' },
         {},
+        // Attributed, but missing everything else.
+        { type: 'T5', group: 'Try', points: 5, teamIndex: 0 },
       ],
     }
     const { impl } = stub({ '/timeline': ragged, '/stats': {}, '/squads': {}, '/match/28766': {} })
     const p = make(impl)
 
     const d = await p.getMatchDetail!({ matchId: '28766' })
+    // The unattributed try is dropped rather than charged to the home side;
+    // only the one the feed actually attributed survives.
+    expect(d!.goals).toHaveLength(1)
     expect(d!.goals[0]).toMatchObject({ side: 'HOME', teamName: '', teamCode: null, minute: null, playerId: null })
     expect(d!.homeTeamId).toBeNull()
     expect(d!.attendance).toBeNull()
@@ -630,7 +773,7 @@ describe('match detail, timeline and stats', () => {
     expect(d!.ifesId).toBe('28766')
 
     const tl = await p.getMatchTimeline!({ matchId: '28766' })
-    expect(tl.map((e) => e.kind)).toEqual(['goal', 'sub'])
+    expect(tl.map((e) => e.kind)).toEqual(['goal'])
     expect(tl[0]).toMatchObject({ minute: null, playerName: null, homeScore: 5, awayScore: 0 })
 
     expect(await p.getMatchStats!({ ifesId: '28766' })).toBeNull()

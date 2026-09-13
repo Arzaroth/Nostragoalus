@@ -5,13 +5,22 @@ A read-only "Stats" tab in the matches view
 two side-by-side boards for the selected competition: top scorers (by goals) and
 top assists. Built to grow into team-level boards (best attack/defense) later.
 
+Which two boards depends on the competition's sport. Rugby shows **top try
+scorers** and **most points** instead: the leaders are usually different people
+and only one of them is a kicker, so one board cannot say both, and rugby has no
+assist concept for the second slot to hold. The choice reads
+`competition.sport`, not whether points data happens to have arrived - inferring
+it from the payload showed football headings until the first score landed and
+then flipped mid-tournament. See [rugby.md](rugby.md).
+
 ## Data
 
 - Both boards are fed by the `/api/competitions/scorers` endpoint
   (`apps/web-nuxt/server/api/competitions/scorers.get.ts`), which returns `PlayerRankings`
-  (`{scorers, assists}`, each a `TopScorer[]` of
-  `{playerName, teamName, teamCode, goals, assists, penalties}`), 10-minute
-  cached per competition.
+  (`{scorers, assists}` plus an optional `points` board, each a `TopScorer[]` of
+  `{playerName, teamName, teamCode, goals, assists, penalties, points}`),
+  10-minute cached per competition. `points` is present only for a sport that
+  records them.
 - The endpoint prefers official player stats (FIFA `getPlayerStats`: the live
   edition's gameday stories, else the finished-edition aggregate - see
   [../architecture/providers.md](../architecture/providers.md); UEFA's full

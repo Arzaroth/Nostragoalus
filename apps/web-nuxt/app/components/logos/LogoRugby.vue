@@ -94,26 +94,3 @@
   overflow: visible;
 }
 </style>
-
-<!-- Same rules LogoDefault carries, repeated rather than inherited: they are
-     global (Vue's scoped compiler mangles ":global(ancestor) .child"), so
-     leaning on LogoDefault's copy would work only for as long as something
-     keeps importing it - and a rugby competition renders this mark alone.
-     Identical selectors, so the duplication is idempotent. -->
-<style>
-.logo-mark .sec {
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  pointer-events: visible;
-}
-.logo-mark .sec:hover {
-  opacity: 0.6;
-  transition-duration: 0.12s;
-}
-.logo-mark .sec-ring:hover {
-  opacity: 0.3;
-}
-.logo-mark .lm-sections ~ g {
-  pointer-events: none;
-}
-</style>

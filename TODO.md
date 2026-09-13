@@ -3461,3 +3461,34 @@ Deferred by the review fix pass (each was a deliberate call, not an oversight):
       false-green-guards treatment; those two are the only genuinely broken ones
       (the rest of the misses are brace patterns and `<feature>` placeholders).
 
+
+## Rugby / multi-sport (deferred by the feat/rugby-worldrugby review)
+
+- [ ] **The static emblem does not follow the sport.** Only the in-app header
+      mark (`LogoMark.vue`) switches; the login, about, invite-landing and
+      share-token pages, and the satori-rendered OG/share cards, all hard-code
+      `/brand/mark.svg`. A rugby competition's share card therefore shows a
+      football. Needs a sport-aware source for satori (which cannot import a
+      Vue component) plus a per-page competition context that those public
+      pages do not all have today.
+- [ ] **Competition creation and its scoring preset are not atomic.**
+      `addCompetition` commits the competition, then calls `saveScoringConfig`,
+      which opens its own transaction. If the second fails the competition
+      exists bound to the FOOTBALL default, and the admin's natural retry hits
+      the slug-uniqueness conflict with no path back. `saveScoringConfig` would
+      have to accept an outer tx.
+- [ ] **Rugby positions are dropped.** `SquadPlayer.position` is
+      `GK | DF | MF | FW`; the World Rugby feed's `positionLabel` (Prop, Hooker,
+      Lock, ...) has nowhere to go, so squads and line-ups carry a null
+      position. Needs the shared shape to learn about rugby.
+- [ ] **`models.gen.dart` carries a dart-formatter reformat.** Regenerating on
+      the current toolchain reformats the whole file (~4.4k lines) because the
+      committed copy was produced by an older `dart format`. This is
+      pre-existing on master - verified by regenerating from master's own
+      snapshot - and the rugby branch is simply the first to regenerate since.
+      Worth a standalone formatter-bump commit so it stops masking real model
+      diffs.
+- [ ] **No e2e for a rugby competition.** The isolated e2e stack's `fixture`
+      provider serves canned football data only, so a rugby spec needs canned
+      rugby fixtures (pools + the 2027 round of 16) before it can drive the
+      Stats boards, the sport-aware mark or the admin sub-feed picker.

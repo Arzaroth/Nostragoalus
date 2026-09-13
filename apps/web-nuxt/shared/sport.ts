@@ -7,7 +7,7 @@ export type Sport = (typeof SPORTS)[number]
 // The sub-feed a provider splits its sport into, when it does. World Rugby
 // carries men's / women's / age-grade union and sevens as separate catalogs, so
 // a competition has to name one; every football provider has exactly one feed.
-export const PROVIDER_SPORTS: Partial<Record<string, readonly { value: string; label: string }[]>> = {
+export const PROVIDER_SPORTS: Record<string, readonly { value: string; label: string }[]> = {
   worldrugby: [
     { value: 'mru', label: "Men's rugby union" },
     { value: 'wru', label: "Women's rugby union" },
@@ -15,7 +15,20 @@ export const PROVIDER_SPORTS: Partial<Record<string, readonly { value: string; l
     { value: 'jwu', label: "Women's U20" },
     { value: 'mrs', label: "Men's sevens" },
     { value: 'wrs', label: "Women's sevens" },
+    { value: 'mjs', label: "Men's junior sevens" },
+    { value: 'wjs', label: "Women's junior sevens" },
   ],
+}
+
+// Every sub-feed any provider offers, for validating one off the wire. A value
+// outside this set is interpolated into a provider URL and stored on the
+// competition, where it surfaces only as an opaque upstream 400.
+export const ALL_PROVIDER_SPORTS: readonly string[] = Object.values(PROVIDER_SPORTS)
+  .flat()
+  .map((feed) => feed.value)
+
+export function isProviderSport(value: string): boolean {
+  return ALL_PROVIDER_SPORTS.includes(value)
 }
 
 // The sport a provider's competitions are played at. A provider serves exactly

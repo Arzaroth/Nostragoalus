@@ -744,6 +744,8 @@
     "player": "QujwI'",
     "topScorers": "bachwI' po'",
     "topAssists": "qachwI' po'",
+    "topTryScorers": "T5 chenmoHwI' pIn",
+    "topPoints": "mI' law' ghajwI'",
     "empty": "De' tu'be'lu'"
   },
   "standings": {
@@ -1130,6 +1132,7 @@
       "colCompetition": "QaD",
       "colSource": "mung",
       "colProvider": "nobwI'",
+      "colSubFeed": "De' Hal",
       "archived": "pollu'ta'",
       "isDefault": "DevwI'",
       "archive": "pol",
@@ -1356,6 +1359,9 @@
       "outcome": "Qap motlh",
       "miss": "Qap Qagh",
       "joker": "joker",
+      "marginBands": "chevmey",
+      "marginBandsPlaceholder": "ghe'naQ 7, 14",
+      "marginBandsHint": "chev rap 'e' toblu'. chIm: chev pIm net poQ (QamqoS). ragh: 7, 14.",
       "jokerMultiplier": "boqHa'wI'",
       "jokerAppliesToBonus": "quvHaq je boq",
       "bonusEngine": "quvHaq jo'",

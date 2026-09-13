@@ -1,12 +1,22 @@
 import { z } from 'zod'
 import { defineReadHandler } from '../../../utils/read-handler'
 import { discoverForProvider, DISCOVERABLE_PROVIDERS } from '../../../utils/competitions/discovery'
+import { isProviderSport } from '../../../../shared/sport'
+
+// Bounded AND closed: the value is interpolated into a provider URL and stored
+// on the competition row, where an unknown one surfaces only as an opaque
+// upstream 400.
+const providerSportSchema = z
+  .string()
+  .min(1)
+  .max(8)
+  .refine(isProviderSport, 'unknown provider sub-feed')
 
 const querySchema = z.object({
   provider: z.enum(DISCOVERABLE_PROVIDERS),
   // World Rugby splits its catalog per sub-feed (men's union, sevens, ...);
   // every football provider has a single feed and ignores this.
-  providerSport: z.string().min(1).max(8).optional(),
+  providerSport: providerSportSchema.optional(),
 })
 
 const responseSchema = z.object({

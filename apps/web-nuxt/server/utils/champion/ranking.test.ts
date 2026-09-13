@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
 import type { FifaRankingProvider } from '../providers/fifa-ranking'
 import { getFifaRanks, getRanksForCompetition, resetFifaRankCache } from './ranking'
 
@@ -95,6 +95,9 @@ describe('getFifaRanks', () => {
 
 describe('getRanksForCompetition', () => {
   const T = new Date('2026-06-01T00:00:00Z')
+  // Not only on the last line of each test: one failing assertion would
+  // otherwise leave a World Rugby-shaped fetch installed for the whole file.
+  afterEach(() => vi.unstubAllGlobals())
 
   function stubWorldRugby(entries: { abbr: string; pos: number }[]) {
     return vi.fn(async () =>

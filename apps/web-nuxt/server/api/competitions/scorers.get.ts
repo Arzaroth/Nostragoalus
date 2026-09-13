@@ -69,7 +69,12 @@ export default defineReadHandler({ response: responseSchema, query: querySchema 
   // FIFA's official aggregate is empty, so cache it like the official one - the
   // empty official result used to populate the cache and no longer does.
   const local = await getCompetitionPlayerRankings(db, competition.id)
-  if (local.scorers.length > 0 || local.assists.length > 0) return remember(local)
+  // The points board counts too: a rugby match settled entirely by kicks (9-6,
+  // 12-9) leaves every player on zero tries, so checking only scorers/assists
+  // would fall through and answer EMPTY with the board sitting right there.
+  if (local.scorers.length > 0 || local.assists.length > 0 || (local.points?.length ?? 0) > 0) {
+    return remember(local)
+  }
 
   // A provider that exposes scorers directly (e.g. football-data); goals only.
   if (provider.getTopScorers) {

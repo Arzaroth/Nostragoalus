@@ -744,6 +744,8 @@
     "player": "Joueur",
     "topScorers": "Meilleurs buteurs",
     "topAssists": "Meilleurs passeurs",
+    "topTryScorers": "Meilleurs marqueurs d'essais",
+    "topPoints": "Meilleurs réalisateurs",
     "empty": "Aucune donnée"
   },
   "standings": {
@@ -1130,6 +1132,7 @@
       "colCompetition": "Compétition",
       "colSource": "Source",
       "colProvider": "Fournisseur",
+      "colSubFeed": "Flux",
       "archived": "archivée",
       "isDefault": "par défaut",
       "archive": "Archiver",
@@ -1356,6 +1359,9 @@
       "outcome": "Bon résultat",
       "miss": "Mauvais résultat",
       "joker": "Joker",
+      "marginBands": "Paliers d'écart",
+      "marginBandsPlaceholder": "ex. 7, 14",
+      "marginBandsHint": "Écarts de score considérés comme le même résultat pour le palier « bon écart ». Vide = l'écart doit être exact (football). Le rugby utilise 7, 14.",
       "jokerMultiplier": "Multiplicateur",
       "jokerAppliesToBonus": "Le multiplicateur s'applique aussi au bonus",
       "bonusEngine": "Moteur de bonus",

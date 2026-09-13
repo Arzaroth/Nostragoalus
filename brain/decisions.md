@@ -783,3 +783,66 @@ could never be reached. Removed. The real consequence of nitro's behaviour is
 the opposite worry: a dropped tick leaves no `task_run` row at all, so a task
 persistently too slow for its schedule shows a healthy `lastRunAt` in the admin
 cron view rather than any sign of saturation.
+
+## Rugby is scored on the margin, and football is untouched proving it
+
+Exact 3 / diff 2 / outcome 1 degenerates in rugby: nobody predicts 27-24 on
+judgement, so `EXACT` collapses into luck and an exact-margin `DIFF` is barely
+easier than it. Rather than fork the engine, `DIFF` was generalized to mean
+"same margin band", with `scoringConfig.marginBands` holding the bounds and null
+meaning football - where every margin is its own band and the tier reduces to
+exactly what it was.
+
+The claim that football is unchanged is not an argument, it is an artifact:
+re-blessing the frozen cross-stack vectors produced 350 added lines and **zero
+deletions**. Nothing that already existed moved.
+
+The crowd bonus had to move with it, and that one is not taste. On `EXACT` basis
+the rarity share is `exactCount / outcomeCount`; rugby scorelines are nearly all
+unique, so the share is tiny for everyone and the top tier pays out to the whole
+field - a flat top-up that discriminates nothing while looking like it works.
+The rugby preset uses `OUTCOME` basis, where the share is how much of the field
+read the result.
+
+## `competition.sport` and `competition.providerSport` are different vocabularies
+
+`sport` is what the competition is played at (`FOOTBALL`, `RUGBY_UNION`), looked
+up from the provider rather than posted. `providerSport` is the sub-feed within
+a provider that serves several - World Rugby's `mru`, `wru`, sevens - and is
+null for football providers.
+
+They briefly shared the field name `sport` at `providerForCompetition`, so every
+stored rugby competition built its adapter with `RUGBY_UNION` where `mru` was
+meant. It was harmless only because nothing read it yet, and invisible to
+typecheck because the factory cast the value. Renaming the field to
+`providerSport` made the compiler point at every place the two met. A collision
+between two vocabularies behind one name is worth a rename even when the current
+readers happen not to care.
+
+## A rugby fixture with no kickoff time is not ingested
+
+The World Rugby feed can carry a fixture before it is timed. Dating it with
+`?? 0` produces a valid-looking 1970 timestamp, which reads as long past
+everywhere kickoff is compared to now - and `getChampionLockTime` is
+`min(kickoffTime)` over the competition, so one untimed fixture would close the
+champion pick window for everyone before the tournament began.
+
+The normalizer emits an empty kickoff and the provider drops those fixtures
+until the feed times them. A missing value is left missing rather than laundered
+into a plausible one.
+
+## Pool matchdays are derived, and the probe is what caught it missing
+
+World Rugby numbers pools but not the rounds within them, so every pool fixture
+arrives as `GROUP` with a null matchday - which `isIngestible` rejects, because
+such a match is filed under matchday 1 and looked up as `NULL`. The adapter
+therefore ends `listFixtures` with `assignGroupMatchdays`, exactly as the FIFA
+and ESPN adapters do.
+
+Worth recording because of how it was found. The adapter had been verified
+against the live feed and looked right - correct stages, correct pool letters,
+correct scores - but nothing had run the admin **probe**, which is the gate that
+decides whether a competition can be created at all. It reported 52 fixtures, 16
+ingestible, 36 dropped, `supported: false`. The Rugby World Cup could not have
+been added. Verifying a provider's output is not the same as verifying the path
+that consumes it.

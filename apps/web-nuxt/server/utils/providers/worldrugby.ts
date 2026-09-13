@@ -18,6 +18,7 @@ import type {
 } from '../../../shared/types/match'
 import { RateLimiter } from './rate-limiter'
 import { bracketFromKnockoutMatches } from './bracket-order'
+import { assignGroupMatchdays } from './stage'
 import {
   ProviderRateLimitError,
   ProviderUpstreamError,
@@ -38,9 +39,10 @@ import {
 const DEFAULT_BASE_URL = 'https://api.wr-rims-prod.pulselive.com/rugby/v3'
 
 // The feed's sport codes. Union and sevens, men's / women's / age-grade; a
-// competition binds to exactly one, and it is what discovery filters on.
-export const WORLD_RUGBY_SPORTS = ['mru', 'wru', 'jmu', 'jwu', 'mrs', 'wrs', 'mjs', 'wjs'] as const
-export type WorldRugbySport = (typeof WORLD_RUGBY_SPORTS)[number]
+// competition binds to exactly one, and it is what discovery filters on. The
+// list lives in shared/sport.ts because the admin picker renders the same set -
+// two copies had already drifted by two entries.
+export type WorldRugbySport = string
 
 interface WrTeam {
   id?: string | null
@@ -121,7 +123,11 @@ export function mapWorldRugbyStage(phaseId: WrPhaseId | null | undefined, phaseL
   if (/round of 32|last 32/.test(label)) return 'R32'
   if (/quarter/.test(label)) return 'QF'
   if (/semi/.test(label)) return 'SF'
-  if (/^final|\bfinal\b/.test(label)) return 'FINAL'
+  // "5th Place Final" and "Bronze Final" are finals of something else; only the
+  // unqualified one is the competition's FINAL, and a second FINAL would be
+  // treated as the real one by the bracket and the double-points rule.
+  if (/\d(?:st|nd|rd|th) place/.test(label)) return 'GROUP'
+  if (/^final\b|^grand final\b/.test(label)) return 'FINAL'
   if (/pool|group/.test(label)) return 'GROUP'
   return 'GROUP'
 }
@@ -184,7 +190,11 @@ export function normalizeWorldRugbyMatch(match: WrMatch, eventId?: string): Norm
     matchday: null,
     homeTeam: toTeam(home),
     awayTeam: toTeam(away),
-    kickoffTime: new Date(match.time?.millis ?? 0).toISOString(),
+    // Empty, never epoch: `?? 0` dates an untimed fixture to 1970, which reads
+    // as long past everywhere kickoff is compared to now - it would close the
+    // competition's champion window (min(kickoffTime)) before it opened. The
+    // provider drops the untimed ones rather than shipping a fake date.
+    kickoffTime: match.time?.millis ? new Date(match.time.millis).toISOString() : '',
     status,
     score,
     winner: toWinner(score, status),
@@ -229,6 +239,12 @@ interface WrSquadEntry {
 
 // Seconds from kick-off to a football-style minute label. 92s is 1:32, which is
 // during the second minute, so it reads as 2'.
+// A fixture with no announced kickoff is not schedulable yet; it reappears on
+// the next sync once the feed times it.
+function timed(match: NormalizedMatch): boolean {
+  return match.kickoffTime !== ''
+}
+
 export function worldRugbyMinute(secs: number | null | undefined): string | null {
   if (secs == null || secs < 0) return null
   return `${Math.floor(secs / 60) + 1}'`
@@ -258,7 +274,7 @@ export interface WorldRugbyOptions {
 export function worldRugbyProvider(options: WorldRugbyOptions): MatchDataProvider {
   const baseUrl = options.baseUrl ?? DEFAULT_BASE_URL
   const eventId = options.eventId
-  const sport = options.sport ?? 'mru'
+  const sport = (options.sport ?? 'mru').toLowerCase()
   const doFetch = options.fetchImpl ?? fetch
   const limiter = options.rateLimiter ?? new RateLimiter(1000)
 
@@ -274,7 +290,11 @@ export function worldRugbyProvider(options: WorldRugbyOptions): MatchDataProvide
     const doc = await getJson<{ timeline?: WrTimelineEvent[] | null }>(
       `${baseUrl}/match/${encodeURIComponent(matchId)}/timeline?language=en`,
     )
-    return doc.timeline ?? []
+    // Sorted by the clock, not left in feed order: the play-by-play is rendered
+    // verbatim and the running score is accumulated in this order, so an
+    // out-of-order feed would show a score that goes backwards. Stable within a
+    // second, which is where a try and its conversion can land.
+    return [...(doc.timeline ?? [])].sort((a, b) => (a.time?.secs ?? 0) - (b.time?.secs ?? 0))
   }
 
   async function teamStatsOf(matchId: string): Promise<{ stats?: Record<string, unknown> | null }[]> {
@@ -318,7 +338,7 @@ export function worldRugbyProvider(options: WorldRugbyOptions): MatchDataProvide
     const doc = await getJson<{ matches?: WrMatch[] | null }>(
       `${baseUrl}/event/${encodeURIComponent(eventId)}/schedule?language=en`,
     )
-    return (doc.matches ?? []).map((m) => normalizeWorldRugbyMatch(m, eventId))
+    return (doc.matches ?? []).map((m) => normalizeWorldRugbyMatch(m, eventId)).filter(timed)
   }
 
   return {
@@ -354,14 +374,19 @@ export function worldRugbyProvider(options: WorldRugbyOptions): MatchDataProvide
     // The whole tournament arrives in one document, so the season argument is
     // not a filter here - the event id already pins the season.
     async listFixtures(_opts: ListFixturesOptions): Promise<NormalizedMatch[]> {
-      return await schedule()
+      // The feed numbers pools but not rounds within them, so the matchday is
+      // derived by date within each pool, exactly as fifa.ts and espn.ts do.
+      // Without it every pool fixture is GROUP with a null matchday, which
+      // isIngestible rejects - the probe then drops the whole pool stage and
+      // refuses to create the competition at all.
+      return assignGroupMatchdays(await schedule())
     },
 
     async getMatchesByDate(date: string): Promise<NormalizedMatch[]> {
       const doc = await getJson<{ content?: WrMatch[] | null }>(
         `${baseUrl}/match?startDate=${encodeURIComponent(date)}&endDate=${encodeURIComponent(date)}&sort=asc&pageSize=100`,
       )
-      return (doc.content ?? []).map((m) => normalizeWorldRugbyMatch(m, eventId))
+      return (doc.content ?? []).map((m) => normalizeWorldRugbyMatch(m, eventId)).filter(timed)
     },
 
     async getLiveMatches(): Promise<NormalizedMatch[]> {
@@ -389,7 +414,10 @@ export function worldRugbyProvider(options: WorldRugbyOptions): MatchDataProvide
       const subsOff = new Map<string, WrTimelineEvent>()
 
       for (const event of events) {
-        const index = event.teamIndex === 1 ? 1 : 0
+        // An entry the feed did not attribute is left alone rather than charged
+        // to the home side, which would invent a card or a score for them.
+        if (event.teamIndex !== 0 && event.teamIndex !== 1) continue
+        const index = event.teamIndex
         const side = index === 1 ? ('AWAY' as const) : ('HOME' as const)
         const team = sides[index]
         const type = (event.type ?? '').toLowerCase()
@@ -411,7 +439,7 @@ export function worldRugbyProvider(options: WorldRugbyOptions): MatchDataProvide
             playerName: (event.playerId && names.get(event.playerId)) || '',
             minute: worldRugbyMinute(event.time?.secs),
             goalType: null,
-            points: event.points ?? null,
+            points: Number.isSafeInteger(event.points) && (event.points as number) > 0 ? (event.points as number) : null,
             ownGoal: false,
             assistPlayerId: null,
             assistPlayerName: null,
@@ -425,10 +453,14 @@ export function worldRugbyProvider(options: WorldRugbyOptions): MatchDataProvide
       // before its Sub Off - so the pairing is a second pass, not a running map.
       // An unpaired one still ships (a blood replacement goes off and back on)
       // rather than being dropped.
+      const pairedOff = new Set<string>()
       for (const event of events) {
         if ((event.type ?? '').toLowerCase() !== 'sub on') continue
-        const index = event.teamIndex === 1 ? 1 : 0
-        const off = subsOff.get(String(event.link ?? `${index}:${event.time?.secs ?? ''}`))
+        if (event.teamIndex !== 0 && event.teamIndex !== 1) continue
+        const index = event.teamIndex
+        const key = String(event.link ?? `${index}:${event.time?.secs ?? ''}`)
+        const off = subsOff.get(key)
+        if (off) pairedOff.add(key)
         substitutions.push({
           side: index === 1 ? 'AWAY' : 'HOME',
           minute: worldRugbyMinute(event.time?.secs),
@@ -436,6 +468,22 @@ export function worldRugbyProvider(options: WorldRugbyOptions): MatchDataProvide
           playerOffName: (off?.playerId && names.get(off.playerId)) || '',
           playerOnId: event.playerId ?? null,
           playerOnName: (event.playerId && names.get(event.playerId)) || '',
+        })
+      }
+
+      // A player who leaves and is not replaced (injury with no cover, a red
+      // card) produces a Sub Off with no partner. Ship it rather than lose the
+      // fact that they left the field.
+      for (const [key, off] of subsOff) {
+        if (pairedOff.has(key)) continue
+        const index = off.teamIndex === 1 ? 1 : 0
+        substitutions.push({
+          side: index === 1 ? 'AWAY' : 'HOME',
+          minute: worldRugbyMinute(off.time?.secs),
+          playerOffId: off.playerId ?? null,
+          playerOffName: (off.playerId && names.get(off.playerId)) || '',
+          playerOnId: null,
+          playerOnName: '',
         })
       }
 
@@ -469,7 +517,8 @@ export function worldRugbyProvider(options: WorldRugbyOptions): MatchDataProvide
       const running = [0, 0]
 
       for (const event of events) {
-        const index = event.teamIndex === 1 ? 1 : 0
+        if (event.teamIndex !== 0 && event.teamIndex !== 1) continue
+        const index = event.teamIndex
         const side = index === 1 ? ('AWAY' as const) : ('HOME' as const)
         const type = (event.type ?? '').toLowerCase()
         // Every scoring entry moves the running score, including the conversion

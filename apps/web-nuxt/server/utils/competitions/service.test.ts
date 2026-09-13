@@ -6,7 +6,7 @@ import { ValidationError } from '../errors'
 import type { AppStage, NormalizedMatch } from '../../../shared/types/match'
 import type { MatchDataProvider } from '../providers/types'
 import { ensureDefaultScoringConfig, getScoringConfigFor } from '../scoring/store'
-import { saveScoringConfig } from '../scoring/admin'
+import { listScoringConfigs, saveScoringConfig } from '../scoring/admin'
 
 let seq = 0
 
@@ -109,6 +109,15 @@ describe('the sport preset a new competition opens on', () => {
     resolveSeason: async () => undefined,
   }
 
+  it('writes an override only for the rugby competition', async () => {
+    const { db, client } = await createTestDb()
+    await ensureDefaultScoringConfig(db)
+    const row = await addCompetition(db, rugby, clean)
+    const { entries } = await listScoringConfigs(db)
+    expect(entries.filter((e) => e.competitionId === row.id)).toHaveLength(1)
+    await client.close()
+  })
+
   it('gives a rugby competition the rugby rules, not the football ones', async () => {
     const { db, client } = await createTestDb()
     const row = await addCompetition(db, rugby, clean)
@@ -128,6 +137,12 @@ describe('the sport preset a new competition opens on', () => {
     const { db, client } = await createTestDb()
     await ensureDefaultScoringConfig(db)
     const row = await addCompetition(db, input, clean)
+
+    // Assert the absence of an override, not just the resolved values: seeding
+    // one with DEFAULT_RULES would resolve identically and pass silently, while
+    // quietly detaching the competition from later edits to the default.
+    const { entries } = await listScoringConfigs(db)
+    expect(entries.filter((e) => e.competitionId === row.id)).toEqual([])
 
     const { rules } = await getScoringConfigFor(db, row.id)
     expect(rules.marginBands).toBeNull()

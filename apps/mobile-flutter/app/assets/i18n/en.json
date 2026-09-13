@@ -749,6 +749,8 @@
     "player": "Player",
     "topScorers": "Top scorers",
     "topAssists": "Top assists",
+    "topTryScorers": "Top try scorers",
+    "topPoints": "Most points",
     "empty": "No data yet"
   },
   "standings": {
@@ -1135,6 +1137,7 @@
       "colCompetition": "Competition",
       "colSource": "Source",
       "colProvider": "Provider",
+      "colSubFeed": "Sub-feed",
       "archived": "archived",
       "isDefault": "default",
       "archive": "Archive",
@@ -1361,6 +1364,9 @@
       "outcome": "Right result",
       "miss": "Wrong result",
       "joker": "Joker",
+      "marginBands": "Margin bands",
+      "marginBandsPlaceholder": "e.g. 7, 14",
+      "marginBandsHint": "Winning margins that count as the same result for the \"right margin\" tier. Empty means the margin must match exactly (football). Rugby uses 7, 14.",
       "jokerMultiplier": "Multiplier",
       "jokerAppliesToBonus": "Multiplier also scales the bonus",
       "bonusEngine": "Bonus engine",

@@ -3,7 +3,16 @@ import { db } from '../../../../db'
 import { defineValidatedHandler } from '../../../utils/validated-handler'
 import { addCompetition } from '../../../utils/competitions/service'
 import { MATCH_PROVIDERS } from '../../../utils/providers/factory'
-import { sportForProvider } from '../../../../shared/sport'
+import { isProviderSport, sportForProvider } from '../../../../shared/sport'
+
+// Bounded AND closed: the value is interpolated into a provider URL and stored
+// on the competition row, where an unknown one surfaces only as an opaque
+// upstream 400.
+const providerSportSchema = z
+  .string()
+  .min(1)
+  .max(8)
+  .refine(isProviderSport, 'unknown provider sub-feed')
 
 const bodySchema = z.object({
   slug: z.string().min(1).max(64),
@@ -11,7 +20,7 @@ const bodySchema = z.object({
   provider: z.enum(MATCH_PROVIDERS),
   externalCompetitionId: z.string().min(1).max(64),
   seasonHint: z.string().min(1).max(16).nullable(),
-  providerSport: z.string().min(1).max(8).nullable().optional(),
+  providerSport: providerSportSchema.nullable().optional(),
 })
 
 const responseSchema = z.object({

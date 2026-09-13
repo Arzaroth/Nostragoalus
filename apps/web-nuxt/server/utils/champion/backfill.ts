@@ -1,6 +1,6 @@
-import { eq, isNull } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import type { AppDatabase } from '../../../db/types'
-import { championPick } from '../../../db/schema'
+import { championPick, competition } from '../../../db/schema'
 import type { FifaRankingProvider } from '../providers/fifa-ranking'
 import { getActiveScoringConfig } from '../scoring/store'
 import { championPointsForRank } from '../scoring/config'
@@ -43,10 +43,15 @@ export async function backfillChampionRanks(
   }
 
   const { rules } = await getActiveScoringConfig(db)
+  // Football only. This repairs picks against the FIFA table, and the three-letter
+  // codes collide across sports - NZL, RSA, FRA and ARG are all in both - so a
+  // rugby pick would be rewritten with a football rank and the global football
+  // tiers, then leave the null-rank set so a re-run could not repair it.
   const picks = await db
     .select({ id: championPick.id, teamCode: championPick.teamCode, potentialPoints: championPick.potentialPoints })
     .from(championPick)
-    .where(isNull(championPick.fifaRank))
+    .innerJoin(competition, eq(competition.id, championPick.competitionId))
+    .where(and(isNull(championPick.fifaRank), eq(competition.sport, 'FOOTBALL')))
 
   let changed = 0
   for (const pick of picks) {

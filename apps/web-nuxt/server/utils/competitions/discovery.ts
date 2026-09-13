@@ -38,7 +38,7 @@ export async function discoverForProvider(
   const makeProvider =
     deps.makeProvider ??
     ((p: string, sport?: string | null) =>
-      providerForCompetition({ provider: p, externalCompetitionId: '', seasonHint: null, sport }))
+      providerForCompetition({ provider: p, externalCompetitionId: '', seasonHint: null, providerSport: sport }))
 
   // Keyed on the sub-feed too: World Rugby's men's and women's catalogs are
   // different lists, and caching one under the bare provider would serve the

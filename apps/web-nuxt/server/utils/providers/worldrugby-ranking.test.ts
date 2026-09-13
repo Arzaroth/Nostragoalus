@@ -74,6 +74,15 @@ describe('worldRugbyRankingProvider', () => {
     expect(calls[0]).toContain('..%2Fevil')
   })
 
+  it('treats an empty table as a failure, not an answer', async () => {
+    // Returned as success it caches for 12h, and every champion pick in that
+    // window resolves to a null rank - which the tiers pay at the top rate.
+    const { impl } = stub({ entries: [] })
+    await expect(
+      worldRugbyRankingProvider({ fetchImpl: impl, rateLimiter: nowait() }).getLatestRanks(),
+    ).rejects.toBeInstanceOf(ProviderUpstreamError)
+  })
+
   it('surfaces a rate limit and an upstream failure as the shared error types', async () => {
     const limited = stub({}, 429)
     await expect(

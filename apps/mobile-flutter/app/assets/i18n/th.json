@@ -744,6 +744,8 @@
     "player": "ผู้เล่น",
     "topScorers": "ดาวซัลโว",
     "topAssists": "แอสซิสต์สูงสุด",
+    "topTryScorers": "ผู้ทำไทรสูงสุด",
+    "topPoints": "ทำแต้มสูงสุด",
     "empty": "ยังไม่มีข้อมูล"
   },
   "standings": {
@@ -1130,6 +1132,7 @@
       "colCompetition": "การแข่งขัน",
       "colSource": "แหล่งข้อมูล",
       "colProvider": "ผู้ให้บริการ",
+      "colSubFeed": "ฟีดย่อย",
       "archived": "เก็บเข้าคลังแล้ว",
       "isDefault": "ค่าเริ่มต้น",
       "archive": "เก็บเข้าคลัง",
@@ -1356,6 +1359,9 @@
       "outcome": "ผลถูกต้อง",
       "miss": "ผลผิด",
       "joker": "โจ๊กเกอร์",
+      "marginBands": "ช่วงผลต่าง",
+      "marginBandsPlaceholder": "เช่น 7, 14",
+      "marginBandsHint": "ผลต่างคะแนนที่นับว่าเป็นผลเดียวกันสำหรับระดับ \"ผลต่างถูก\" เว้นว่างคือต้องตรงพอดี (ฟุตบอล) รักบี้ใช้ 7, 14",
       "jokerMultiplier": "ตัวคูณ",
       "jokerAppliesToBonus": "ตัวคูณมีผลกับโบนัสด้วย",
       "bonusEngine": "กลไกโบนัส",

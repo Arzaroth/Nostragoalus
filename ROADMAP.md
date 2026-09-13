@@ -836,9 +836,10 @@ effort buckets; order within a bucket is not priority.
     leading places for years. Sevens has no table; that 400 falls back to the
     flat bonus, the path that already existed for a FIFA outage.
   - [x] **The mark follows the sport**: a rugby competition puts a rugby ball in
-    the crystal ball (`LogoRugby.vue`, plus `mark-rugby.svg` for the static
-    emblem). An unlocked skin still wins - that is a deliberate unlock, and it
-    should not be undone by which tournament is being viewed.
+    the crystal ball (`LogoRugby.vue`). An unlocked skin still wins - that is a
+    deliberate unlock, and it should not be undone by which tournament is being
+    viewed. Only the in-app header switches; the static emblem on the login,
+    about and share-card surfaces is still the football one (see TODO).
   - [x] **Tries reach `goal_event`, and the rest of the detail with them**:
     play-by-play, cards, substitutions, possession, attendance, ground, per-match
     team stats, and tournament squads + head coach. The try-scorer board fills

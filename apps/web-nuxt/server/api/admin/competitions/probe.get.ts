@@ -2,12 +2,22 @@ import { z } from 'zod'
 import { defineReadHandler } from '../../../utils/read-handler'
 import { probeCompetition } from '../../../utils/competitions/probe'
 import { MATCH_PROVIDERS } from '../../../utils/providers/factory'
+import { isProviderSport } from '../../../../shared/sport'
+
+// Bounded AND closed: the value is interpolated into a provider URL and stored
+// on the competition row, where an unknown one surfaces only as an opaque
+// upstream 400.
+const providerSportSchema = z
+  .string()
+  .min(1)
+  .max(8)
+  .refine(isProviderSport, 'unknown provider sub-feed')
 
 const querySchema = z.object({
   provider: z.enum(MATCH_PROVIDERS),
   externalCompetitionId: z.string().min(1).max(64),
   seasonHint: z.string().min(1).max(16).optional(),
-  providerSport: z.string().min(1).max(8).optional(),
+  providerSport: providerSportSchema.optional(),
 })
 
 const responseSchema = z.object({

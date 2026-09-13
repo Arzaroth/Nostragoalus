@@ -11,7 +11,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 - Un pronostic de vainqueur au rugby est valorisé selon le classement World Rugby, pas celui de la FIFA. Miser sur l'un des quatre premiers rapporte le moins, une équipe hors du top 20 le plus : choisir l'Afrique du Sud vaut ce que vaut choisir l'Afrique du Sud.
 - La boule de cristal contient un ballon de rugby quand vous êtes dans un tournoi de rugby. Un skin débloqué reste prioritaire : celui-là, vous l'avez cherché.
 - Le rugby est noté à l'écart, pas au score exact. Personne ne prédit 27-24 au jugé : un tournoi de rugby récompense désormais le fait de placer l'écart dans le bon palier - à une transformation près (1-7), 8-14, ou 15 et plus - et le score exact devient un bonus chanceux plutôt que le prix principal. Le bonus de rareté suit : il mesure la part du public qui a lu le résultat, au lieu de donner le palier maximal à quiconque a trouvé le vainqueur. Tout cela s'applique dès l'ajout du tournoi, et chaque valeur reste réglable.
-- Admin : les tournois de rugby peuvent être ajoutés, depuis le flux officiel de World Rugby plutôt que celui d'un tiers. Les poules, les phases finales et la petite finale sont lues correctement, et la Coupe du monde 2027 - y compris ses nouveaux huitièmes - est déjà complète. Le barème et l'habillage du site restent ceux du football : c'est une porte ouverte, pas encore un mode rugby.
+- Admin : les tournois de rugby peuvent être ajoutés, depuis le flux officiel de World Rugby plutôt que celui d'un tiers. Les poules, les phases finales et la petite finale sont lues correctement, et la Coupe du monde 2027 - y compris ses nouveaux huitièmes - est déjà complète.
 
 ## [4.12.1] - 2026-09-12
 
