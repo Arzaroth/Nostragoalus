@@ -244,6 +244,23 @@ describe('a sport that scores points', () => {
     await client.close()
   })
 
+  it('drops a scorer the provider could not name, and keeps one named on any row', async () => {
+    const { db, client } = await createTestDb()
+    const competitionId = await seedCompetition(db)
+    const md1 = (await findRoundId(db, competitionId, 'GROUP', 1)) as string
+    const matchId = await makeMatch(db, { competitionId, roundId: md1, kickoffTime: new Date('2026-06-11T16:00:00Z') })
+
+    await addGoal(db, competitionId, matchId, { playerId: 'ghost', playerName: '', points: 5 })
+    // The same player, unnamed on the earlier row and named on the later one.
+    await addGoal(db, competitionId, matchId, { playerId: 'w', playerName: '', points: 5 })
+    await addGoal(db, competitionId, matchId, { playerId: 'w', playerName: 'Winger', points: 5 })
+
+    const { scorers, points } = await getCompetitionPlayerRankings(db, competitionId)
+    expect(scorers.map((s) => [s.playerName, s.goals])).toEqual([['Winger', 2]])
+    expect(points!.map((s) => s.playerName)).toEqual(['Winger'])
+    await client.close()
+  })
+
   it('keeps a try with no point value on the scorer board', async () => {
     const { db, client } = await createTestDb()
     const competitionId = await seedCompetition(db)

@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import { scoreIcon } from '../../utils/match-view'
+
+// The ball of the sport being played; a football beside a rugby try is the tell
+// that a view never asked. See scoreIcon.
+const ball = computed(() => scoreIcon(useSelectedSport().value, null))
 import { matchIsInPlay } from '#shared/types/match'
 
 const { t, locale } = useI18n()
@@ -171,7 +176,7 @@ function fmt(d: string) {
             <div v-if="topScorer || topAssister" class="flex flex-col gap-1">
               <div v-if="topScorer" class="flex items-center justify-between gap-2">
                 <span style="color: var(--p-text-muted-color)">{{ t('match.topScorer') }}</span>
-                <span class="font-medium truncate">{{ formatPlayerName(topScorer.playerName) }} <span class="tabular-nums">({{ topScorer.goals }}⚽)</span></span>
+                <span class="font-medium truncate">{{ formatPlayerName(topScorer.playerName) }} <span class="tabular-nums">({{ topScorer.goals }}{{ ball }})</span></span>
               </div>
               <div v-if="topAssister" class="flex items-center justify-between gap-2">
                 <span style="color: var(--p-text-muted-color)">{{ t('match.topAssister') }}</span>

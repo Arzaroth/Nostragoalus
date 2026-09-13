@@ -588,6 +588,31 @@ describe('match detail, timeline and stats', () => {
     expect(calls.filter((u) => u.includes('/timeline')).length).toBe(1)
   })
 
+  it('names a scorer who is not in the tournament squad list', async () => {
+    // Squads are the initial selection: a mid-tournament call-up who then
+    // scores is absent from it. Makazole Mapimpi scored three tries against
+    // Romania and rendered as a blank row with a 5 beside it.
+    const { impl, calls } = stub({
+      '/timeline': TIMELINE,
+      '/stats': STATS,
+      '/squads': SQUADS,
+      '/match/28766': MATCH,
+      '/player/p2': { name: { display: 'Makazole Mapimpi' } },
+    })
+    const p = make(impl)
+    const d = await p.getMatchDetail!({ matchId: '28766' })
+    expect(d!.goals[1]!.playerName).toBe('Makazole Mapimpi')
+    // Memoised across methods: one lookup per unknown player for the adapter's life.
+    await p.getMatchTimeline!({ matchId: '28766' })
+    expect(calls.filter((u) => u.includes('/player/p2')).length).toBe(1)
+  })
+
+  it('leaves a player the lookup cannot resolve unnamed rather than failing the detail', async () => {
+    const d = await make(full().impl).getMatchDetail!({ matchId: '28766' })
+    expect(d!.goals[1]!.playerName).toBe('')
+    expect(d!.goals[0]!.playerName).toBe("Mark Tele'a")
+  })
+
   it('re-arms the timeline fetch after a failure instead of caching the error', async () => {
     // A memo that keeps a rejected promise turns one transient upstream blip
     // into a permanently empty play-by-play for that match.

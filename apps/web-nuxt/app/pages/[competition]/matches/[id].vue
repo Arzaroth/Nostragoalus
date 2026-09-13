@@ -3,6 +3,7 @@ import { buildTimeline, h2hSummaryOf, liveClockSpec, scoreIcon } from '../../../
 
 // The sport picks which ball a score is drawn with; see scoreIcon.
 const selectedSport = useSelectedSport()
+const isRugby = computed(() => selectedSport.value === 'RUGBY_UNION')
 import { liveHeaderScore } from '../../../utils/live-score'
 import { visibleMediaForStatus, type MatchMediaKind } from '#shared/match-media'
 import { EXTRA_TIME_BREAK_MINUTE, matchHasStarted, matchIsInPlay } from '#shared/types/match'
@@ -53,17 +54,20 @@ const selectedSlug = useSelectedCompetition()
 // competition board is a tournament-wide top-N leaderboard - filtering that to a
 // team hid any team without a top-N scorer (and dropped a big team's lower-tally
 // scorers), so a team that had scored looked empty. See getMatchPlayerRankings.
-const { data: scorersData, status: scorersStatus, clear: clearScorers } = await useFetch<{ scorers: any[]; assists: any[] }>(`/api/matches/${id.value}/scorers`, {
+const { data: scorersData, status: scorersStatus, clear: clearScorers } = await useFetch<{ scorers: any[]; assists: any[]; points?: any[] }>(`/api/matches/${id.value}/scorers`, {
   lazy: true,
 })
-// The endpoint splits players into a goals board and an assists board; a pure
-// assister (no goals) is only on the latter. Union them so this page's per-team
-// contributor list and top-assister line see every scorer and assister.
+// The endpoint splits players across boards, and a player can be on only one of
+// them: a pure assister has no goals, and in rugby a goal-kicker has no tries -
+// the fly-half who scored every one of his side's points is on the points board
+// alone. Union all three or the page's contributor list simply loses them.
 const scorers = computed<any[]>(() => {
   const data = scorersData.value
   if (!data) return []
   const byKey = new Map<string, any>()
-  for (const p of [...(data.scorers ?? []), ...(data.assists ?? [])]) byKey.set(`${p.playerName}|${p.teamCode ?? ''}`, p)
+  for (const p of [...(data.scorers ?? []), ...(data.assists ?? []), ...(data.points ?? [])]) {
+    byKey.set(`${p.playerName}|${p.teamCode ?? ''}`, p)
+  }
   return [...byKey.values()]
 })
 
@@ -273,11 +277,16 @@ function teamPlayers(side: 'home' | 'away') {
   // Contributors only - a full roster of 0-0 rows is noise here.
   return code
     ? scorers.value
-        .filter((s) => s.teamCode === code && ((s.goals ?? 0) > 0 || (s.assists ?? 0) > 0))
-        .sort((a, b) => (b.goals ?? 0) - (a.goals ?? 0) || (b.assists ?? 0) - (a.assists ?? 0))
+        .filter((s) => s.teamCode === code && ((s.goals ?? 0) > 0 || (s.assists ?? 0) > 0 || (s.points ?? 0) > 0))
+        .sort(
+          (a, b) =>
+            (b.goals ?? 0) - (a.goals ?? 0) ||
+            (b.points ?? 0) - (a.points ?? 0) ||
+            (b.assists ?? 0) - (a.assists ?? 0),
+        )
     : []
 }
-function bestBy(side: 'home' | 'away', field: 'goals' | 'assists') {
+function bestBy(side: 'home' | 'away', field: 'goals' | 'assists' | 'points') {
   return teamPlayers(side)
     .filter((s) => (s[field] ?? 0) > 0)
     .slice()
@@ -859,15 +868,22 @@ function toggleFormInfo(side: string, i: number | string) {
                 </div>
                 <div v-if="teamPlayers(side).length" class="text-sm flex flex-col gap-1">
                   <div style="color: var(--p-text-muted-color)">
-                    {{ t('match.topScorer') }}: <b style="color: var(--p-text-color)">{{ formatPlayerName(bestBy(side, 'goals')?.playerName) || '-' }}</b><span v-if="bestBy(side, 'goals')"> ({{ bestBy(side, 'goals').goals }}⚽)</span>
+                    {{ isRugby ? t('stats.topTryScorers') : t('match.topScorer') }}: <b style="color: var(--p-text-color)">{{ formatPlayerName(bestBy(side, 'goals')?.playerName) || '-' }}</b><span v-if="bestBy(side, 'goals')"> ({{ bestBy(side, 'goals').goals }}{{ scoreIcon(selectedSport, 5) }})</span>
                   </div>
-                  <div style="color: var(--p-text-muted-color)">
+                  <!-- Rugby has a try-assist statistic, but this feed carries no
+                       assist at all - so the slot shows points, which it does
+                       have, instead of a row that can only ever read "-". -->
+                  <div v-if="isRugby" style="color: var(--p-text-muted-color)">
+                    {{ t('stats.topPoints') }}: <b style="color: var(--p-text-color)">{{ formatPlayerName(bestBy(side, 'points')?.playerName) || '-' }}</b><span v-if="bestBy(side, 'points')"> ({{ bestBy(side, 'points').points }} {{ t('match.pointsShort') }})</span>
+                  </div>
+                  <div v-else style="color: var(--p-text-muted-color)">
                     {{ t('match.topAssister') }}: <b style="color: var(--p-text-color)">{{ formatPlayerName(bestBy(side, 'assists')?.playerName) || '-' }}</b><span v-if="bestBy(side, 'assists')"> ({{ bestBy(side, 'assists').assists }}👟)</span>
                   </div>
                   <div class="border-t mt-1 pt-2 flex flex-col gap-1" style="border-color: var(--p-content-border-color)">
                     <div v-for="(p, i) in teamPlayers(side)" :key="i" class="flex items-center justify-between gap-2">
                       <span class="truncate">{{ formatPlayerName(p.playerName) }}</span>
-                      <span class="tabular-nums shrink-0" style="color: var(--p-text-muted-color)">{{ p.goals ?? 0 }}⚽ · {{ p.assists ?? 0 }}👟</span>
+                      <span v-if="isRugby" class="tabular-nums shrink-0" style="color: var(--p-text-muted-color)">{{ p.goals ?? 0 }}{{ scoreIcon(selectedSport, 5) }} · {{ p.points ?? 0 }} {{ t('match.pointsShort') }}</span>
+                      <span v-else class="tabular-nums shrink-0" style="color: var(--p-text-muted-color)">{{ p.goals ?? 0 }}⚽ · {{ p.assists ?? 0 }}👟</span>
                     </div>
                   </div>
                 </div>

@@ -18,6 +18,9 @@ async function aggregatePlayers(db: AppDatabase, competitionId: string): Promise
       p = { playerId: id, playerName: name, teamName, teamCode, goals: 0, assists: 0, points: 0 }
       players.set(id, p)
     }
+    // One unnamed row must not condemn the player: any row that does carry a
+    // name wins, whichever order they come in.
+    if (!p.playerName && name) p.playerName = name
     return p
   }
 
@@ -36,7 +39,9 @@ async function aggregatePlayers(db: AppDatabase, competitionId: string): Promise
     if (r.assistPlayerId) ensure(r.assistPlayerId, r.assistPlayerName || 'Unknown', r.teamName, r.teamCode).assists += 1
   }
 
-  return [...players.values()].map((s) => ({
+  // A board is a list of names. A player the provider could not name carries no
+  // information, and used to render as a blank line with a tally beside it.
+  return [...players.values()].filter((s) => s.playerName.trim() !== '').map((s) => ({
     playerName: s.playerName,
     teamName: s.teamName,
     teamCode: s.teamCode,

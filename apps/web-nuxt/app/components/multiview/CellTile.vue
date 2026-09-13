@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import { scoreIcon } from '../../utils/match-view'
+
+// The ball of the sport being played; a football beside a rugby try is the tell
+// that a view never asked. See scoreIcon.
+const ball = computed(() => scoreIcon(useSelectedSport().value, null))
 import { matchHasStarted, matchIsInPlay, type MatchStatus } from '#shared/types/match'
 import { liveClockSpec } from '../../utils/match-view'
 import type { MatchListItem } from '../../composables/useMatches'
@@ -41,7 +46,7 @@ const clock = computed(() => {
 
     <div v-if="goals.length" class="flex flex-wrap gap-1 justify-center px-2 pb-1">
       <span v-for="(g, i) in goals" :key="i" class="text-[11px] px-1.5 py-0.5 rounded" style="background: var(--p-content-border-color)">
-        ⚽ {{ formatPlayerName(g.playerName) }}<span v-if="g.minute" class="opacity-60"> {{ g.minute }}</span>
+        {{ ball }} {{ formatPlayerName(g.playerName) }}<span v-if="g.minute" class="opacity-60"> {{ g.minute }}</span>
       </span>
     </div>
 

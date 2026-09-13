@@ -9,6 +9,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 - Un match de rugby n'affiche plus l'historique football des deux équipes. Le face-à-face et la forme s'appuient sur les archives du football international de la FIFA, et les codes pays à trois lettres sont identiques dans les deux sports : un quart de finale France - Afrique du Sud était donc illustré par leurs rencontres de football, buts compris. Ces panneaux sont désormais réservés au football.
 - Les cartons sont signalés dans un match de rugby. Ils étaient comptés dans le résumé mais jamais listés : la frise n'affichait aucun carton, pas même un carton rouge.
+- L'onglet Joueurs d'un match de rugby liste tous ceux qui ont marqué, pas seulement les marqueurs d'essai. Un ouvreur ayant inscrit tous les points de son équipe en était tout simplement absent. Chaque joueur affiche essais et points, et le meilleur réalisateur de l'équipe remplace le meilleur passeur : le rugby ne compte pas de passe décisive.
+- Un marqueur de rugby absent de la liste des sélectionnés apparaissait comme une ligne vide avec un score à côté. Ces joueurs sont désormais cherchés un par un, et les matchs déjà enregistrés sont relus pour que leur nom s'affiche.
 - La frise d'un match de rugby se lit comme du rugby : transformations, pénalités et drops ont chacun leur ligne au lieu d'être fondus dans l'essai ou omis, et un score porte un ballon de rugby et non de football.
 
 ## [5.0.0] - 2026-09-13

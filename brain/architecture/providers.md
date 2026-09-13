@@ -307,6 +307,12 @@ typed bronze final, and the World Rugby rankings that will drive champion tiers.
   list and the player-id -> name map every timeline needs, so it is memoised per
   adapter. A tournament whose squads are not named yet answers with empty ones:
   RWC 2027 has 24 squads and 0 players today.
+- **The squad list is the initial selection**, so a scorer can be missing from
+  it: Makazole Mapimpi is not among RWC 2023's 658 squad players, and his tries
+  stored with an empty name. Ids the bulk map does not answer are resolved one at
+  a time from `/player/{id}` (`name.display`) and memoised, which also covers the
+  empty-squads tournament above. See
+  [../features/rugby.md](../features/rugby.md).
 - **`providerStageId` carries the event id**, though the feed addresses a match
   by its own id alone. Without it `sync/details.ts` - which selects on
   `providerStageId IS NOT NULL` - skips every rugby match silently, and the

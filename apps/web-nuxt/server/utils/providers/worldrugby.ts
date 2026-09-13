@@ -358,6 +358,28 @@ export function worldRugbyProvider(options: WorldRugbyOptions): MatchDataProvide
     return squadsPromise
   }
 
+  // A scorer is not always in the tournament squad list: squads are the initial
+  // selection, and a mid-tournament call-up who then scores is absent from it.
+  // Those players used to reach goal_event with an empty name and rendered as a
+  // blank row with a score beside it, so the gaps are filled one player at a
+  // time from /player/{id}. Rare by construction, and memoised.
+  const extraNames = new Map<string, string>()
+  async function namesFor(ids: (string | null | undefined)[]): Promise<Map<string, string>> {
+    const known = await playerNames()
+    const missing = [...new Set(ids)].filter((id): id is string => !!id && !known.has(id) && !extraNames.has(id))
+    for (const id of missing) {
+      try {
+        const doc = await getJson<{ name?: { display?: string | null } | null }>(
+          `${baseUrl}/player/${encodeURIComponent(id)}`,
+        )
+        if (doc.name?.display) extraNames.set(id, doc.name.display)
+      } catch {
+        // Leave it unnamed rather than fail the whole detail for one player.
+      }
+    }
+    return new Map([...known, ...extraNames])
+  }
+
   async function playerNames(): Promise<Map<string, string>> {
     const names = new Map<string, string>()
     for (const squad of await squadsOnce()) {
@@ -438,11 +460,11 @@ export function worldRugbyProvider(options: WorldRugbyOptions): MatchDataProvide
     },
 
     async getMatchDetail({ matchId }): Promise<MatchDetail | null> {
-      const [match, events, names] = await Promise.all([
+      const [match, events] = await Promise.all([
         getJson<WrMatch>(`${baseUrl}/match/${encodeURIComponent(matchId)}`),
         timelineOf(matchId),
-        playerNames(),
       ])
+      const names = await namesFor(events.map((e) => e.playerId))
       const sides = [match.teams?.[0], match.teams?.[1]]
       const cards = { home: { yellow: 0, red: 0 }, away: { yellow: 0, red: 0 } }
       const bookings: BookingEvent[] = []
@@ -560,7 +582,8 @@ export function worldRugbyProvider(options: WorldRugbyOptions): MatchDataProvide
     },
 
     async getMatchTimeline({ matchId }): Promise<TimelineEvent[]> {
-      const [events, names] = await Promise.all([timelineOf(matchId), playerNames()])
+      const events = await timelineOf(matchId)
+      const names = await namesFor(events.map((e) => e.playerId))
       const out: TimelineEvent[] = []
       const running = [0, 0]
 

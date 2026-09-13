@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { TopScorer } from '#shared/types/match'
+import { scoreIcon } from '../utils/match-view'
 
 const props = withDefaults(
   defineProps<{ rows: TopScorer[]; metric: 'goals' | 'assists' | 'points'; limit?: number }>(),
@@ -7,13 +8,18 @@ const props = withDefaults(
 )
 const { t } = useI18n()
 
-// Keyed, not a ternary: a two-way ternary over three metrics put the assists
-// boot above a column of rugby points.
-const METRIC_ICON: Record<'goals' | 'assists' | 'points', string> = {
-  goals: '⚽',
-  assists: '👟',
-  points: '🏉',
-}
+// The scorer column wears the ball of the sport being played - a rugby try board
+// under a football was the giveaway that this table never knew the sport. The
+// points column is a count of points, not of plays, so it is labelled rather
+// than drawn.
+const sport = useSelectedSport()
+const metricIcon = computed(() =>
+  props.metric === 'goals'
+    ? scoreIcon(sport.value, null)
+    : props.metric === 'points'
+      ? t('match.pointsShort')
+      : '👟',
+)
 
 // Rank by the board's metric, drop zero rows, and slice. Ties break on the other
 // metric then name (matching the endpoint's order); the displayed rank, though,
@@ -49,7 +55,7 @@ const ranked = computed(() => {
       <tr style="color: var(--p-text-muted-color)">
         <th class="py-1 text-start">#</th>
         <th class="text-start">{{ t('stats.player') }}</th>
-        <th class="text-center">{{ METRIC_ICON[metric] }}</th>
+        <th class="text-center">{{ metricIcon }}</th>
       </tr>
     </thead>
     <tbody>

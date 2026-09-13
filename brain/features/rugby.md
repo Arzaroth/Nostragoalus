@@ -100,6 +100,25 @@ The Stats view picks its boards from the competition's sport, not from whether
 points data happens to have arrived - inferring it from the payload showed
 football headings until the first score landed, then flipped mid-tournament.
 
+## Naming a scorer
+
+The adapter reads one `/event/{id}/squads` document for the whole tournament and
+uses it as the id -> name map for every timeline, rather than a `/player/{id}`
+call per actor per match. The squad list is the **initial** selection, though, so
+a player called up mid-tournament and then scoring is not in it: Makazole Mapimpi
+is absent from the RWC 2023 document, and his three tries against Romania stored
+with an empty `playerName` and rendered as a blank line with a score beside it.
+Ids the squad map does not answer are now resolved one at a time from
+`/player/{id}` and memoised for the life of the adapter - rare by construction,
+so the saving the bulk document buys is kept.
+
+Stored rows do not heal on their own, because the detail sync only visits a match
+whose `details_fetched_at` is null. `drizzle/0065_rugby_unnamed_scorers.sql`
+clears it for exactly the matches holding a nameless scoring row, so the next sync
+re-fetches and replaces them. Belt and braces, `aggregatePlayers` drops a player
+it cannot name from every board: a board is a list of names, and a tally with no
+name beside it tells the reader nothing.
+
 ## The mark
 
 A rugby competition puts a rugby ball inside the crystal ball
@@ -139,7 +158,12 @@ football meetings until the endpoint learned to check
 ## What rugby deliberately does not have
 
 - **Assists.** The feed has no assist concept, so that board is replaced rather
-  than left empty.
+  than left empty - the competition Stats view shows points in its place, and so
+  does a match's Players tab, which names the side's leading points scorer where
+  football names its top assister. The same tab merges the points board into its
+  player list: unioning only scorers and assists dropped a pure goal-kicker
+  entirely, and Handre Pollard scored all twelve of South Africa's points in the
+  2023 final.
 - **Fergie time.** The analytic fires only on a minute containing `+`, which the
   World Rugby clock never produces, so it is inert for rugby rather than wrong -
   a try-only reconstruction of a 27-13 scoreline would be nonsense.
