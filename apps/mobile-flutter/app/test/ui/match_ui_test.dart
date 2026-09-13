@@ -109,7 +109,7 @@ LeaguesResponseLeague league({String id = 'l1', String name = 'Aces', String com
       'picksSynced': true,
       'memberCount': 3,
       'chatEnabled': true,
-      'competition': {'id': comp, 'slug': comp, 'name': comp},
+      'competition': {'id': comp, 'slug': comp, 'name': comp, 'sport': 'FOOTBALL'},
     });
 
 const _i18n = {

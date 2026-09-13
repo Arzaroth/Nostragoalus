@@ -187,7 +187,7 @@ void main() {
         Reply(200, const {
           'bot': {'id': 'bot'},
           'persona': 'evil-twin',
-          'competition': {'id': 'c1', 'slug': 'wc26', 'name': 'World Cup'},
+          'competition': {'id': 'c1', 'slug': 'wc26', 'name': 'World Cup', 'sport': 'FOOTBALL'},
           'league': null,
           'champion': null,
           'summary': {

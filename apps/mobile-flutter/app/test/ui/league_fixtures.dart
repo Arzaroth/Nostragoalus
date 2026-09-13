@@ -26,7 +26,7 @@ Map<String, dynamic> leagueJson(
     {
       'id': id,
       'name': name,
-      'competition': {'id': 'c-$competition', 'slug': competition, 'name': 'Comp $competition'},
+      'competition': {'id': 'c-$competition', 'slug': competition, 'name': 'Comp $competition', 'sport': 'FOOTBALL'},
       'mode': 'NORMAL',
       'role': 'MEMBER',
       'visibility': 'PRIVATE',

@@ -25,7 +25,7 @@ void main() {
       leaguesOverride(leagues),
       dmThreadsProvider.overrideWith((ref) async => DmThreadsResponse(threads: threads)),
       competitionsProvider
-          .overrideWith((ref) async => const CompetitionsResponse(competitions: [])),
+          .overrideWith((ref) async => const CompetitionsResponse(competitions: [], defaultSlug: '')),
     ]);
     addTearDown(c.dispose);
     return c;

@@ -4,9 +4,10 @@ import 'package:nostragoalus/api/models.gen.dart';
 void main() {
   test('CompetitionsResponse parses a nested list', () {
     final r = CompetitionsResponse.fromJson({
+      'defaultSlug': 'world-cup',
       'competitions': [
-        {'id': 'wc', 'slug': 'world-cup', 'name': 'World Cup'},
-        {'id': 'eu', 'slug': 'euro', 'name': 'Euro'},
+        {'id': 'wc', 'slug': 'world-cup', 'name': 'World Cup', 'sport': 'FOOTBALL'},
+        {'id': 'eu', 'slug': 'euro', 'name': 'Euro', 'sport': 'FOOTBALL'},
       ],
     });
 

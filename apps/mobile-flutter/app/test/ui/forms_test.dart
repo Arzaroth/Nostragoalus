@@ -257,8 +257,9 @@ void main() {
       },
       [
         competitionsProvider.overrideWith((ref) async => CompetitionsResponse.fromJson(const {
+              'defaultSlug': 'wc26',
               'competitions': [
-                {'id': 'c1', 'slug': 'wc26', 'name': 'World Cup', 'startsAt': null},
+                {'id': 'c1', 'slug': 'wc26', 'name': 'World Cup', 'startsAt': null, 'sport': 'FOOTBALL'},
               ],
             })),
       ],

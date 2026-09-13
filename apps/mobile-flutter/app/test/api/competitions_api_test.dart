@@ -9,8 +9,9 @@ void main() {
     test('competitions lists what the server offers', () async {
       final (api, adapter) = buildApi([
         Reply(200, const {
+          'defaultSlug': 'wc26',
           'competitions': [
-            {'id': 'c1', 'slug': 'wc26', 'name': 'World Cup'},
+            {'id': 'c1', 'slug': 'wc26', 'name': 'World Cup', 'sport': 'FOOTBALL'},
           ],
         }),
       ]);
@@ -98,6 +99,7 @@ void main() {
             },
           ],
           'coach': null,
+          'defaultSlug': '',
           'competitions': [],
         }),
       ]);

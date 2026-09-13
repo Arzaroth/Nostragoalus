@@ -20,7 +20,7 @@ Reply _refusal({String? minimum = '4.9.0', String? downloadUrl = '/download/x.ap
 
 void main() {
   test('every request says which build it is', () async {
-    final (api, adapter) = buildApi([Reply(200, const {'competitions': []})]);
+    final (api, adapter) = buildApi([Reply(200, const {'competitions': [], 'defaultSlug': ''})]);
 
     await api.competitions();
     expect(adapter.requests.single.headers['x-ng-client'], AppConfig.clientId);
