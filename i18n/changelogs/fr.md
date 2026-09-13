@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [5.0.0] - 2026-09-13
+
 ### Ajouté
 
 - Les matchs de rugby ont leur détail : marqueurs d'essais à la minute, cartons, remplacements, possession, affluence et stade, plus un fil du match qui fait courir le score à chaque transformation et pénalité. Le classement des marqueurs d'essais s'en remplit seul, et le pronostic du meilleur marqueur dispose enfin d'un effectif : 33 joueurs et l'entraîneur par équipe. Les compositions aussi : les 23 numéros, les titulaires, les remplaçants et le capitaine. Et l'onglet Stats affiche deux classements au rugby - essais et points - parce que le meilleur marqueur d'essais et le meilleur réalisateur sont rarement la même personne.

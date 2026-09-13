@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [5.0.0] - 2026-09-13
+
 ### Added
 
 - Rugby matches carry their detail: try scorers with the minute, cards, substitutions, possession, attendance and the ground, plus a play-by-play that runs the score through every conversion and penalty. The try-scorer board fills itself from that, and picking a best scorer now has a squad to pick from - 33 players and the head coach per team. Team sheets are there too: the 23 shirts, who is starting, who is on the bench, and the captain. And the Stats view shows two rugby boards rather than one - most tries, and most points - because the leading try scorer and the leading points scorer are rarely the same person.

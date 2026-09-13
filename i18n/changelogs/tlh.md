@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [5.0.0] - 2026-09-13
+
 ### chel
 
 - ragh may'mey De' naQ tu'lu': T5 chenmoHwI' je poH, nganmey, choHmey, moQ SeH, bIQtIq, je QujmeH yotlh. je may' lut: Hoch Qav mI' chIq. T5 chenmoHwI' patlh ngeDqu'; 'ej DaH chenmoHwI' Qav wIvmeH mangghom tu'lu' - 33 QuQwI' je ghojmoHwI'. je may' mangghom tu'lu': 23 mI', chenwI'pu', loQwI'pu', je la'. je mI' HaSta: cha' patlh tu'lu' - T5 law' je mI' law' - rapbe' chaH.
