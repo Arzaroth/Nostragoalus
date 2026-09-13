@@ -160,11 +160,7 @@ watch(
   { immediate: true },
 )
 
-// Nothing picked against one provider's catalog means anything against the
-// next: leaving the old list up let a World Rugby event be probed as an ESPN
-// league, and the sub-feed switch silently kept the men's list on screen while
-// querying the women's.
-watch([provider, providerSport], () => {
+function clearPick() {
   catalog.value = null
   chosen.value = ''
   probe.value = null
@@ -173,19 +169,40 @@ watch([provider, providerSport], () => {
   draftName.value = ''
   draftSlug.value = ''
   showOlder.value = false
+}
+
+// Bumped whenever the selection moves, so a discover or probe still in flight
+// against the previous provider cannot repopulate what the switch just cleared.
+// ESPN's catalog takes seconds, which is plenty of time to change provider.
+let generation = 0
+
+// Nothing picked against one provider's catalog means anything against the
+// next: leaving the old list up let a World Rugby event be probed as an ESPN
+// league, and the sub-feed switch silently kept the men's list on screen while
+// querying the women's.
+watch([provider, providerSport], () => {
+  generation += 1
+  clearPick()
   err.value = ''
 })
 
 // A provider's whole archive is not a menu: World Rugby carries ~208 events back
-// to 2019 and ESPN ~218 leagues. Recent seasons by default, the rest a click
-// away, and the list itself is type-to-search.
-const RECENT_YEARS = 1
+// to 2019 and ESPN ~218 leagues. The current season and the one before it by
+// default, the rest a click away, and the list itself is type-to-search.
+const RECENT_SEASONS = 2
 const catalogVisible = computed(() => {
   const all = catalog.value ?? []
   if (showOlder.value) return all
-  const floor = new Date().getFullYear() - RECENT_YEARS
-  // An entry the provider gave no season is kept: it cannot be judged old.
-  return all.filter((c) => !c.seasonHint || Number(c.seasonHint) >= floor)
+  const floor = new Date().getFullYear() - (RECENT_SEASONS - 1)
+  return all.filter((c) => {
+    // An entry the provider gave no season is kept, and so is one whose season
+    // cannot be read as a year: a provider labelling seasons "2024/25" is not
+    // thereby all archive. Note Number(null) is 0, not NaN, so the empty case
+    // has to be taken first.
+    if (!c.seasonHint) return true
+    const year = Number(c.seasonHint)
+    return !Number.isFinite(year) || year >= floor
+  })
 })
 const catalogHidden = computed(() => (catalog.value?.length ?? 0) - catalogVisible.value.length)
 const catalogOptions = computed(() =>
@@ -195,14 +212,27 @@ const catalogOptions = computed(() =>
   })),
 )
 
-// What actually gets probed and created, whichever way it was chosen.
-const externalId = computed(() => (canDiscover.value ? chosen.value : manualId.value.trim()))
-const seasonHintParam = computed(() => {
-  const hint = canDiscover.value ? chosenEntry.value?.seasonHint : manualSeason.value.trim() || null
-  return hint ? { seasonHint: hint } : {}
+const chosenEntry = computed(() => catalog.value?.find((c) => c.externalCompetitionId === chosen.value) ?? null)
+
+// Collapsing the older seasons can hide what is already picked. The Select then
+// falls back to its placeholder, so leaving `chosen` set would arm Check it and
+// Add it against an id the screen no longer shows as selected.
+watch(catalogVisible, (visible) => {
+  if (!chosen.value || visible.some((c) => c.externalCompetitionId === chosen.value)) return
+  chosen.value = ''
+  probe.value = null
+  draftName.value = ''
+  draftSlug.value = ''
 })
 
-const chosenEntry = computed(() => catalog.value?.find((c) => c.externalCompetitionId === chosen.value) ?? null)
+// What actually gets probed and created, whichever way it was chosen. Derived
+// once: the probe and the create used to spell the season differently, and they
+// agreed only because the catalog happened to be empty on the manual path.
+const externalId = computed(() => (canDiscover.value ? chosen.value : manualId.value.trim()))
+const seasonHint = computed<string | null>(() =>
+  canDiscover.value ? (chosenEntry.value?.seasonHint ?? null) : manualSeason.value.trim() || null,
+)
+const seasonHintParam = computed(() => (seasonHint.value ? { seasonHint: seasonHint.value } : {}))
 const takenSlugs = computed(() => new Set((data.value?.competitions ?? []).map((c) => c.slug)))
 
 // A stable, URL-safe suggestion the admin can still overwrite. The slug is
@@ -213,11 +243,15 @@ function suggestSlug(name: string, season: string | null): string {
 }
 
 const discover = useMutation({
-  mutationFn: () =>
-    $fetch<{ competitions: Discovered[] }>('/api/admin/competitions/discover', {
+  mutationFn: async () => {
+    const at = generation
+    const res = await $fetch<{ competitions: Discovered[] }>('/api/admin/competitions/discover', {
       params: { provider: provider.value, ...sportParam.value },
-    }),
-  onSuccess: (res) => {
+    })
+    return { at, res }
+  },
+  onSuccess: ({ at, res }) => {
+    if (at !== generation) return
     err.value = ''
     catalog.value = res.competitions
     chosen.value = ''
@@ -227,25 +261,27 @@ const discover = useMutation({
 })
 
 const runProbe = useMutation({
-  mutationFn: () =>
-    $fetch<Probe>('/api/admin/competitions/probe', {
+  mutationFn: async () => {
+    const at = generation
+    const res = await $fetch<Probe>('/api/admin/competitions/probe', {
       params: {
         provider: provider.value,
         externalCompetitionId: externalId.value,
         ...sportParam.value,
         ...seasonHintParam.value,
       },
-    }),
-  onSuccess: (res) => {
+    })
+    return { at, res }
+  },
+  onSuccess: ({ at, res }) => {
+    if (at !== generation) return
     err.value = ''
     probe.value = res
     // A typed-in id has no catalog entry to name it, so the id seeds both
     // fields and the admin renames it before saving.
-    const entry = chosenEntry.value
-    const name = entry?.name ?? externalId.value
-    const season = entry?.seasonHint ?? (manualSeason.value.trim() || null)
+    const name = chosenEntry.value?.name ?? externalId.value
     draftName.value = name
-    draftSlug.value = suggestSlug(name, season)
+    draftSlug.value = suggestSlug(name, seasonHint.value)
   },
   onError: (e) => {
     probe.value = null
@@ -262,16 +298,17 @@ const create = useMutation({
         name: draftName.value.trim(),
         provider: provider.value,
         externalCompetitionId: externalId.value,
-        seasonHint: chosenEntry.value?.seasonHint ?? (manualSeason.value.trim() || null),
+        seasonHint: seasonHint.value,
         ...sportParam.value,
       },
     }),
   onSuccess: async () => {
     err.value = ''
     adding.value = false
-    catalog.value = null
-    chosen.value = ''
-    probe.value = null
+    // Everything, not just the catalog: a typed-in id left behind meant
+    // reopening the panel pre-filled with the competition just created, one
+    // click from a duplicate-slug attempt.
+    clearPick()
     await refreshAll()
   },
   onError: (e) => fail(e, 'admin.competitions.createFailed'),
@@ -385,34 +422,22 @@ const canCreate = computed(
               />
             </div>
 
-            <!-- A provider with no catalog endpoint is still addable: the id is
-                 typed in, and the same dry-run probe decides whether it works. -->
-            <div v-if="!canDiscover" class="flex flex-col gap-2">
-              <p class="text-xs" style="color: var(--p-text-muted-color)">{{ t('admin.competitions.manualIntro') }}</p>
+            <!-- One probe control for both ways in: the id is either picked
+                 from the catalog or typed, and the same dry run judges it. -->
+            <div v-if="!canDiscover || catalog" class="flex flex-col gap-2">
+              <p v-if="!canDiscover" class="text-xs" style="color: var(--p-text-muted-color)">{{ t('admin.competitions.manualIntro') }}</p>
               <div class="flex flex-wrap items-end gap-3">
-                <label class="flex flex-col gap-1">
-                  <span class="text-xs font-semibold" style="color: var(--p-text-muted-color)">{{ t('admin.competitions.manualIdLabel') }}</span>
-                  <InputText v-model="manualId" maxlength="64" class="w-72" @update:model-value="probe = null" />
-                </label>
-                <label class="flex flex-col gap-1">
-                  <span class="text-xs font-semibold" style="color: var(--p-text-muted-color)">{{ t('admin.competitions.manualSeasonLabel') }}</span>
-                  <InputText v-model="manualSeason" maxlength="16" class="w-28" @update:model-value="probe = null" />
-                </label>
-                <Button
-                  :label="runProbe.isPending.value ? t('admin.competitions.probing') : t('admin.competitions.probe')"
-                  icon="pi pi-bolt"
-                  severity="secondary"
-                  outlined
-                  :disabled="!externalId"
-                  :loading="runProbe.isPending.value"
-                  @click="runProbe.mutate()"
-                />
-              </div>
-            </div>
-
-            <div v-else-if="catalog" class="flex flex-col gap-2">
-              <div class="flex flex-wrap items-end gap-3">
-                <label class="flex flex-col gap-1">
+                <template v-if="!canDiscover">
+                  <label class="flex flex-col gap-1">
+                    <span class="text-xs font-semibold" style="color: var(--p-text-muted-color)">{{ t('admin.competitions.manualIdLabel') }}</span>
+                    <InputText v-model="manualId" maxlength="64" class="w-72" @update:model-value="probe = null" />
+                  </label>
+                  <label class="flex flex-col gap-1">
+                    <span class="text-xs font-semibold" style="color: var(--p-text-muted-color)">{{ t('admin.competitions.manualSeasonLabel') }}</span>
+                    <InputText v-model="manualSeason" maxlength="16" class="w-28" @update:model-value="probe = null" />
+                  </label>
+                </template>
+                <label v-else class="flex flex-col gap-1">
                   <span class="text-xs font-semibold" style="color: var(--p-text-muted-color)">{{ t('admin.competitions.colCompetition') }}</span>
                   <Select
                     v-model="chosen"
@@ -436,11 +461,17 @@ const canCreate = computed(
                   @click="runProbe.mutate()"
                 />
               </div>
-              <div class="text-xs" style="color: var(--p-text-muted-color)">
+              <div v-if="canDiscover && catalog" class="text-xs flex items-center gap-1" style="color: var(--p-text-muted-color)">
                 {{ t('admin.competitions.catalogCount', { shown: catalogOptions.length, total: catalog.length }) }}
-                <button v-if="catalogHidden > 0 || showOlder" type="button" class="underline ms-1" @click="showOlder = !showOlder">
-                  {{ showOlder ? t('admin.competitions.showRecent') : t('admin.competitions.showOlder', { n: catalogHidden }) }}
-                </button>
+                <Button
+                  v-if="catalogHidden > 0 || showOlder"
+                  :label="showOlder ? t('admin.competitions.showRecent') : t('admin.competitions.showOlder', { n: catalogHidden })"
+                  size="small"
+                  severity="secondary"
+                  link
+                  class="p-0"
+                  @click="showOlder = !showOlder"
+                />
               </div>
             </div>
 

@@ -392,8 +392,9 @@ const MAX_LEADERS = 25
 // index cannot turn one admin click into an unbounded fan-out.
 const MAX_DISCOVERED = 400
 // ESPN names one league per request and carries ~218 of them. Six at a time
-// overlaps the round trips without raising the request rate, which the shared
-// refLimiter still governs.
+// overlaps the round trips; the shared refLimiter still caps the rate, so the
+// walk lands at its interval times the league count rather than at that plus a
+// round trip each.
 const DISCOVERY_CONCURRENCY = 6
 
 export function espnProvider(options: EspnOptions): MatchDataProvider {
@@ -627,13 +628,11 @@ export function espnProvider(options: EspnOptions): MatchDataProvider {
         if (slugs.length >= MAX_DISCOVERED) break
       }
 
-      // A few workers pulling off one queue, NOT Promise.all over every slug:
-      // RateLimiter spaces acquisitions off a single `lastAt` and has no queue,
-      // so a parallel map has all 218 read the same timestamp, sleep the same
-      // 60ms and fire as one burst - which is what the limiter exists to
-      // prevent. Each worker still awaits the limiter, so the spacing between
-      // requests is unchanged; what overlaps is the round-trip latency, which is
-      // what made this a 21-second wait behind a button with nothing to show.
+      // A few workers pulling off one queue, NOT Promise.all over every slug.
+      // The limiter hands out one slot per interval however many callers are
+      // waiting, so the request rate is the same as the old serial walk; what
+      // the workers overlap is the round-trip latency, which is what made this
+      // a 21-second wait behind a button with nothing to show.
       const found: (DiscoveredCompetition | null)[] = new Array(slugs.length).fill(null)
       let cursor = 0
       let rateLimited: unknown = null
@@ -647,7 +646,6 @@ export function espnProvider(options: EspnOptions): MatchDataProvider {
           try {
             const doc = await getJson<EspnLeagueDoc>(`${coreBaseUrl}/${encodeURIComponent(slug)}`, refLimiter)
             const name = doc.displayName ?? doc.name
-            // Positional, so the result does not depend on which worker won.
             if (name) {
               found[i] = {
                 externalCompetitionId: doc.slug ?? slug,

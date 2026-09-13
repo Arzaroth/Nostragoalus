@@ -862,21 +862,41 @@ is saved on the strength of a pasted id alone. It opens on a discoverable
 provider because that is the guided path - opening on one that can only take an
 id reads as the harder way being the only way.
 
+## The rate limiter reserves its slot before sleeping
+
+`RateLimiter` used to record `lastAt` AFTER its sleep, which made it correct for
+one caller and useless for several: concurrent callers all read the same
+`lastAt`, computed the same wait, and resumed together, so N callers went out as
+a burst of N. The class is 18 lines with no queue, and that shape is why every
+ref-walk in the adapters was written as a serial loop - the comment on ESPN's
+said so explicitly.
+
+It now holds `nextAt`, the next instant a request may go out, and reserves it
+before sleeping. Concurrent callers take successive slots instead of the same
+one. Serial behaviour is unchanged, an idle gap still costs nothing, and the
+limiter is now safe to put concurrency behind - which is what made the catalog
+change below possible.
+
+Found by review, not by a test: the burst is invisible to anything that asserts
+on in-flight counts rather than on timing, and the first version of the catalog
+change shipped a comment claiming the rate was untouched when it was 6x.
+
 ## Catalog concurrency is bounded workers, not Promise.all, and not serial
 
 ESPN names one league per request and carries ~218 of them, so the catalog is
-inherently N+1. It was walked serially because `RateLimiter` paces off a single
-`lastAt` with no queue: a parallel map has every request read the same timestamp,
-sleep the same 60ms, and fire as one burst - the exact thing the limiter exists
-to prevent.
+inherently N+1. Walked serially it was latency-bound: ~163ms per league, ~21s in
+total, behind a button with nothing to show, which read as broken rather than
+slow.
 
-Serial made the walk latency-bound instead: ~163ms per league, ~21s in total,
-behind a button with nothing to show, which read as broken rather than slow. Six
-workers pulling off one queue, each still awaiting the shared limiter, leaves the
-request RATE untouched and overlaps only the round trips: ~6s. The results are
-written positionally so the list does not depend on which worker won, and a 429
-stops the whole walk, because a short catalog tells the admin those competitions
-do not exist.
+Six workers pulling off one queue, each awaiting the shared limiter, overlap the
+round trips while the limiter caps the rate. The walk lands at the ref interval
+times the league count (60ms x 218, ~13s) rather than that plus a round trip
+each. `Promise.all` over all 218 is still wrong, cap or no cap: the point is a
+bounded number in flight, not a bounded rate alone.
+
+The results are written positionally so the list does not depend on which worker
+won, and a 429 stops the whole walk, because a short catalog tells the admin
+those competitions do not exist.
 
 ## Catalog recency is filtered on the client
 

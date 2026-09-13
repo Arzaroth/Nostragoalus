@@ -14,11 +14,22 @@ const providerSportSchema = z
   .max(8)
   .refine(isProviderSport, 'unknown provider sub-feed')
 
+// Bounded AND shaped: the value is spliced into provider URLs (FIFA, UEFA and
+// football-data interpolate it without encoding, some of it as a path segment),
+// so a `/`, `?`, `#` or `&` in it would re-point or truncate the request. Every
+// provider's real ids are alphanumeric with dots, dashes or a UUID: "17", "3",
+// "WC", "eng.1", "14bc12d5-59bd-4c9e-b1cf-653ce66b72b7".
+const externalCompetitionIdSchema = z
+  .string()
+  .min(1)
+  .max(64)
+  .regex(/^[A-Za-z0-9._-]+$/, 'unexpected characters in the competition id')
+
 const bodySchema = z.object({
   slug: z.string().min(1).max(64),
   name: z.string().min(1).max(120),
   provider: z.enum(MATCH_PROVIDERS),
-  externalCompetitionId: z.string().min(1).max(64),
+  externalCompetitionId: externalCompetitionIdSchema,
   seasonHint: z.string().min(1).max(16).nullable(),
   providerSport: providerSportSchema.nullable().optional(),
 })

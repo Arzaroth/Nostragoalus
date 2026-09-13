@@ -75,9 +75,10 @@ Which competitions exist is admin-managed, not a code constant. Two pieces:
   list. The ESPN index carries `$ref` links only, so each league's name, season
   and `isTournament` flag costs one hop; they go through the tight ref limiter
   rather than the scoreboard's one-per-second, six workers at a time off one
-  queue. The workers overlap the round trips without raising the request rate,
-  which the shared limiter still governs: ~218 leagues in ~6s, against ~21s when
-  the walk was serial and looked to the admin like a button that did nothing.
+  queue. The workers overlap the round trips while the limiter caps the rate, so
+  the walk costs the interval times the league count (~13s for ~218) instead of
+  that plus a round trip each (~21s), which looked to the admin like a button
+  that did nothing.
   Not every provider can enumerate (UEFA's ids are a curated handful, the offline
   `fixture` provider has one), and that is a normal answer, not a lesser one:
   probe and create accept every provider in `MATCH_PROVIDERS`, so the admin

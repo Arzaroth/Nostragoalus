@@ -9,7 +9,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 - Admin: the competitions screen uses the same controls as the rest of the app, and the button that lists what a provider carries now looks like one. Its dropdowns were plain browser selects, so the screen looked borrowed from another site and the next step was easy to miss.
 - Admin: FIFA and UEFA can be picked as a provider again. Neither publishes a list of what it carries, and the screen only offered providers that do - even though the check and the save have always accepted any of them. Paste the competition's id instead, and the same dry run decides.
-- Admin: listing a provider's competitions is roughly four times faster. ESPN names one league per request and carries over two hundred, which took twenty seconds behind a button with nothing to show, so it read as broken.
+- Admin: listing a provider's competitions is noticeably faster, and a rate limit is now actually enforced when several requests are in flight rather than only one. ESPN names one league per request and carries over two hundred, which took twenty seconds behind a button with nothing to show, so it read as broken.
 - Admin: a provider's whole archive is no longer a single menu. World Rugby carries over two hundred events going back to 2019: recent seasons are shown by default with the rest a click away, and the list can be typed into to search it.
 - Admin: changing the provider or the sub-feed clears the competitions listed for the previous one. The old list stayed on screen, so a World Rugby event could be checked as though it were an ESPN league.
 

@@ -1236,6 +1236,27 @@ describe('espnProvider.discoverCompetitions hardening', () => {
     await expect(provider(fetchImpl).discoverCompetitions!()).rejects.toThrow(ProviderRateLimitError)
   })
 
+  // With only two slugs every worker exits on the empty queue, so the test above
+  // proves the throw but never that the walk STOPS. Enough slugs to keep the
+  // workers looping, and the count is what shows the remaining ones were
+  // abandoned rather than fired into an upstream already saying slow down.
+  it('stops walking the catalog once the upstream rate-limits it', async () => {
+    const slugs = Array.from({ length: 60 }, (_, i) => `l${i}.1`)
+    let named = 0
+    const fetchImpl = vi.fn(async (url: string) => {
+      if (url.includes('?limit=')) return jsonResponse({ items: slugs.map((sl) => ({ $ref: ref(sl) })) })
+      named += 1
+      // Answer a few, then start refusing.
+      if (named > 10) return jsonResponse({ message: 'slow down' }, 429)
+      const slug = decodeURIComponent(url).split('/leagues/')[1]!
+      return jsonResponse({ slug, displayName: slug, season: { year: 2026 } })
+    })
+    await expect(provider(fetchImpl).discoverCompetitions!()).rejects.toThrow(ProviderRateLimitError)
+    // The in-flight six may each land one more request; nothing like the 60 a
+    // walk that ignored the refusal would have sent.
+    expect(named).toBeLessThanOrEqual(20)
+  })
+
   // The $ref is upstream text; one bad escape must not cost the whole catalog.
   it('skips a malformed $ref instead of throwing out of the walk', async () => {
     const fetchImpl = stub([`${ref('eng.1')}`, 'http://x/leagues/100%'], {

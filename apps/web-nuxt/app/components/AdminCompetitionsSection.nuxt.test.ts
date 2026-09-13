@@ -15,10 +15,15 @@ const LIST = {
   discoverableProviders: ['espn', 'worldrugby'],
 }
 
+// Seasons relative to the clock, not literals: the component hides anything
+// older than last season, so a hard-coded year turns the suite red on its own
+// the moment it ages out.
+const THIS_SEASON = String(new Date().getFullYear())
+const NEXT_SEASON = String(new Date().getFullYear() + 2)
 const CATALOG = {
   competitions: [
-    { externalCompetitionId: 'eng.1', name: 'Premier League', seasonHint: '2026', isTournament: false },
-    { externalCompetitionId: 'uefa.euro', name: 'European Championship', seasonHint: '2028', isTournament: true },
+    { externalCompetitionId: 'eng.1', name: 'Premier League', seasonHint: THIS_SEASON, isTournament: false },
+    { externalCompetitionId: 'uefa.euro', name: 'European Championship', seasonHint: NEXT_SEASON, isTournament: true },
   ],
 }
 
@@ -168,18 +173,18 @@ describe('AdminCompetitionsSection', () => {
     expect(w.text()).toContain('51 matches found, 51 usable')
 
     const slugInput = w.findAll('input')[1]!
-    expect((slugInput.element as HTMLInputElement).value).toBe('european-championship-2028')
+    expect((slugInput.element as HTMLInputElement).value).toBe(`european-championship-${NEXT_SEASON}`)
 
     await buttonWith(w, 'Add it').trigger('click')
     await vi.waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith('/api/admin/competitions', {
         method: 'POST',
         body: {
-          slug: 'european-championship-2028',
+          slug: `european-championship-${NEXT_SEASON}`,
           name: 'European Championship',
           provider: 'espn',
           externalCompetitionId: 'uefa.euro',
-          seasonHint: '2028',
+          seasonHint: NEXT_SEASON,
         },
       }),
     )
@@ -227,6 +232,16 @@ describe('AdminCompetitionsSection', () => {
     // provider now selected.
     await vi.waitFor(() => expect(w.text()).not.toContain('This one works.'))
     expect(w.findAll('button').some((b: Found) => b.text() === 'Add it')).toBe(false)
+
+    // And the drafts with them: a name and slug seeded from the previous
+    // provider's entry would otherwise be what a later create wrote.
+    await pick(providerSelect, 'fifa')
+    await vi.waitFor(() => expect(w.text()).toContain('does not publish a list'))
+    const fields = w.findAll('input')
+    expect(fields.map((f: Found) => (f.element as HTMLInputElement).value)).toEqual(['', ''])
+
+    // Back to a provider that has sub-feeds for the second half.
+    await pick(providerSelect, 'worldrugby')
 
     // And the sub-feed switch clears it again.
     await buttonWith(w, 'List what it carries').trigger('click')
@@ -310,6 +325,121 @@ describe('AdminCompetitionsSection', () => {
     await buttonWith(w, 'show 1 older').trigger('click')
     await awaitCatalog(w, 'Ancient Cup')
     expect(w.text()).toContain('3 of 3 shown')
+  })
+
+  // Re-picking inside the same catalog must drop the verdict: the clearing
+  // watcher only watches provider and sub-feed, so this is the only thing
+  // standing between a probe of one competition and a create of another.
+  it('drops the verdict when a different competition is picked from the same list', async () => {
+    const w = await setup(true)
+    await vi.waitFor(() => expect(w.text()).toContain('FIFA World Cup 2026'))
+    await buttonWith(w, 'Add a competition').trigger('click')
+    await buttonWith(w, 'List what it carries').trigger('click')
+    await awaitCatalog(w, 'European Championship')
+
+    await pick(catalogSelect(w), 'uefa.euro')
+    await buttonWith(w, 'Check it').trigger('click')
+    await vi.waitFor(() => expect(w.text()).toContain('This one works.'))
+
+    // Same catalog, different entry: the green verdict and the seeded slug
+    // describe the previous one, so both have to go.
+    await pick(catalogSelect(w), 'eng.1')
+    await vi.waitFor(() => expect(w.text()).not.toContain('This one works.'))
+    expect(w.findAll('button').some((b: Found) => b.text() === 'Add it')).toBe(false)
+  })
+
+  // The toggle is the only way back once the archive is showing, so the
+  // `|| showOlder` half of its condition is load-bearing.
+  it('lets the older seasons be collapsed again, and forgets a pick it hides', async () => {
+    const old = String(new Date().getFullYear() - 6)
+    fetchMock = vi.fn(async (url: string) => {
+      if (url === '/api/admin/competitions/discover') {
+        return {
+          competitions: [
+            { externalCompetitionId: 'new.1', name: 'This Season', seasonHint: THIS_SEASON, isTournament: true },
+            { externalCompetitionId: 'old.1', name: 'Ancient Cup', seasonHint: old, isTournament: true },
+          ],
+        }
+      }
+      if (url === '/api/admin/competitions/probe') return GOOD_PROBE
+      return LIST
+    })
+    vi.stubGlobal('$fetch', fetchMock)
+
+    const w = await setup(true)
+    await vi.waitFor(() => expect(w.text()).toContain('FIFA World Cup 2026'))
+    await buttonWith(w, 'Add a competition').trigger('click')
+    await buttonWith(w, 'List what it carries').trigger('click')
+    await awaitCatalog(w, 'This Season')
+
+    await buttonWith(w, 'show 1 older').trigger('click')
+    await awaitCatalog(w, 'Ancient Cup')
+    await pick(catalogSelect(w), 'old.1')
+    await buttonWith(w, 'Check it').trigger('click')
+    await vi.waitFor(() => expect(w.text()).toContain('This one works.'))
+
+    // Collapsing hides the picked entry. The Select would fall back to its
+    // placeholder while Check it and Add it still acted on the hidden id.
+    await buttonWith(w, 'recent seasons only').trigger('click')
+    await vi.waitFor(() => expect(catalogLabels(w).join(' | ')).not.toContain('Ancient Cup'))
+    expect(w.text()).not.toContain('This one works.')
+    expect((buttonWith(w, 'Check it').element as HTMLButtonElement).disabled).toBe(true)
+  })
+
+  // An entry whose season is not a bare year cannot be judged old.
+  it('keeps a competition whose season it cannot read as a year', async () => {
+    fetchMock = vi.fn(async (url: string) => {
+      if (url === '/api/admin/competitions/discover') {
+        return {
+          competitions: [
+            { externalCompetitionId: 'split.1', name: 'Split Season', seasonHint: '2024/25', isTournament: true },
+            { externalCompetitionId: 'old.1', name: 'Ancient Cup', seasonHint: String(new Date().getFullYear() - 6), isTournament: true },
+          ],
+        }
+      }
+      return LIST
+    })
+    vi.stubGlobal('$fetch', fetchMock)
+
+    const w = await setup(true)
+    await vi.waitFor(() => expect(w.text()).toContain('FIFA World Cup 2026'))
+    await buttonWith(w, 'Add a competition').trigger('click')
+    await buttonWith(w, 'List what it carries').trigger('click')
+    await awaitCatalog(w, 'Split Season')
+    expect(catalogLabels(w).join(' | ')).not.toContain('Ancient Cup')
+  })
+
+  // A catalog that lands after the provider moved on would repopulate exactly
+  // what the switch cleared.
+  it('ignores a catalog that arrives after the provider changed', async () => {
+    let release: (v: unknown) => void = () => {}
+    const held = new Promise((r) => { release = r })
+    fetchMock = vi.fn(async (url: string) => {
+      if (url === '/api/admin/competitions/discover') {
+        await held
+        return CATALOG
+      }
+      return LIST
+    })
+    vi.stubGlobal('$fetch', fetchMock)
+
+    const w = await setup(true)
+    await vi.waitFor(() => expect(w.text()).toContain('FIFA World Cup 2026'))
+    await buttonWith(w, 'Add a competition').trigger('click')
+    await buttonWith(w, 'List what it carries').trigger('click')
+
+    // Switch while it is still in flight, then let it answer.
+    const providerSelect = selects(w).find((sel: SelectComp) =>
+      ((sel.props('options') ?? []) as { value: string }[]).some((o) => o.value === 'fifa'),
+    )!
+    await pick(providerSelect, 'fifa')
+    release(null)
+    await new Promise((r) => setTimeout(r, 0))
+    await nextTick()
+
+    // fifa has no catalog, so the espn list must not have brought one back.
+    await vi.waitFor(() => expect(w.text()).toContain('does not publish a list'))
+    expect(w.text()).not.toContain('of 2 shown')
   })
 
   it('renders nothing for a non-admin', async () => {
@@ -446,7 +576,7 @@ describe('AdminCompetitionsSection error paths', () => {
       await buttonWith(w, 'Check it').trigger('click')
       await vi.waitFor(() => expect(w.text()).toContain('This one works.'))
       expect(fetchMock).toHaveBeenCalledWith('/api/admin/competitions/probe', {
-        params: { provider: 'worldrugby', externalCompetitionId: 'uefa.euro', providerSport: 'mru', seasonHint: '2028' },
+        params: { provider: 'worldrugby', externalCompetitionId: 'uefa.euro', providerSport: 'mru', seasonHint: NEXT_SEASON },
       })
 
       await buttonWith(w, 'Add it').trigger('click')

@@ -5,6 +5,7 @@ import { footballDataProvider } from './football-data'
 import { fixtureProvider } from './fixture'
 import { worldRugbyProvider, type WorldRugbySport } from './worldrugby'
 import type { MatchDataProvider } from './types'
+import { ValidationError } from '../errors'
 
 export interface ProviderSelection {
   provider: string
@@ -35,7 +36,11 @@ export function createProvider(selection: ProviderSelection): MatchDataProvider 
 
   if (selection.provider === 'football-data') {
     if (!selection.footballDataToken) {
-      throw new Error('football-data provider requires NUXT_FOOTBALL_DATA_TOKEN')
+      // A ValidationError, not a bare Error: the admin screen offers every
+      // provider now, so this is reachable by clicking one that the deploy
+      // never configured. Unmapped it surfaces as a 500 the admin cannot tell
+      // from a bad competition id.
+      throw new ValidationError('football-data provider requires NUXT_FOOTBALL_DATA_TOKEN')
     }
     return footballDataProvider({
       token: selection.footballDataToken,

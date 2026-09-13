@@ -3543,3 +3543,28 @@ Deferred by the review fix pass (each was a deliberate call, not an oversight):
       every sampled goal carries `points: null`. The field is a number. Seeding
       a rugby competition would make the sample honest; hand-editing the
       generated file would just be reverted by the next regen.
+
+### Deferred by the fix/admin-competitions-ux review
+
+- [ ] **`resolveLeaders` in `espn.ts` is still a serial ref-walk.** It names up
+      to 25 scorers plus their teams one request at a time against the same
+      60ms ref limiter, ~6s, on the live top-scorers path rather than behind an
+      admin button. The bounded-worker loop five lines above it in
+      `discoverCompetitions` is the same shape and could be lifted into a small
+      local `mapBounded(items, limit, fn)` serving both. NOT worth a shared
+      cross-adapter helper: fifa, uefa and worldrugby space their ref reads at
+      1000ms, so they are limiter-bound and concurrency buys them nothing.
+- [ ] **The admin screens are half converted to PrimeVue.** The competitions
+      section now uses `Select`/`Button`; `AdminApiKeysSection.vue:186`,
+      `AdminOddsSection.vue:91`, `LeagueRewards.vue:226,247` and
+      `MatchMedia.vue:87,90,104` still carry the hand-rolled
+      `rounded-lg border px-2 py-1.5 text-sm` `<select>` this branch removed, so
+      an admin moving between sections still meets a native dropdown two panels
+      over.
+- [ ] **`competition.external_competition_id` is unconstrained in the database.**
+      The probe and create routes now reject anything outside
+      `^[A-Za-z0-9._-]+$`, because FIFA, UEFA and football-data splice the value
+      straight into a provider URL (some of it as a path segment) with no
+      `encodeURIComponent`. Rows created before that check, or written by any
+      future path that skips the schema, are still unshaped. Either encode at
+      each adapter boundary or add a CHECK constraint.
