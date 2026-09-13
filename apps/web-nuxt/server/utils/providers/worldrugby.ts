@@ -1,6 +1,7 @@
 import type {
   AppStage,
   MatchDetail,
+  MatchLineups,
   MatchStatus,
   NormalizedBracket,
   NormalizedGoal,
@@ -9,6 +10,7 @@ import type {
   SquadPlayer,
   SubstitutionEvent,
   Team,
+  TeamLineup,
   TeamMatchStats,
   TimelineEvent,
   TimelineEventKind,
@@ -202,6 +204,19 @@ export interface WrTimelineEvent {
   time?: { secs?: number | null } | null
   // Both halves of a substitution carry the same link id.
   link?: string | number | null
+}
+
+// /match/{id}/summary. `teamList.list` is the 23-man team sheet plus the head
+// coach (the one entry with no number); `number` here is a numeric string, not
+// the position code the same key holds in /event/{id}/squads. captainIds are
+// altIds, not player ids.
+interface WrSummary {
+  teams?: {
+    teamList?: {
+      list?: { player?: { id?: string | null; altId?: string | null; name?: { display?: string | null } | null } | null; number?: string | number | null }[] | null
+      captainIds?: string[] | null
+    } | null
+  }[] | null
 }
 
 interface WrSquadEntry {
@@ -519,6 +534,55 @@ export function worldRugbyProvider(options: WorldRugbyOptions): MatchDataProvide
         }
       })
       return Object.keys(out).length > 0 ? out : null
+    },
+
+    async getMatchLineups({ matchId }): Promise<MatchLineups | null> {
+      const summary = await getJson<WrSummary>(`${baseUrl}/match/${encodeURIComponent(matchId)}/summary`)
+      const sides = summary.teams ?? []
+      const lineup = (index: number): TeamLineup => {
+        const entry = sides[index]?.teamList
+        const captains = new Set(entry?.captainIds ?? [])
+        const named = (entry?.list ?? []).flatMap((row) => {
+          const id = row.player?.id
+          const name = row.player?.name?.display
+          // The list carries the head coach with a null number alongside the 23.
+          const shirt = Number(row.number)
+          if (!id || !name || !row.number || !Number.isFinite(shirt)) return []
+          return [{
+            shirt,
+            player: {
+              playerId: String(id),
+              name,
+              shirtNumber: shirt,
+              // Prop, Hooker, Lock, Flanker... none of which is GK/DF/MF/FW.
+              // The label is dropped rather than forced into a football slot.
+              position: null,
+              captain: !!row.player?.altId && captains.has(row.player.altId),
+              pictureUrl: null,
+            } as SquadPlayer,
+          }]
+        })
+        named.sort((a, b) => a.shirt - b.shirt)
+        return {
+          formation: null,
+          // The coach is the entry with no shirt number.
+          coach: (entry?.list ?? []).find((row) => !row.number)?.player?.name?.display ?? null,
+          // 1-15 start, 16-23 are the bench: the numbering is the position in
+          // rugby union, not a squad-list convention.
+          startingXI: named.filter((p) => p.shirt <= 15).map((p) => p.player),
+          bench: named.filter((p) => p.shirt > 15).map((p) => p.player),
+        }
+      }
+
+      const home = lineup(0)
+      const away = lineup(1)
+      return {
+        // Team sheets drop shortly before kickoff; until then the list is empty
+        // and the UI must show nothing rather than half a side.
+        available: home.startingXI.length > 0 && away.startingXI.length > 0,
+        home,
+        away,
+      }
     },
 
     async getTeamTournament({ teamRef }) {

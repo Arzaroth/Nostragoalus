@@ -311,9 +311,16 @@ typed bronze final, and the World Rugby rankings that will drive champion tiers.
   by its own id alone. Without it `sync/details.ts` - which selects on
   `providerStageId IS NOT NULL` - skips every rugby match silently, and the
   team page's `getTeamTournament` is handed no matches.
-- **No line-ups.** There is no endpoint for a matchday XV at any route shape;
-  `getMatchLineups` stays unimplemented and that panel is empty for rugby.
-  The feed's squad `number` is a position code ("SR", "CE"), not a shirt number.
+- **Line-ups** come from `/match/{id}/summary`, whose `teams[].teamList.list`
+  is the 23-man team sheet plus the head coach - the coach being the one entry
+  with no number. Three traps: `number` is a numeric STRING here while the same
+  key in `/event/{id}/squads` holds a position code ("SR", "CE"); `captainIds`
+  are **altIds**, so matching them against `player.id` finds nobody; and the
+  `order` field is not a line-up order (its values run past 38), so the split is
+  by shirt number - 1-15 start, 16-23 are the bench, which in rugby union is the
+  position rather than a squad-list convention.
+- **Rugby positions are dropped.** `SquadPlayer.position` is GK/DF/MF/FW and a
+  hooker is none of them, so the feed's `positionLabel` has nowhere to go.
 
 A competition names its sport twice for different reasons: `competition.sport`
 (the `sport` pg enum, `FOOTBALL` / `RUGBY_UNION`) is looked up from the provider

@@ -662,6 +662,79 @@ describe('match detail, timeline and stats', () => {
     expect(t.coach).toBeNull()
   })
 
+  describe('line-ups', () => {
+    const sheet = (nums: (string | null)[], captainAltId: string) => ({
+      teamList: {
+        captainIds: [captainAltId],
+        list: nums.map((n, i) => ({
+          player: { id: `id${i}`, altId: `alt${i}`, name: { display: n === null ? 'The Coach' : `Player ${n}` } },
+          number: n,
+        })),
+      },
+    })
+    // 23 numbered shirts plus the coach, which is the entry with no number.
+    const NUMS = [...Array.from({ length: 23 }, (_, i) => String(i + 1)), null]
+    const SUMMARY = { teams: [sheet(NUMS, 'alt6'), sheet(NUMS, 'alt0')] }
+
+    it('splits the sheet at 15 and names the coach', async () => {
+      const { impl } = stub({ '/summary': SUMMARY })
+      const l = await make(impl).getMatchLineups!({ matchId: '28766' })
+      expect(l!.available).toBe(true)
+      expect(l!.home.startingXI).toHaveLength(15)
+      expect(l!.home.bench).toHaveLength(8)
+      expect(l!.home.coach).toBe('The Coach')
+      // Rugby numbering is the position, so 1-15 start and 16-23 are the bench.
+      expect(l!.home.startingXI.map((p) => p.shirtNumber)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15])
+      expect(l!.home.bench.map((p) => p.shirtNumber)).toEqual([16, 17, 18, 19, 20, 21, 22, 23])
+    })
+
+    it('reads the captain off altId, not player id', async () => {
+      // captainIds carry altIds; matching them against player.id finds nobody.
+      const { impl } = stub({ '/summary': SUMMARY })
+      const l = await make(impl).getMatchLineups!({ matchId: '28766' })
+      expect(l!.home.startingXI.filter((p) => p.captain).map((p) => p.shirtNumber)).toEqual([7])
+      expect(l!.away.startingXI.filter((p) => p.captain).map((p) => p.shirtNumber)).toEqual([1])
+    })
+
+    it('sorts by shirt number whatever order the feed used', async () => {
+      const shuffled = { teams: [sheet(['3', '1', '2'], 'alt0'), sheet(['2', '1'], 'alt0')] }
+      const { impl } = stub({ '/summary': shuffled })
+      const l = await make(impl).getMatchLineups!({ matchId: '28766' })
+      expect(l!.home.startingXI.map((p) => p.shirtNumber)).toEqual([1, 2, 3])
+    })
+
+    it('is unavailable until both team sheets drop', async () => {
+      // They are published shortly before kickoff; half a side must show as
+      // nothing rather than as a line-up.
+      const oneSide = { teams: [sheet(['1', '2'], 'alt0'), { teamList: { list: [] } }] }
+      const { impl } = stub({ '/summary': oneSide })
+      const l = await make(impl).getMatchLineups!({ matchId: '28766' })
+      expect(l!.available).toBe(false)
+      expect(l!.away.startingXI).toEqual([])
+    })
+
+    it('drops an entry with no player, and a number that is not one', async () => {
+      const ragged = {
+        teams: [
+          { teamList: { list: [{ number: '1' }, { player: { id: 'x' }, number: '2' }, { player: { id: 'y', name: { display: 'Odd' } }, number: 'SR' }] } },
+          {},
+        ],
+      }
+      const { impl } = stub({ '/summary': ragged })
+      const l = await make(impl).getMatchLineups!({ matchId: '28766' })
+      expect(l!.home.startingXI).toEqual([])
+      expect(l!.away.coach).toBeNull()
+      expect(l!.available).toBe(false)
+    })
+
+    it('leaves the rugby position out rather than forcing it into a football slot', async () => {
+      const { impl } = stub({ '/summary': SUMMARY })
+      const l = await make(impl).getMatchLineups!({ matchId: '28766' })
+      expect(l!.home.startingXI[0]!.position).toBeNull()
+      expect(l!.home.formation).toBeNull()
+    })
+  })
+
   it('does not take the detail sync down when squads are unavailable', async () => {
     // A tournament whose squads are not named yet, or a failing call.
     const { impl } = stub({ '/timeline': TIMELINE, '/stats': STATS, '/match/28766': MATCH })

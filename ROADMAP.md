@@ -844,11 +844,15 @@ effort buckets; order within a bucket is not priority.
     team stats, and tournament squads + head coach. The try-scorer board fills
     from the local goal-event aggregation with no `getTopScorers` needed, and the
     best-scorer pick finally has a squad behind it.
+  - [x] **Line-ups too**, from `/match/{id}/summary` - the 23-man sheet with
+    shirt numbers, captain and head coach. (An earlier pass wrongly concluded
+    there was no endpoint for these: the probe only tried `/lineups`-shaped
+    paths. The RWC site shows them, which is what prompted looking again.)
   - Rugby, still to do: a **points** scorer board beside the try one (the feed
     has the points on every scoring event; the local aggregation counts rows,
-    so this needs its own query rather than more provider work). **Line-ups are
-    not reachable** - no endpoint exists - so that panel should be hidden for
-    rugby rather than left empty. ESPN covers rugby under `sports/rugby/`. Sport switch
+    so this needs its own query rather than more provider work). Rugby positions
+    (prop, hooker, ...) are still dropped - `SquadPlayer.position` only has
+    GK/DF/MF/FW, so carrying them needs the shared shape to learn about rugby. ESPN covers rugby under `sports/rugby/`. Sport switch
     drives theme or at least logo. Multi-sport is a MAJOR.
   - Basketball: wanted, but **NBA playoffs is not a smaller NBA** - best-of-7 is
     variable-length multi-leg, a generalization of the UCL problem rather than

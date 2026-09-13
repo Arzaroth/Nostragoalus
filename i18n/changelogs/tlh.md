@@ -7,7 +7,7 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ### chel
 
-- ragh may'mey De' naQ tu'lu': T5 chenmoHwI' je poH, nganmey, choHmey, moQ SeH, bIQtIq, je QujmeH yotlh. je may' lut: Hoch Qav mI' chIq. T5 chenmoHwI' patlh ngeDqu'; 'ej DaH chenmoHwI' Qav wIvmeH mangghom tu'lu' - 33 QuQwI' je ghojmoHwI'.
+- ragh may'mey De' naQ tu'lu': T5 chenmoHwI' je poH, nganmey, choHmey, moQ SeH, bIQtIq, je QujmeH yotlh. je may' lut: Hoch Qav mI' chIq. T5 chenmoHwI' patlh ngeDqu'; 'ej DaH chenmoHwI' Qav wIvmeH mangghom tu'lu' - 33 QuQwI' je ghojmoHwI'. je may' mangghom tu'lu': 23 mI', chenwI'pu', loQwI'pu', je la'.
 - ragh charghwI' wIv: World Rugby patlh lo'lu', FIFA patlh lo'be'. loSDIch patlh Dung wIvlu'chugh, puS pop; cha'maH patlh retlh wIvlu'chugh, law' pop.
 - ragh qaDDaq SoHtaHvIS, nagh Sor moQDaq ragh moQ tu'lu'. 'ach HaSta poSmoHpu'bogh yIQaw': 'oH DaSampu'.
 - ragh: chev toblu', mI' pIn'a' toqbe'. 27-24 luHarbe' Hoch. DaH chev Daq lugh (1-7, 8-14, 15 nIteb) 'oH pop'e'. mI' pIn'a' 'oH Do'Ha' pop neH. je motlhHa' pop choHlu': 'Iv Sovbe' net toq, qaDHom charghwI' Sovbogh Hoch pop nobbe'. qaD chelDI', DaH Hoch tu'lu'; che'wI' Hoch choHlaH.
