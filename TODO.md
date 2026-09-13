@@ -3528,13 +3528,18 @@ Deferred by the review fix pass (each was a deliberate call, not an oversight):
       silently returns the football. Typing the map as `Record<string, Sport>`
       (the union already exists in `shared/sport.ts`) makes the whole client
       chain checked.
-- [ ] **`/api/matches/{id}/insights` is stale in the sampled API docs.** Its goal
-      objects gained `points` (so a score drawn from the insights fallback is not
-      always rendered as a try), but `server/utils/docs/response-schemas.json`
-      still shows the old shape. The regen
-      (`node scripts/gen-api-schemas.mjs` against a freshly seeded dev stack)
-      could not run at release time: the shared dev pgdata is wedged, a
-      migration failing on an already-existing `user.onboarding_tour_dismissed_at`
-      column and blocking every later one, so `competition.sport` is missing and
-      `/api/matches` 500s. Recreate the dev volume, then regen. The real contract
-      (`shared/contracts-openapi/openapi.snapshot.json`) is already in step.
+- [ ] **The sampled API docs have drifted well past one endpoint.**
+      Regenerating `server/utils/docs/response-schemas.json` for the `insights`
+      `points` field showed the rest of the file is stale by several features:
+      `/api/competitions` never learned `sport` (5.0.0), `/api/roadmap` is
+      missing `voteCount`/`viewerHasVoted`/`underReview`, and the run dropped
+      `/api/matches/{id}/live-detail` while adding `/api/users/{id}/cabinet`,
+      because the seeded matches have moved on since the file was last built.
+      Only the intended endpoint was kept. A controlled regen wants a dev DB
+      reset to the canonical seed first, so the ~20 other samples stop moving.
+- [ ] **`insights.goals[].points` is documented as a string.**
+      `inferSchema` in `scripts/gen-api-schemas.mjs` maps a sampled `null` to
+      `{type: 'string', nullable: true}`, and the seed has no rugby fixture, so
+      every sampled goal carries `points: null`. The field is a number. Seeding
+      a rugby competition would make the sample honest; hand-editing the
+      generated file would just be reverted by the next regen.

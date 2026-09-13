@@ -555,6 +555,10 @@
               "assistPlayerName": {
                 "type": "string",
                 "nullable": true
+              },
+              "points": {
+                "type": "string",
+                "nullable": true
               }
             }
           }
