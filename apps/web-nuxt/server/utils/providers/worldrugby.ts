@@ -74,6 +74,10 @@ export interface WrMatch {
 
 interface WrEvent {
   id: string
+  // The UUID the /event routes now require. `id` is the legacy numeric key: the
+  // catalog still lists it, but addressing an event by it answers 400
+  // ("Invalid UUID string"), so this is what a competition is bound to.
+  altId?: string | null
   label?: string | null
   sport?: string | null
   start?: { label?: string | null } | null
@@ -351,16 +355,19 @@ export function worldRugbyProvider(options: WorldRugbyOptions): MatchDataProvide
   // the alternative is a /player/{id} call per actor per match.
   let squadsPromise: Promise<WrSquadEntry[]> | null = null
   function squadsOnce(): Promise<WrSquadEntry[]> {
-    squadsPromise ??= getJson<{ squads?: WrSquadEntry[] | null }>(
-      `${baseUrl}/event/${encodeURIComponent(eventId)}/squads`,
-    )
-      .then((doc) => doc.squads ?? [])
-      .catch(() => {
+    squadsPromise ??= (async () => {
+      try {
+        const doc = await getJson<{ squads?: WrSquadEntry[] | null }>(
+          `${baseUrl}/event/${encodeURIComponent(await eventUuid())}/squads`,
+        )
+        return doc.squads ?? []
+      } catch {
         // A tournament whose squads are not named yet answers with empty ones;
         // a failure here must not take the whole detail sync down with it.
         squadsPromise = null
         return []
-      })
+      }
+    })()
     return squadsPromise
   }
 
@@ -397,6 +404,37 @@ export function worldRugbyProvider(options: WorldRugbyOptions): MatchDataProvide
     return new Map([...known, ...extraNames])
   }
 
+  // World Rugby moved the /event routes onto UUIDs: the catalog still lists the
+  // legacy numeric key as `id`, but addressing an event by it now answers 400
+  // ("Invalid UUID string"), which takes fixtures, squads, the bracket and the
+  // line-ups down with it. Competitions bound before that migration hold the
+  // numeric one, so it is swapped for the `altId` the catalog carries beside it.
+  // Memoised, and only ever walked for a legacy binding - a UUID short-circuits.
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  let eventUuidOnce: Promise<string> | null = null
+  function eventUuid(): Promise<string> {
+    eventUuidOnce ??= (async () => {
+      if (UUID_RE.test(eventId)) return eventId
+      try {
+        for (let page = 0; page < 5; page++) {
+          const doc = await getJson<{ content?: WrEvent[] | null; pageInfo?: { numPages?: number } | null }>(
+            `${baseUrl}/event?page=${page}&pageSize=100&sort=desc`,
+          )
+          const content = doc.content ?? []
+          const hit = content.find((e) => String(e.id) === eventId)
+          if (hit?.altId) return String(hit.altId)
+          if (content.length === 0 || page + 1 >= (doc.pageInfo?.numPages ?? 0)) break
+        }
+      } catch {
+        // Fall through: the upstream error on the real call is the better
+        // message, and re-arm so a transient failure is not cached as "legacy".
+        eventUuidOnce = null
+      }
+      return eventId
+    })()
+    return eventUuidOnce
+  }
+
   async function playerNames(): Promise<Map<string, string>> {
     const names = new Map<string, string>()
     for (const squad of await squadsOnce()) {
@@ -411,7 +449,7 @@ export function worldRugbyProvider(options: WorldRugbyOptions): MatchDataProvide
 
   async function schedule(): Promise<NormalizedMatch[]> {
     const doc = await getJson<{ matches?: WrMatch[] | null }>(
-      `${baseUrl}/event/${encodeURIComponent(eventId)}/schedule?language=en`,
+      `${baseUrl}/event/${encodeURIComponent(await eventUuid())}/schedule?language=en`,
     )
     return (doc.matches ?? []).map((m) => normalizeWorldRugbyMatch(m, eventId)).filter(timed)
   }
@@ -433,7 +471,7 @@ export function worldRugbyProvider(options: WorldRugbyOptions): MatchDataProvide
           // always; an event the feed left untagged is kept rather than guessed.
           if (event.sport && event.sport.toLowerCase() !== sport) continue
           out.push({
-            externalCompetitionId: String(event.id),
+            externalCompetitionId: String(event.altId ?? event.id),
             name: event.label ?? String(event.id),
             seasonHint: event.start?.label?.slice(0, 4) ?? null,
             // The feed says nothing about shape, and guessing from the name is

@@ -193,11 +193,12 @@ describe('worldRugbyProvider', () => {
   const schedule = { matches: [poolMatch, { ...poolMatch, matchId: '28767', status: 'L', scores: [5, 0] }] }
 
   it('lists a tournament from its single schedule document', async () => {
+    const id = '14bc12d5-59bd-4c9e-b1cf-653ce66b72b7'
     const { impl, calls } = stub({ '/schedule': schedule })
-    const p = worldRugbyProvider({ eventId: '1893', fetchImpl: impl, rateLimiter: nowait() })
+    const p = worldRugbyProvider({ eventId: id, fetchImpl: impl, rateLimiter: nowait() })
     const fixtures = await p.listFixtures({ season: 'ignored' })
     expect(fixtures).toHaveLength(2)
-    expect(calls[0]).toContain('/rugby/v3/event/1893/schedule')
+    expect(calls[0]).toContain(`/rugby/v3/event/${id}/schedule`)
   })
 
   it('accepts the uuid event ids the feed uses from 2025 on', async () => {
@@ -209,11 +210,14 @@ describe('worldRugbyProvider', () => {
   })
 
   it('escapes the event id into the path', async () => {
+    // A non-uuid id is looked up first and, unfound, used as given - so the
+    // escaping still has to hold on the call that carries it.
     const { impl, calls } = stub({ '/schedule': schedule })
     const p = worldRugbyProvider({ eventId: '../../evil?x=1', fetchImpl: impl, rateLimiter: nowait() })
     await p.listFixtures({ season: '2027' }).catch(() => {})
-    expect(calls[0]).not.toContain('/evil?x=1')
-    expect(calls[0]).toContain('..%2F..%2Fevil%3Fx%3D1')
+    const scheduleCall = calls.find((u) => u.includes('/schedule'))!
+    expect(scheduleCall).not.toContain('/evil?x=1')
+    expect(scheduleCall).toContain('..%2F..%2Fevil%3Fx%3D1')
   })
 
   it('returns only in-play matches as live', async () => {
@@ -501,6 +505,62 @@ describe('mapWorldRugbyTimelineKind', () => {
     expect(mapWorldRugbyTimelineKind({ type: 'Ruck' })).toBeNull()
     expect(mapWorldRugbyTimelineKind({ type: 'Sub Off' })).toBeNull()
     expect(mapWorldRugbyTimelineKind({})).toBeNull()
+  })
+})
+
+describe('addressing an event', () => {
+  const UUID = 'f14aca9d-f746-431d-8e5e-9db6c311ec69'
+  const SCHEDULE = { matches: [] }
+  const CATALOG = {
+    content: [
+      { id: '1892', altId: 'aaaaaaaa-0000-4000-8000-000000000000', label: 'Something else', sport: 'mru' },
+      { id: '1893', altId: UUID, label: 'Rugby World Cup 2023', sport: 'mru' },
+    ],
+    pageInfo: { numPages: 1 },
+  }
+
+  // World Rugby moved /event onto UUIDs; the numeric key the catalog still
+  // lists now answers 400, which took fixtures, squads and the bracket with it.
+  it('swaps a legacy numeric id for the uuid the catalog carries beside it', async () => {
+    const { impl, calls } = stub({ '/event?page=': CATALOG, '/schedule': SCHEDULE })
+    await worldRugbyProvider({ eventId: '1893', fetchImpl: impl, rateLimiter: nowait() }).listFixtures({})
+    expect(calls.some((u) => u.includes(`/event/${UUID}/schedule`))).toBe(true)
+    expect(calls.some((u) => u.includes('/event/1893/'))).toBe(false)
+  })
+
+  it('does not go looking when the competition already holds a uuid', async () => {
+    const { impl, calls } = stub({ '/event?page=': CATALOG, '/schedule': SCHEDULE })
+    await worldRugbyProvider({ eventId: UUID, fetchImpl: impl, rateLimiter: nowait() }).listFixtures({})
+    expect(calls.some((u) => u.includes(`/event/${UUID}/schedule`))).toBe(true)
+    expect(calls.some((u) => u.includes('/event?page='))).toBe(false)
+  })
+
+  it('resolves once, however many endpoints ask for it', async () => {
+    const { impl, calls } = stub({
+      '/event?page=': CATALOG,
+      '/schedule': SCHEDULE,
+      '/squads': { squads: [] },
+    })
+    const p = worldRugbyProvider({ eventId: '1893', fetchImpl: impl, rateLimiter: nowait() })
+    await p.listFixtures({})
+    await p.getTeamTournament!({ teamRef: '42', matches: [] })
+    expect(calls.filter((u) => u.includes('/event?page=')).length).toBe(1)
+  })
+
+  it('falls back to the id it was given when the catalog does not carry it', async () => {
+    // Better to let the upstream 400 speak than to invent a uuid.
+    const { impl, calls } = stub({ '/event?page=': { content: [], pageInfo: { numPages: 1 } }, '/schedule': SCHEDULE })
+    await worldRugbyProvider({ eventId: '404404', fetchImpl: impl, rateLimiter: nowait() }).listFixtures({})
+    expect(calls.some((u) => u.includes('/event/404404/schedule'))).toBe(true)
+  })
+
+  it('binds a discovered competition to the uuid, not the legacy key', async () => {
+    const { impl } = stub({ '/event?page=': CATALOG })
+    const found = await worldRugbyProvider({ eventId: 'x', fetchImpl: impl, rateLimiter: nowait() }).discoverCompetitions!()
+    expect(found.map((c) => c.externalCompetitionId)).toEqual([
+      'aaaaaaaa-0000-4000-8000-000000000000',
+      UUID,
+    ])
   })
 })
 
