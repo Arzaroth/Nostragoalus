@@ -21,7 +21,7 @@ import {
   type EspnSummary,
 } from './espn-summary'
 import { RateLimiter } from './rate-limiter'
-import { assignGroupMatchdays, mapStageFromName, parseGroupNameStrict } from './stage'
+import { assignMatchdays, mapStageFromName, parseGroupNameStrict } from './stage'
 import {
   ProviderRateLimitError,
   ProviderUpstreamError,
@@ -487,7 +487,7 @@ export function espnProvider(options: EspnOptions): MatchDataProvider {
     const matches = events
       .map((event) => normalizeEspnEvent(event, groups))
       .filter((m): m is NormalizedMatch => m !== null)
-    return assignGroupMatchdays(matches)
+    return assignMatchdays(matches)
   }
 
   // One summary document carries the play-by-play, both line-ups and both

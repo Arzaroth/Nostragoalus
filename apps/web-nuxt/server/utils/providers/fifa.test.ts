@@ -16,7 +16,7 @@ import {
   type GamedayStoriesResponse,
 } from './fifa'
 import { RateLimiter } from './rate-limiter'
-import { assignGroupMatchdays } from './stage'
+import { assignMatchdays } from './stage'
 import { ProviderRateLimitError, ProviderUpstreamError } from './types'
 import { cycleGet } from './cycle-tls'
 
@@ -183,13 +183,13 @@ describe('normalizeFifaMatch', () => {
   })
 })
 
-describe('assignGroupMatchdays', () => {
+describe('assignMatchdays', () => {
   it('assigns matchdays by date within each group and leaves knockouts untouched', () => {
     const dates = ['2026-06-25', '2026-06-11', '2026-06-19', '2026-06-12', '2026-06-18', '2026-06-25']
     const matches = dates.map((d, i) => normalizeFifaMatch(groupMatch({ IdMatch: `g${i}`, Date: `${d}T18:00:00Z` })))
     const ko = normalizeFifaMatch(groupMatch({ IdMatch: 'ko', StageName: [{ Locale: 'en', Description: 'Final' }], GroupName: undefined }))
 
-    assignGroupMatchdays([...matches, ko])
+    assignMatchdays([...matches, ko])
 
     const matchdayById = Object.fromEntries(matches.map((m) => [m.providerMatchId, m.matchday]))
     expect(matchdayById.g1).toBe(1) // 06-11
@@ -202,7 +202,7 @@ describe('assignGroupMatchdays', () => {
 
   it('ignores group matches without a group letter', () => {
     const m = normalizeFifaMatch(groupMatch({ GroupName: undefined }))
-    assignGroupMatchdays([m])
+    assignMatchdays([m])
     expect(m.matchday).toBeNull()
   })
 })

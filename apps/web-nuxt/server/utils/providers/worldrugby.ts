@@ -19,7 +19,7 @@ import type {
 } from '../../../shared/types/match'
 import { RateLimiter } from './rate-limiter'
 import { bracketFromKnockoutMatches } from './bracket-order'
-import { assignGroupMatchdays } from './stage'
+import { assignMatchdays } from './stage'
 import {
   ProviderRateLimitError,
   ProviderUpstreamError,
@@ -492,7 +492,7 @@ export function worldRugbyProvider(options: WorldRugbyOptions): MatchDataProvide
       // Without it every pool fixture is GROUP with a null matchday, which
       // isIngestible rejects - the probe then drops the whole pool stage and
       // refuses to create the competition at all.
-      return assignGroupMatchdays(await schedule())
+      return assignMatchdays(await schedule())
     },
 
     async getMatchesByDate(date: string): Promise<NormalizedMatch[]> {

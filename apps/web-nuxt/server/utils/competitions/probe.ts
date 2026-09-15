@@ -17,7 +17,7 @@ export type ProbeBlocker =
   | 'no_fixtures'
   // Some fixtures would be dropped at insert. Almost always a competition with
   // no group letters (a domestic league, or a single-table league phase), whose
-  // matchday cannot be derived - see assignGroupMatchdays.
+  // matchday cannot be derived - see assignMatchdays.
   | 'fixtures_dropped'
   // Two fixtures at the same knockout stage between the same pair of teams. The
   // schema cannot hold them: round is unique on (competition, stage, matchday)

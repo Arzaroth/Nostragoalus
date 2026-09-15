@@ -24,7 +24,7 @@ import type {
 } from '../../../shared/types/match'
 import { EXTRA_TIME_BREAK_MINUTE } from '../../../shared/types/match'
 import { RateLimiter } from './rate-limiter'
-import { assignGroupMatchdays, mapStageFromName, parseGroupLetter } from './stage'
+import { assignMatchdays, mapStageFromName, parseGroupLetter } from './stage'
 import { ProviderRateLimitError, ProviderUpstreamError, type ListFixturesOptions, type MatchDataProvider } from './types'
 import { minuteValue } from '../stats/insights'
 import { CHROME_JA3, CHROME_UA, cycleGet } from './cycle-tls'
@@ -1013,7 +1013,7 @@ export function fifaProvider(options: FifaOptions): MatchDataProvider {
   return {
     meta: { name: 'fifa', rateLimitPerMin: 60, dailyCap: null },
     async listFixtures(_options: ListFixturesOptions) {
-      return assignGroupMatchdays(await fetchAll())
+      return assignMatchdays(await fetchAll())
     },
     async getMatchesByDate(date: string) {
       return (await fetchAll()).filter((m) => m.kickoffTime.startsWith(date))

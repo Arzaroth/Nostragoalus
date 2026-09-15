@@ -36,7 +36,7 @@ export function parseGroupNameStrict(name: string | null | undefined): string | 
 // No feed we read publishes a group matchday, so derive it: order each group's
 // fixtures by kickoff and pair them off. Matches without a group letter are left
 // alone - a league has no matchday we can infer this way.
-export function assignGroupMatchdays(matches: NormalizedMatch[]): NormalizedMatch[] {
+export function assignMatchdays(matches: NormalizedMatch[]): NormalizedMatch[] {
   const byGroup = new Map<string, NormalizedMatch[]>()
   for (const m of matches) {
     if (m.stage !== 'GROUP' || !m.group) continue
