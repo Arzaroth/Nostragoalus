@@ -314,7 +314,7 @@ export const E2E_TABLE_SLUG = 'e2e-table'
 // ingested because the isolated stack's `fixture` provider serves one canned
 // football tournament; what is under test here is that the app renders a
 // competition with no pools, which it could not even hold before.
-export async function seedSingleTableCompetition(): Promise<{ competitionId: string; slug: string }> {
+export async function seedSingleTableCompetition(): Promise<{ competitionId: string; slug: string; matchId: string }> {
   await cleanupSingleTable()
   const teams = [
     { code: 'FRA', name: 'France' },
@@ -340,6 +340,7 @@ export async function seedSingleTableCompetition(): Promise<{ competitionId: str
     [E2E_TABLE_SLUG],
   )
   const competitionId = rows[0].id
+  let firstMatchId = ''
 
   for (let r = 0; r < rounds.length; r += 1) {
     const matchday = r + 1
@@ -353,10 +354,11 @@ export async function seedSingleTableCompetition(): Promise<{ competitionId: str
     for (const [h, a] of rounds[r]!) {
       // Future kickoffs, spread a week apart per round, so the pick window is open.
       const kickoff = new Date(Date.now() + (matchday * 7 * 24 + 6) * 60 * 60 * 1000)
-      await db().query(
+      const { rows: matchRows } = await db().query<{ id: string }>(
         `insert into match (id, competition_id, provider_match_id, round_id, stage, group_name,
                             home_team, away_team, home_team_code, away_team_code, kickoff_time, status)
-         values (gen_random_uuid(), $1, $2, $3, 'GROUP', null, $4, $5, $6, $7, $8, 'SCHEDULED')`,
+         values (gen_random_uuid(), $1, $2, $3, 'GROUP', null, $4, $5, $6, $7, $8, 'SCHEDULED')
+         returning id`,
         [
           competitionId,
           `e2e-table-${matchday}-${h}-${a}`,
@@ -368,9 +370,10 @@ export async function seedSingleTableCompetition(): Promise<{ competitionId: str
           kickoff.toISOString(),
         ],
       )
+      firstMatchId ||= matchRows[0].id
     }
   }
-  return { competitionId, slug: E2E_TABLE_SLUG }
+  return { competitionId, slug: E2E_TABLE_SLUG, matchId: firstMatchId }
 }
 
 export async function cleanupSingleTable(): Promise<void> {

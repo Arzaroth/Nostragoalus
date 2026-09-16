@@ -11,6 +11,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ### Fixed
 
+- Predicting a rugby score no longer asks whether you meant it. Any realistic rugby scoreline was being flagged as wildly high and needed confirming before it would save, because the check was measured in goals: seven is a rout in football and a single converted try in rugby.
 - Rugby competitions can be read from World Rugby again. World Rugby moved to new identifiers and started refusing the old ones, which took fixtures, squads, the bracket and the team sheets with it for every tournament added before the change, and made six of the nine World Cups on offer impossible to add. Existing tournaments repair themselves.
 
 ## [5.0.2] - 2026-09-13

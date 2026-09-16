@@ -11,6 +11,7 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ### Corrigé
 
+- Pronostiquer un score de rugby ne demande plus si c'est bien voulu. Tout score de rugby réaliste était signalé comme anormalement élevé et devait être confirmé avant d'être enregistré, car le contrôle se mesurait en buts : sept est une démonstration au football et un simple essai transformé au rugby.
 - Les compétitions de rugby sont de nouveau lisibles chez World Rugby. World Rugby est passé à de nouveaux identifiants et a cessé d'accepter les anciens, ce qui emportait calendrier, effectifs, tableau final et feuilles de match pour tout tournoi ajouté avant ce changement, et rendait six des neuf Coupes du monde proposées impossibles à ajouter. Les tournois existants se réparent d'eux-mêmes.
 
 ## [5.0.2] - 2026-09-13

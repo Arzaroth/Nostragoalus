@@ -25,4 +25,26 @@ describe('isOutlandishScore', () => {
     expect(isOutlandishScore(1, 33)).toBe(true)
     expect(isOutlandishScore(33, 1)).toBe(true)
   })
+
+  it('does not call an ordinary rugby scoreline outlandish', () => {
+    // The football ceiling is one converted try, so it warned on every realistic
+    // rugby pick: 21-17 could not be saved without confirming past a dialog.
+    expect(isOutlandishScore(21, 17, 'RUGBY_UNION')).toBe(false)
+    expect(isOutlandishScore(27, 13, 'RUGBY_UNION')).toBe(false)
+    // The real record books have to fit too - Ireland 82-8 Romania, RWC 2023.
+    expect(isOutlandishScore(82, 8, 'RUGBY_UNION')).toBe(false)
+    expect(isOutlandishScore(96, 0, 'RUGBY_UNION')).toBe(false)
+  })
+
+  it('still catches the digit too many in rugby', () => {
+    expect(isOutlandishScore(211, 17, 'RUGBY_UNION')).toBe(true)
+    expect(isOutlandishScore(21, 177, 'RUGBY_UNION')).toBe(true)
+    expect(isOutlandishScore(90, 80, 'RUGBY_UNION')).toBe(true)
+  })
+
+  it('keeps the football ceiling for football, and for an unknown sport', () => {
+    expect(isOutlandishScore(21, 17, 'FOOTBALL')).toBe(true)
+    expect(isOutlandishScore(21, 17, null)).toBe(true)
+    expect(isOutlandishScore(21, 17, 'CURLING')).toBe(true)
+  })
 })

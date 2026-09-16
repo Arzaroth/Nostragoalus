@@ -4,6 +4,9 @@ import { isOutlandishScore } from '~/utils/prediction-sanity'
 const props = defineProps<{ home: number | null; away: number | null; disabled?: boolean }>()
 const emit = defineEmits<{ update: [value: { home: number; away: number }] }>()
 const { t } = useI18n()
+// What counts as an outlandish scoreline is the sport's business: seven is a
+// rout in football and one converted try in rugby.
+const sport = useSelectedSport()
 
 const home = ref<number | null>(props.home)
 const away = ref<number | null>(props.away)
@@ -41,7 +44,7 @@ function commit() {
   if (!dirty.value) return
   const h = home.value as number
   const a = away.value as number
-  if (isOutlandishScore(h, a)) {
+  if (isOutlandishScore(h, a, sport.value)) {
     pending.value = { home: h, away: a }
     confirmOutlandish.value = true
     return

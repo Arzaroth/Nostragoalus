@@ -11,6 +11,7 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ### tI'lu'
 
+- ragh mI' DawIvDI', 'ach 'e' DaHechbej''a' ghelbe'choH De'wI'. wa'DIch Hoch ragh mI' lugh Doq'eghlu'pu', 'ej lulajlu'pa' toblu' 'e' poQlu'; QamqoS moQ toghlu'mo': QamqoSDaq Soch charghbej, 'ach raghDaq wa' T5 choHlu'pu' neH 'oH.
 - World Rugby vo' ragh QujmeH laDlaH DaH. per chu' lo'choH World Rugby, 'ej per ngo' lajQo'choH; vaj may'mey, mangghom, tetlh, je chaH tetlh Qaw'lu'pu' QujmeH Hoch chelpu'bogh wa'DIch, 'ej javmaH Hut QamqoS moQ chelbe'laH. QujmeH tu'lu'bogh tI''egh.
 
 ## [5.0.2] - 2026-09-13
