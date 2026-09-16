@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [5.1.0] - 2026-09-17
+
 ### Ajouté
 
 - Les tournois joués en poule unique peuvent être ajoutés, à commencer par le Tournoi des Six Nations. Jusqu'ici une compétition devait être découpée en poules : l'application déduisait la journée d'un match de sa lettre de poule, et un classement unique n'en a pas, si bien que chaque rencontre était silencieusement écartée et le tournoi impossible à ajouter. Une journée se lit désormais dans le calendrier lui-même : elle dure jusqu'à ce que chaque équipe ait joué une fois.

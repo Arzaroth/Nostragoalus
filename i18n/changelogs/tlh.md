@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [5.1.0] - 2026-09-17
+
 ### chelpu'
 
 - wa' tetlh Qujmey chellu'laH DaH, Six Nations wa'DIch. wa'DIch ghom per lo' De'wI' 'e' poQlu': ghom per vo' poH tu'lu', 'ach wa' tetlh ghom per ghajbe', vaj Hoch may' woDlu'pu' 'ej QujmeH chellu'laHbe'pu'. DaH may'mey vo' poH laDlu': Hoch ghom wa'logh Qujpu'DI', rIn poH.

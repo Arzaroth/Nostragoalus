@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [5.1.0] - 2026-09-17
+
 ### Added
 
 - Tournaments played as one table can be added, the Six Nations first among them. Until now a competition had to be split into pools: the app worked out which round a match belonged to from its pool letter, and a single table has none, so every fixture was quietly dropped and the tournament could not be added at all. A round is now read from the fixtures themselves - it runs until every team has played once.
