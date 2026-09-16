@@ -99,13 +99,18 @@ poll would return.
   `ensureRounds` files group rounds under `matchday` 1..N while `findRoundId`
   looks a null matchday up as `IS NULL`, so it never matches and every group
   fixture is silently skipped at insert. The adapter runs the shared
-  `assignGroupMatchdays` (in `stage.ts`, also used by FIFA) over the whole season
-  to derive it. That helper keys off the group letter, so **a competition with no
-  groups - a domestic league - cannot be synced today**: its fixtures are all
-  GROUP-stage with no letter, get no matchday, and would be skipped. ESPN's league
-  coverage is therefore not yet usable; see TODO.md. Measured against the live
-  API: the Premier League returns 374 fixtures of which **0** are ingestible,
-  and the new-format Champions League 189 of which 29 are (its league phase is a
+  `assignMatchdays` (in `stage.ts`, also used by FIFA and World Rugby) over the
+  whole season to derive it, and it has two shapes. With pool letters, each
+  pool's fixtures are ordered by kickoff and paired off, two to a matchday.
+  Without any, the competition is one table and a round is taken literally as
+  "every team has played once": walk the fixtures in kickoff order, start a new
+  round when a team would repeat. That needs no per-competition size and no date
+  threshold, which a midweek round would break. A fixture moved out of its round
+  lands in a later one, which is the same answer a date rule gives and the feeds
+  carry nothing to do better with.
+  Measured against the live API: the Premier League returns 374 fixtures, and
+  the new-format Champions League 189 of which 29 are ingestible (its league
+  phase is a
   single table with no letters, and R16/QF/SF are two-legged). The competition
   probe (`server/utils/competitions/probe.ts`) reports exactly this before an
   admin can add such a competition - see

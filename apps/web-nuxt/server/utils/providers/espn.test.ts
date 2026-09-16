@@ -569,12 +569,14 @@ describe('espnProvider', () => {
     expect(standingsCalls).toBe(2)
   })
 
-  it('leaves a league ungrouped when the standings carry no group letters', async () => {
+  it('leaves a league ungrouped, but still numbers its rounds', async () => {
+    // No group letter is the league case, not a broken one: the fixture still
+    // needs a matchday or it never reaches the match table.
     const fetchImpl = stubFetch({ standings: { children: [{ abbreviation: 'Premier League' }] } })
     const provider = espnProvider({ league: 'eng.1', fetchImpl, rateLimiter: noWait() })
     const matches = await provider.listFixtures({ season: '2026' })
     expect(matches[0].group).toBeNull()
-    expect(matches[0].matchday).toBeNull()
+    expect(matches[0].matchday).toBe(1)
   })
 
   it('ignores a standings entry with no team id', async () => {

@@ -806,6 +806,18 @@ effort buckets; order within a bucket is not priority.
     first `SINGLE_TABLE` (6 teams, 5 rounds, 15 matches, so volume is a
     non-issue and the matchday-without-a-group-letter plumbing gets proven
     cheaply); then EU top-5 leagues; then UCL; then LoL Worlds / CS majors.
+  - [x] **A single table's rounds are derived from its fixtures** (5.1.0). No
+    feed publishes a matchday, and the pool rule needs a letter the Six Nations
+    does not have: it arrives as "Pool" with an empty subType, so every fixture
+    was filed under matchday 1 and looked up as NULL, i.e. silently dropped.
+    A round is now taken literally as "every team has played once" - walk the
+    fixtures in kickoff order and start a new one when a team would repeat.
+    No per-competition size, and no date threshold for a midweek round to
+    break. Verified against the live feed: 2025 and 2026 Six Nations both land
+    15 of 15 fixtures in 5 rounds of 3, and RWC 2023 still lands 48 of 48 in
+    its four pools. **This unblocks the shape, not the product**: EU top-5
+    leagues now ingest, but whether a 38-round league is worth playing (and
+    what the champion pick means without a final) is still its own step.
   - **Two-legged ties are the real cost of the new UCL**, not the table shape,
     and nothing models them today: `round_competition_stage_matchday_uq
     (competitionId, stage, matchday)` forbids two rounds for one stage, the

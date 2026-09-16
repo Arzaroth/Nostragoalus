@@ -307,6 +307,82 @@ export async function cleanupRugby(): Promise<void> {
   await db().query(`delete from competition where slug = $1`, [E2E_RUGBY_SLUG])
 }
 
+export const E2E_TABLE_SLUG = 'e2e-table'
+
+// A single-table competition: six teams, five rounds of three, and NO group
+// letter anywhere - the shape the Six Nations arrives in. Seeded rather than
+// ingested because the isolated stack's `fixture` provider serves one canned
+// football tournament; what is under test here is that the app renders a
+// competition with no pools, which it could not even hold before.
+export async function seedSingleTableCompetition(): Promise<{ competitionId: string; slug: string }> {
+  await cleanupSingleTable()
+  const teams = [
+    { code: 'FRA', name: 'France' },
+    { code: 'IRE', name: 'Ireland' },
+    { code: 'ENG', name: 'England' },
+    { code: 'SCO', name: 'Scotland' },
+    { code: 'WAL', name: 'Wales' },
+    { code: 'ITA', name: 'Italy' },
+  ]
+  // A round-robin draw: each round pairs every team exactly once.
+  const rounds: [number, number][][] = [
+    [[0, 1], [2, 3], [4, 5]],
+    [[0, 2], [1, 4], [3, 5]],
+    [[0, 3], [1, 5], [2, 4]],
+    [[0, 4], [2, 5], [1, 3]],
+    [[0, 5], [1, 2], [3, 4]],
+  ]
+
+  const { rows } = await db().query<{ id: string }>(
+    `insert into competition (id, slug, name, provider, external_competition_id, season_hint, sport, is_active)
+     values (gen_random_uuid(), $1, 'E2E Championship', 'worldrugby', 'e2e-table', '2019', 'RUGBY_UNION', true)
+     returning id`,
+    [E2E_TABLE_SLUG],
+  )
+  const competitionId = rows[0].id
+
+  for (let r = 0; r < rounds.length; r += 1) {
+    const matchday = r + 1
+    const { rows: roundRows } = await db().query<{ id: string }>(
+      `insert into round (id, competition_id, kind, stage, matchday, label, sort_order)
+       values (gen_random_uuid(), $1, 'GROUP_MATCHDAY', 'GROUP', $2, $3, $2)
+       returning id`,
+      [competitionId, matchday, `Round ${matchday}`],
+    )
+    const roundId = roundRows[0].id
+    for (const [h, a] of rounds[r]!) {
+      // Future kickoffs, spread a week apart per round, so the pick window is open.
+      const kickoff = new Date(Date.now() + (matchday * 7 * 24 + 6) * 60 * 60 * 1000)
+      await db().query(
+        `insert into match (id, competition_id, provider_match_id, round_id, stage, group_name,
+                            home_team, away_team, home_team_code, away_team_code, kickoff_time, status)
+         values (gen_random_uuid(), $1, $2, $3, 'GROUP', null, $4, $5, $6, $7, $8, 'SCHEDULED')`,
+        [
+          competitionId,
+          `e2e-table-${matchday}-${h}-${a}`,
+          roundId,
+          teams[h]!.name,
+          teams[a]!.name,
+          teams[h]!.code,
+          teams[a]!.code,
+          kickoff.toISOString(),
+        ],
+      )
+    }
+  }
+  return { competitionId, slug: E2E_TABLE_SLUG }
+}
+
+export async function cleanupSingleTable(): Promise<void> {
+  await db().query(`delete from match where competition_id in (select id from competition where slug = $1)`, [
+    E2E_TABLE_SLUG,
+  ])
+  await db().query(`delete from round where competition_id in (select id from competition where slug = $1)`, [
+    E2E_TABLE_SLUG,
+  ])
+  await db().query(`delete from competition where slug = $1`, [E2E_TABLE_SLUG])
+}
+
 export const E2E_ALT_SLUG = 'e2e-alt'
 
 // A second, older-season competition, so a spec can prove the default MOVES.

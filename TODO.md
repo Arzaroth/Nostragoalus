@@ -1153,13 +1153,15 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
       editor; whichever lands needs the e2e spec the gate asks for, and only
       then is ESPN worth a CHANGELOG entry (one was written and withdrawn in the
       ESPN pass for exactly this reason).
-- [ ] ESPN cannot sync a competition without groups (a domestic league). Group
-      rounds need a matchday, `assignGroupMatchdays` derives it from the group
-      letter, and a league has none - so its fixtures would get no matchday and
-      be dropped at insert by the `findRoundId` IS NULL lookup. Needs either a
-      matchday source for leagues (ESPN publishes none on the scoreboard) or a
-      league-shaped round model. Until then the ESPN adapter is
-      group-and-knockout only, whatever ESPN's league coverage offers.
+- [x] ESPN cannot sync a competition without groups (a domestic league). Group
+      rounds need a matchday, `assignMatchdays` derived it from the group letter,
+      and a league has none - so its fixtures got no matchday and were dropped at
+      insert by the `findRoundId` IS NULL lookup. Fixed by deriving a single
+      table's rounds from the fixtures themselves: a round is however many
+      matches it takes for every team to play once. No provider publishes a
+      matchday, so nothing was waiting on ESPN. Note this unblocks the SHAPE
+      only - a 38-round league still has to be worth playing, which is the
+      roadmap's "EU top-5 leagues" step, not this one.
 - [ ] The `matchday ?? 1` in `ensureRounds` vs the `IS NULL` lookup in
       `findRoundId` (sync/rounds.ts) disagree, so a GROUP match arriving with a
       null matchday is counted in `skipped` and the sync still reports success.

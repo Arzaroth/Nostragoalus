@@ -15,9 +15,10 @@ import type { MatchDataProvider } from '../providers/types'
 export type ProbeBlocker =
   // The provider returned nothing for this competition and season.
   | 'no_fixtures'
-  // Some fixtures would be dropped at insert. Almost always a competition with
-  // no group letters (a domestic league, or a single-table league phase), whose
-  // matchday cannot be derived - see assignMatchdays.
+  // Some fixtures would be dropped at insert, i.e. filed under a round nothing
+  // then looks for. A competition with no group letters is no longer one of
+  // these: assignMatchdays numbers a single table by the round each team plays
+  // in. What is left is a feed that types only some of its fixtures.
   | 'fixtures_dropped'
   // Two fixtures at the same knockout stage between the same pair of teams. The
   // schema cannot hold them: round is unique on (competition, stage, matchday)

@@ -5,6 +5,14 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### chellu'
+
+- wa' tetlh Qujmey chellu'laH DaH, Six Nations wa'DIch. wa'DIch ghom per lo' De'wI' 'e' poQlu': ghom per vo' poH tu'lu', 'ach wa' tetlh ghom per ghajbe', vaj Hoch may' woDlu'pu' 'ej QujmeH chellu'laHbe'pu'. DaH may'mey vo' poH laDlu': Hoch ghom wa'logh Qujpu'DI', rIn poH.
+
+### tI'lu'
+
+- World Rugby vo' ragh QujmeH laDlaH DaH. per chu' lo'choH World Rugby, 'ej per ngo' lajQo'choH; vaj may'mey, mangghom, tetlh, je chaH tetlh Qaw'lu'pu' QujmeH Hoch chelpu'bogh wa'DIch, 'ej javmaH Hut QamqoS moQ chelbe'laH. QujmeH tu'lu'bogh tI''egh.
+
 ## [5.0.2] - 2026-09-13
 
 ### tI'lu'

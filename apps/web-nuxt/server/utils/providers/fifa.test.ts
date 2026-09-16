@@ -200,10 +200,12 @@ describe('assignMatchdays', () => {
     expect(ko.matchday).toBeNull()
   })
 
-  it('ignores group matches without a group letter', () => {
+  it('numbers a group match with no group letter as a single table', () => {
+    // It used to be left null, which isIngestible then dropped. A competition
+    // with no letters anywhere is one table, and its first round is matchday 1.
     const m = normalizeFifaMatch(groupMatch({ GroupName: undefined }))
     assignMatchdays([m])
-    expect(m.matchday).toBeNull()
+    expect(m.matchday).toBe(1)
   })
 })
 

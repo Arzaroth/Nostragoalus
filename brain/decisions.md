@@ -907,3 +907,27 @@ cache per cutoff while making "show me the older ones" a round trip. The full
 catalog is fetched once and the screen shows recent seasons with a count and a
 toggle, over a type-to-search picker. An entry the provider gave no season is
 kept: it cannot be judged old.
+
+## A single table's rounds come from its fixtures, not its calendar
+
+No feed publishes a matchday, and the pool rule needs a letter a single table
+does not have: the Six Nations arrives as "Pool" with an empty subType, and a
+domestic league carries nothing at all. Those fixtures were filed under matchday
+1 by `ensureRounds` and looked up as `IS NULL` by `findRoundId`, so every one of
+them was dropped at insert - the silent loss the admin probe exists to report.
+
+The rule is the definition of a round-robin round applied literally: walk the
+fixtures in kickoff order and start a new round when a team would appear in the
+current one twice. It needs no per-competition size (three matches in the Six
+Nations, ten in a twenty-team league) and no date threshold, which is what a
+midweek round would break. A date-gap rule was the obvious alternative and gives
+the same answer on the real Six Nations, but only because that championship is
+played on separated weekends.
+
+What it cannot do is recover a postponed fixture's original round: played later,
+it lands in a later round. A date rule gives the same answer, and the feeds carry
+nothing better - if one ever publishes a round number, read it instead.
+
+This unblocks the SHAPE, not the product. EU top-5 leagues now ingest, but
+whether a 38-round league is worth playing, and what a champion pick means in a
+competition with no final, are their own question.

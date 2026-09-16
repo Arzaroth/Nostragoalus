@@ -111,7 +111,11 @@ The probe blocks on four things:
   filed under matchday 1 by `ensureRounds` and looked up as `IS NULL` by
   `findRoundId`, so `upsertMatches` counts it in `skipped` and it never appears.
   *Any* loss blocks, not just total loss - a partially ingested competition looks
-  like it works.
+  like it works. A competition with no group letters is no longer one of these:
+  `assignMatchdays` numbers a single table from its own fixtures (see
+  [../architecture/providers.md](../architecture/providers.md)), which is what
+  made the Six Nations addable. What still trips it is a feed that types only
+  some of its fixtures.
 - `two_legged_knockout` - the same pair meeting twice at one knockout stage. The
   schema cannot hold it: `round` is unique on (competition, stage, matchday) and
   knockout rounds carry a null matchday, so the second leg has nowhere to go, and
