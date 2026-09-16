@@ -463,6 +463,13 @@
       "when": 1789264264678,
       "tag": "0065_rugby_unnamed_scorers",
       "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1789264264679,
+      "tag": "0066_knockout_sort_band",
+      "breakpoints": true
     }
   ]
 }

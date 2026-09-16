@@ -4,8 +4,6 @@ import { isOutlandishScore } from '~/utils/prediction-sanity'
 const props = defineProps<{ home: number | null; away: number | null; disabled?: boolean }>()
 const emit = defineEmits<{ update: [value: { home: number; away: number }] }>()
 const { t } = useI18n()
-// What counts as an outlandish scoreline is the sport's business: seven is a
-// rout in football and one converted try in rugby.
 const sport = useSelectedSport()
 
 const home = ref<number | null>(props.home)
@@ -32,10 +30,10 @@ function scheduleCommit() {
   debounce = setTimeout(commit, 900)
 }
 
-// An implausible scoreline (8+ goals for one side, or a 12+ goal aggregate)
-// holds a confirm before saving, so a fat-finger like 1-33 isn't committed
-// silently. It's a confirm, not a block: accept saves, cancel restores the last
-// value. Plausible scores still auto-save untouched.
+// An implausible scoreline holds a confirm before saving, so a fat-finger is not
+// committed silently. What counts as implausible is the sport's, not this
+// component's - see isOutlandishScore. It's a confirm, not a block: accept
+// saves, cancel restores the last value. Plausible scores still auto-save.
 const confirmOutlandish = ref(false)
 const pending = ref<{ home: number; away: number } | null>(null)
 

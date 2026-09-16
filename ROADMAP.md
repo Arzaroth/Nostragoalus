@@ -771,9 +771,11 @@ effort buckets; order within a bucket is not priority.
     season without writing and report what came back (fixture count, how many
     resolved a matchday, groups, bracket/detail availability). Without it an
     admin picks "Premier League" from a nice dropdown and gets a competition
-    with zero matches and no error anywhere: `assignGroupMatchdays` keys off the
+    with zero matches and no error anywhere: `assignMatchdays` keyed off the
     group letter, `findRoundId` looks a null matchday up as `IS NULL`, and every
-    group fixture is silently skipped at insert. The probe's verdict is also the
+    group fixture was silently skipped at insert. The league case is fixed (see
+    the single-table item below); the probe stays the guard for every other way
+    a fixture can be dropped. The probe's verdict is also the
     gate on which formats are allowed at all, rather than an admin-set dropdown
     - an admin has no way to know `uefa.champions` changed format in 2024.
   - **Switching provider on an existing competition is the dangerous op**, not
@@ -905,7 +907,7 @@ effort buckets; order within a bucket is not priority.
       matches by record (`0-0` x8, `1-0` x4, `0-1` x4, `2-0` x2, ...), so the
       round is wins+losses+1; Liquipedia states it outright
       (`matchsection=Round 1`). This looked like the fatal blocker (a null
-      matchday is silently dropped at insert, the same trap that still blocks
+      matchday is silently dropped at insert, the same trap that used to block
       domestic leagues) and it is not.
     - **No keyless live feed on blast.tv**: `/v2/matches/live`,
       `/v2/matches/{id}` and `/v2/games` are 401/403, and match rows carry no

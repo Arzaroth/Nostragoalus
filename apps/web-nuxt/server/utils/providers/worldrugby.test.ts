@@ -554,6 +554,55 @@ describe('addressing an event', () => {
     expect(calls.some((u) => u.includes('/event/404404/schedule'))).toBe(true)
   })
 
+  it('walks past the first page to find an older event', async () => {
+    // A competition still holding a numeric id is by definition an old event,
+    // and the catalog is sorted newest first, so the answer is rarely on page 0.
+    const page0 = { content: [{ id: '9001', altId: 'bbbbbbbb-0000-4000-8000-000000000000', sport: 'mru' }], pageInfo: { numPages: 3 } }
+    const page1 = { content: [{ id: '9002', altId: 'cccccccc-0000-4000-8000-000000000000', sport: 'mru' }], pageInfo: { numPages: 3 } }
+    const page2 = { content: [{ id: '1893', altId: UUID, sport: 'mru' }], pageInfo: { numPages: 3 } }
+    const impl = vi.fn(async (url: string | URL) => {
+      const href = String(url)
+      const body = href.includes('page=0') ? page0 : href.includes('page=1') ? page1 : href.includes('page=2') ? page2 : SCHEDULE
+      return new Response(JSON.stringify(body), { status: 200, headers: { 'content-type': 'application/json' } })
+    }) as unknown as typeof fetch
+    const calls: string[] = []
+    const spy = vi.fn(async (url: string | URL) => {
+      calls.push(String(url))
+      return impl(url as never)
+    }) as unknown as typeof fetch
+    await worldRugbyProvider({ eventId: '1893', fetchImpl: spy, rateLimiter: nowait() }).listFixtures({})
+    expect(calls.some((u) => u.includes(`/event/${UUID}/schedule`))).toBe(true)
+  })
+
+  it('stops at the event it found even when that event carries no uuid', async () => {
+    // Found and unusable is an answer; paging on cannot improve it.
+    const catalog = { content: [{ id: '1893', altId: null, sport: 'mru' }], pageInfo: { numPages: 4 } }
+    const { impl, calls } = stub({ '/event?page=': catalog, '/schedule': SCHEDULE })
+    await worldRugbyProvider({ eventId: '1893', fetchImpl: impl, rateLimiter: nowait() }).listFixtures({})
+    expect(calls.filter((u) => u.includes('/event?page=')).length).toBe(1)
+    expect(calls.some((u) => u.includes('/event/1893/schedule'))).toBe(true)
+  })
+
+  it('re-arms after a failed lookup instead of pinning itself to the legacy id', async () => {
+    // A memo that keeps the fallback turns one blip into a process-long outage:
+    // every /event call then answers 400 until the app restarts.
+    let catalogCalls = 0
+    const impl = vi.fn(async (url: string | URL) => {
+      const href = String(url)
+      if (href.includes('/event?page=')) {
+        catalogCalls += 1
+        if (catalogCalls === 1) return new Response('nope', { status: 503 })
+        return new Response(JSON.stringify(CATALOG), { status: 200, headers: { 'content-type': 'application/json' } })
+      }
+      return new Response(JSON.stringify(SCHEDULE), { status: 200, headers: { 'content-type': 'application/json' } })
+    }) as unknown as typeof fetch
+    const p = worldRugbyProvider({ eventId: '1893', fetchImpl: impl, rateLimiter: nowait() })
+    await p.listFixtures({})
+    const after = await p.listFixtures({})
+    expect(after).toEqual([])
+    expect(catalogCalls).toBe(2)
+  })
+
   it('binds a discovered competition to the uuid, not the legacy key', async () => {
     const { impl } = stub({ '/event?page=': CATALOG })
     const found = await worldRugbyProvider({ eventId: 'x', fetchImpl: impl, rateLimiter: nowait() }).discoverCompetitions!()

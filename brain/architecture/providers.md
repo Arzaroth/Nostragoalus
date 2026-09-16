@@ -272,8 +272,9 @@ typed bronze final, and the World Rugby rankings that will drive champion tiers.
   **round of 16** arrives with `eventPhaseId: null` and only an `eventPhase`
   label ("Round of 16 (1)"), so the typed field is authoritative when present
   and the label is the fallback. A pool whose letter goes missing is worse than
-  it sounds: `assignGroupMatchdays` keys off the letter and a null group is
-  dropped at insert.
+  it sounds: `assignMatchdays` takes a competition down the pool path as soon as
+  ANY fixture carries a letter, and the letterless ones there keep a null
+  matchday and are dropped at insert.
 - **`[0, 0]` means "not played", not a goalless draw.** The feed sends zeros for
   every unplayed match, so the score is only taken once the status says the
   match started. Taken at face value it settles predictions on unplayed fixtures.

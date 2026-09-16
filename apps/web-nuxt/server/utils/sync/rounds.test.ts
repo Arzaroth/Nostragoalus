@@ -29,6 +29,30 @@ describe('roundDefForMatch', () => {
     expect(roundDefForMatch('R16', null)).toMatchObject({ kind: 'KNOCKOUT', stage: 'R16', matchday: null, label: 'Round of 16' })
     expect(roundDefForMatch('FINAL', null).sortOrder).toBeGreaterThan(roundDefForMatch('R16', null).sortOrder)
   })
+
+  it('names a group-less round a round, not a group matchday', () => {
+    // A single table has no group for a matchday to be the matchday of, so
+    // "Group Matchday 3" named something the competition does not have.
+    expect(roundDefForMatch('GROUP', 3, false).label).toBe('Round 3')
+    expect(roundDefForMatch('GROUP', 3, true).label).toBe('Group Matchday 3')
+    // Pooled by default: every caller that does not say otherwise means one.
+    expect(roundDefForMatch('GROUP', 3).label).toBe('Group Matchday 3')
+  })
+
+  // `round` is unique on (competition, sort_order), so a matchday must never
+  // land on a knockout stage's slot. Pools kept matchdays under six; a single
+  // table plays 38 or 46, and matchday 10 used to collide with R32 - the sync
+  // aborted on the unique index, half-ingested.
+  it('keeps every knockout stage clear of any matchday a league can reach', () => {
+    const LEAGUE_ROUNDS = 46
+    const matchdays = Array.from({ length: LEAGUE_ROUNDS }, (_, i) => roundDefForMatch('GROUP', i + 1, false).sortOrder)
+    const knockouts = (['R32', 'R16', 'QF', 'SF', 'THIRD_PLACE', 'FINAL'] as const).map(
+      (stage) => roundDefForMatch(stage, null).sortOrder,
+    )
+    expect(new Set([...matchdays, ...knockouts]).size).toBe(matchdays.length + knockouts.length)
+    // And every round of the table still sorts before the first knockout.
+    expect(Math.max(...matchdays)).toBeLessThan(Math.min(...knockouts))
+  })
 })
 
 describe('ensureRounds / findRoundId', () => {

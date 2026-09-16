@@ -3570,3 +3570,48 @@ Deferred by the review fix pass (each was a deliberate call, not an oversight):
       `encodeURIComponent`. Rows created before that check, or written by any
       future path that skips the schema, are still unshaped. Either encode at
       each adapter boundary or add a CHECK constraint.
+
+### Deferred by the feat/single-table-competitions review
+
+- [ ] **The probe lost a safety net it used to have for free.** `fixtures_dropped`
+      blocked on any GROUP fixture with a null matchday, which also caught a
+      POOLED competition whose group letters stopped parsing - every fixture
+      dropped, so the admin was refused and told why. Now such a competition is
+      numbered as a single table and the probe is green: 48 pool fixtures walk as
+      one 48-match table, `group_name` is null everywhere, and the group tables
+      render empty. The precedent is not hypothetical - World Rugby changed its
+      event id encoding under us in the same week. The probe cannot tell "one
+      table" from "pools that failed to parse" from fixtures alone; what it CAN
+      do is say which it decided, so the admin sees "no groups, will run as one
+      table" before creating. Wants `topology` on the probe result and a line in
+      the admin verdict.
+- [ ] **A re-derived matchday can disagree with a frozen `round_id`.**
+      `upsert-matches.ts` fixes `roundId` at insert and never moves it, but the
+      single-table numbering is a function of the WHOLE fixture list: a fixture
+      that arrives late, or gains a date it did not have, can split a round and
+      shift every round after it by one. Already-stored matches keep their old
+      round while new ones are filed under the shifted numbers, so a round can
+      end up holding fixtures from two real rounds and a deadline that matches
+      neither. brain/decisions.md records the simple case (a postponed fixture
+      lands in a later round) but not the cascade. Either renumber on re-sync or
+      pin a round to its fixtures once it has any.
+- [ ] **Simultaneous kickoffs have no tie-break.** `assignMatchdays` orders by
+      `kickoffTime` alone, so two fixtures at the same instant keep the feed's
+      array order (stable sort, but the provider's ordering, not ours). Benign
+      for a full round played simultaneously, since such a round repeats no team,
+      but nothing pins it and nothing documents it. `providerMatchId` would make
+      it ours.
+- [ ] **`eventUuid()` scans only the newest 500 events.** It inherits
+      `page < 5` from `discoverCompetitions`, where the cap is a UX argument
+      about a picker, not a correctness one. A competition holding a legacy
+      numeric id is by definition an OLD event, i.e. the part of a
+      newest-first catalog the cap excludes - so "existing tournaments repair
+      themselves" holds only for events inside that window. RWC 2023 is (checked
+      live), but nothing guarantees the next one is. Either raise the cap for
+      resolution or ask the catalog for the id directly if the feed ever offers
+      it.
+- [ ] **The paged catalog walk is written twice** in `worldrugby.ts`, in
+      `eventUuid()` and `discoverCompetitions()`: same URL, same page size, same
+      sort, same termination rule, different per-event body. An
+      `async function* eventPages()` would put the cap, the sort and the
+      termination in one place, so the next feed change lands once.

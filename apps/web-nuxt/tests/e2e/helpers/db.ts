@@ -334,8 +334,10 @@ export async function seedSingleTableCompetition(): Promise<{ competitionId: str
   ]
 
   const { rows } = await db().query<{ id: string }>(
-    `insert into competition (id, slug, name, provider, external_competition_id, season_hint, sport, is_active)
-     values (gen_random_uuid(), $1, 'E2E Championship', 'worldrugby', 'e2e-table', '2019', 'RUGBY_UNION', true)
+    `insert into competition (id, slug, name, provider, external_competition_id, season_hint, sport,
+                              provider_sport, is_active)
+     values (gen_random_uuid(), $1, 'E2E Championship', 'worldrugby', 'e2e-table', '2019', 'RUGBY_UNION',
+             'mru', true)
      returning id`,
     [E2E_TABLE_SLUG],
   )
@@ -348,6 +350,8 @@ export async function seedSingleTableCompetition(): Promise<{ competitionId: str
       `insert into round (id, competition_id, kind, stage, matchday, label, sort_order)
        values (gen_random_uuid(), $1, 'GROUP_MATCHDAY', 'GROUP', $2, $3, $2)
        returning id`,
+      // The label roundDefForMatch gives a group-less competition; seeding any
+      // other string would have the spec assert its own fixture.
       [competitionId, matchday, `Round ${matchday}`],
     )
     const roundId = roundRows[0].id

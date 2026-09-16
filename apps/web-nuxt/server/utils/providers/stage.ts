@@ -64,6 +64,13 @@ function assignPoolMatchdays(matches: NormalizedMatch[]): NormalizedMatch[] {
   return matches
 }
 
+// An undrawn side. `toTeam` falls back to 'TBD' on both ESPN and World Rugby,
+// so the string is a hole in the draw, not a team that keeps playing.
+function isPlaceholderTeam(name: string): boolean {
+  const n = name.trim().toUpperCase()
+  return n === '' || n === 'TBD' || n === 'TBA'
+}
+
 // One table, no letters: the Six Nations arrives as "Pool" with an empty
 // subType, and a domestic league has nothing at all. Pairing off by twos is
 // wrong here because a round is however many matches it takes for every team to
@@ -82,8 +89,11 @@ function assignSingleTableMatchdays(matches: NormalizedMatch[]): NormalizedMatch
   let playing = new Set<string>()
   for (const m of table) {
     // Names, not codes: a code is nullable on every feed, and two nulls would
-    // read as the same team and split every round in half.
-    const sides = [m.homeTeam.name, m.awayTeam.name]
+    // read as the same team and split every round in half. Names have their own
+    // degenerate value though - an undrawn side is 'TBD' on ESPN and World
+    // Rugby alike - so a placeholder identifies nobody and neither closes a
+    // round nor joins one.
+    const sides = [m.homeTeam.name, m.awayTeam.name].filter((name) => !isPlaceholderTeam(name))
     if (sides.some((side) => playing.has(side))) {
       matchday += 1
       playing = new Set()

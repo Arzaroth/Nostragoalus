@@ -129,6 +129,31 @@ describe('assignMatchdays: one table, no pool letters', () => {
     expect(new Set(out.map((m) => m.matchday)).size).toBe(1)
   })
 
+  it('orders the fixtures itself rather than trusting the feed', () => {
+    // World Rugby's schedule is keyed by matchId, and a fixture rescheduled
+    // after publication keeps its low id and gains a late date. Handed the
+    // championship shuffled, the rounds still come out right.
+    const shuffled = [...SIX_NATIONS_2025].sort(() => Math.random() - 0.5)
+    const out = assignMatchdays(table(shuffled))
+    for (const m of out) {
+      const round = SIX_NATIONS_2025.findIndex(([kickoff]) => kickoff === m.kickoffTime)
+      expect(m.matchday).toBe(Math.floor(round / 3) + 1)
+    }
+  })
+
+  it('does not let an undrawn side close a round', () => {
+    // 'TBD' is a hole in the draw on every feed. Counted as a team it meets
+    // itself in the next fixture and splits the round, and every round after.
+    const rows = table([
+      ['2026-02-06T20:00:00Z', 'France', 'TBD'],
+      ['2026-02-07T15:00:00Z', 'TBD', 'Italy'],
+      ['2026-02-07T17:00:00Z', 'Wales', 'Scotland'],
+      ['2026-02-14T15:00:00Z', 'France', 'Italy'],
+    ])
+    const out = assignMatchdays(rows)
+    expect(out.map((m) => m.matchday)).toEqual([1, 1, 1, 2])
+  })
+
   it('leaves the knockout rounds alone', () => {
     const rows = table([['2025-01-31T20:00:00Z', 'France', 'Wales']])
     const ko: NormalizedMatch = { ...rows[0]!, providerMatchId: 'ko', stage: 'FINAL', matchday: null }

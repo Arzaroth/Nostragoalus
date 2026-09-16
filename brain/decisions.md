@@ -714,9 +714,10 @@ See [features/mobile-app.md](features/mobile-app.md).
   nothing. FIFA and UEFA both derive a matchday and so never hit it; the first
   draft of the ESPN adapter did not, and lost all 72 group fixtures of the 2026
   World Cup while reporting a clean run. The derivation now lives once in
-  `stage.ts` as `assignGroupMatchdays`, shared by FIFA and ESPN. It keys off the
-  group letter, which is why a league (no groups, no letters) is not syncable
-  through this path yet.
+  `stage.ts` as `assignMatchdays`, shared by FIFA, ESPN and World Rugby. It used
+  to key off the group letter alone, which is why a league (no groups, no
+  letters) was not syncable through this path; see "A single table's rounds come
+  from its fixtures" below for what replaced that.
 - **Two group-name parsers, on purpose.** `parseGroupLetter` matches a trailing
   letter because FIFA hands us a localized label ("Groupe A"), and anchoring the
   whole string would drop every non-English feed. `parseGroupNameStrict` anchors
@@ -836,7 +837,7 @@ into a plausible one.
 World Rugby numbers pools but not the rounds within them, so every pool fixture
 arrives as `GROUP` with a null matchday - which `isIngestible` rejects, because
 such a match is filed under matchday 1 and looked up as `NULL`. The adapter
-therefore ends `listFixtures` with `assignGroupMatchdays`, exactly as the FIFA
+therefore ends `listFixtures` with `assignMatchdays`, exactly as the FIFA
 and ESPN adapters do.
 
 Worth recording because of how it was found. The adapter had been verified
@@ -925,8 +926,15 @@ the same answer on the real Six Nations, but only because that championship is
 played on separated weekends.
 
 What it cannot do is recover a postponed fixture's original round: played later,
-it lands in a later round. A date rule gives the same answer, and the feeds carry
-nothing better - if one ever publishes a round number, read it instead.
+it lands in a later round, and because the numbering is a function of the whole
+list, every round after it shifts too. `roundId` is frozen at insert, so a
+re-sync can file new matches under shifted numbers while the stored ones keep the
+old - see TODO.md. A date rule gives the same answer, and the feeds carry nothing
+better; if one ever publishes a round number, read it instead.
+
+An undrawn side does not count as a team. 'TBD' is the placeholder on every feed,
+and taken literally it meets itself in the next fixture and splits the round, and
+every round after it.
 
 This unblocks the SHAPE, not the product. EU top-5 leagues now ingest, but
 whether a 38-round league is worth playing, and what a champion pick means in a

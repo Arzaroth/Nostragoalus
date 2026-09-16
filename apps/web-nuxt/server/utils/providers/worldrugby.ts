@@ -421,8 +421,11 @@ export function worldRugbyProvider(options: WorldRugbyOptions): MatchDataProvide
             `${baseUrl}/event?page=${page}&pageSize=100&sort=desc`,
           )
           const content = doc.content ?? []
+          // Found is an answer either way: an event carrying no altId will not
+          // grow one on a later page, and paging on costs four rate-limited
+          // round trips to arrive at the same fallback.
           const hit = content.find((e) => String(e.id) === eventId)
-          if (hit?.altId) return String(hit.altId)
+          if (hit) return hit.altId ? String(hit.altId) : eventId
           if (content.length === 0 || page + 1 >= (doc.pageInfo?.numPages ?? 0)) break
         }
       } catch {

@@ -13,6 +13,15 @@ const STAGE_ORDER: Record<AppStage, number> = {
   FINAL: 60,
 }
 
+// A GROUP round's sort order IS its matchday, and `round` is unique on
+// (competition, sort_order), so the knockout ladder has to live above any
+// matchday a competition can reach. Pools capped that at 5 (the largest pool the
+// feeds carry is five teams, ten fixtures, two to a matchday); a single table
+// does not - the Championship plays 46 rounds. Without the offset, matchday 10
+// collides with R32 and the whole sync aborts on the unique index.
+// drizzle/0066_knockout_sort_band.sql lifts the rounds already stored.
+const KNOCKOUT_SORT_BASE = 1000
+
 const KNOCKOUT_LABELS: Record<Exclude<AppStage, 'GROUP'>, string> = {
   R32: 'Round of 32',
   R16: 'Round of 16',
@@ -32,12 +41,23 @@ export interface RoundDef {
 
 // Derive a round from a match's stage/matchday. Works for any competition format
 // (e.g. the Euro starts at the Round of 16 with no Round of 32).
-export function roundDefForMatch(stage: AppStage, matchday: number | null): RoundDef {
+//
+// `pooled` names the round after what the competition actually has: a Six
+// Nations round is a round, not a "Group Matchday", and there is no group for it
+// to be the matchday of.
+export function roundDefForMatch(stage: AppStage, matchday: number | null, pooled = true): RoundDef {
   if (stage === 'GROUP') {
     const md = matchday ?? 1
-    return { kind: 'GROUP_MATCHDAY', stage, matchday: md, label: `Group Matchday ${md}`, sortOrder: md }
+    const label = pooled ? `Group Matchday ${md}` : `Round ${md}`
+    return { kind: 'GROUP_MATCHDAY', stage, matchday: md, label, sortOrder: md }
   }
-  return { kind: 'KNOCKOUT', stage, matchday: null, label: KNOCKOUT_LABELS[stage], sortOrder: STAGE_ORDER[stage] }
+  return {
+    kind: 'KNOCKOUT',
+    stage,
+    matchday: null,
+    label: KNOCKOUT_LABELS[stage],
+    sortOrder: KNOCKOUT_SORT_BASE + STAGE_ORDER[stage],
+  }
 }
 
 export async function ensureRounds(
@@ -45,9 +65,12 @@ export async function ensureRounds(
   competitionId: string,
   matches: NormalizedMatch[],
 ): Promise<void> {
+  // Same test the matchday derivation makes (see providers/stage.ts): any pool
+  // letter anywhere means the competition has pools.
+  const pooled = matches.some((m) => m.stage === 'GROUP' && m.group)
   const defs = new Map<string, RoundDef>()
   for (const m of matches) {
-    const def = roundDefForMatch(m.stage, m.matchday)
+    const def = roundDefForMatch(m.stage, m.matchday, pooled)
     defs.set(`${def.stage}:${def.matchday ?? ''}`, def)
   }
 

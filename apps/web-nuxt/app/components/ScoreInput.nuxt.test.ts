@@ -1,7 +1,12 @@
-import { describe, it, expect, afterEach } from 'vitest'
-import { mountSuspended } from '@nuxt/test-utils/runtime'
-import { defineComponent, ref, nextTick } from 'vue'
+import { describe, it, expect, afterEach, vi } from 'vitest'
+import { mockNuxtImport, mountSuspended } from '@nuxt/test-utils/runtime'
+import { computed, defineComponent, ref, nextTick } from 'vue'
 import ScoreInput from './ScoreInput.vue'
+
+// The outlandish ceiling is per sport, so the component has to be asked which
+// one it is rendering under. Hoisted for mockNuxtImport.
+const { sportRef } = vi.hoisted(() => ({ sportRef: { value: 'FOOTBALL' } }))
+mockNuxtImport('useSelectedSport', () => () => computed(() => sportRef.value))
 
 // Two stacked inputs mimic a matchday list: keyboard advance must hop
 // home -> away -> next match's home.
@@ -91,6 +96,7 @@ describe('ScoreInput outlandish confirm', () => {
   afterEach(() => {
     while (mounted.length) mounted.pop()!.unmount()
     document.body.innerHTML = ''
+    sportRef.value = 'FOOTBALL'
   })
 
   async function mountOne() {
@@ -112,6 +118,28 @@ describe('ScoreInput outlandish confirm', () => {
     input.focus()
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }))
   }
+
+  it('judges the scoreline by the sport it is rendered under', async () => {
+    // 21-17 is an ordinary Six Nations result and a fantasy football one. Asking
+    // the wrong sport is how every rugby pick ended up behind a dialog.
+    sportRef.value = 'RUGBY_UNION'
+    const rugby = await mountOne()
+    rugby.vm.home = 21
+    rugby.vm.away = 17
+    await commitViaEnter(rugby.cmp)
+    await nextTick()
+    expect(findButton('Save anyway')).toBeFalsy()
+    expect(rugby.cmp.emitted('update')![0][0]).toEqual({ home: 21, away: 17 })
+
+    sportRef.value = 'FOOTBALL'
+    const football = await mountOne()
+    football.vm.home = 21
+    football.vm.away = 17
+    await commitViaEnter(football.cmp)
+    await nextTick()
+    expect(findButton('Save anyway')).toBeTruthy()
+    expect(football.cmp.emitted('update')).toBeFalsy()
+  })
 
   it('holds an outlandish score behind a confirm, then saves on accept', async () => {
     const { cmp, vm } = await mountOne()
