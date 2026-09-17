@@ -27,7 +27,8 @@
     "e2e:report": "playwright show-report",
     "badge": "node scripts/coverage-badge.mjs",
     "test:components": "vitest run --project nuxt",
-    "create-admin": "node scripts/create-admin.mjs"
+    "create-admin": "node scripts/create-admin.mjs",
+    "canary": "tsx scripts/canary/main.ts"
   },
   "dependencies": {
     "@better-auth/api-key": "1.6.27",
