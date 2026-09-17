@@ -18,6 +18,14 @@ the code. Alphabetical.
   (SCHEDULED -> LIVE/PAUSED -> FINISHED, plus
   POSTPONED/CANCELLED/SUSPENDED/AWARDED/INTERRUPTED).
 - **Prediction** - a user's home/away score guess for a match, locked at kickoff.
+- **Canary** - the daily off-CI program that asks the live provider feeds whether
+  they still have the shape the adapters read. Its verdicts are `ok` / `MISSING` /
+  `TYPE` / `unchecked` (nothing of that kind to look at) / `absent` (a RARE key
+  whose context did not occur). See
+  [architecture/provider-canary.md](architecture/provider-canary.md).
+- **Drift** - an undocumented feed changing shape under the adapters. It does not
+  throw, it degrades: the app keeps serving with less in it. The failure the
+  canary exists to find.
 - **Joker** - a single ×2 multiplier a user spends on one prediction per round.
 - **Trophy** - a rare, competition-end award (OVERALL, GROUP_PHASE,
   KNOCKOUT_PHASE, MADAME_IRMA, TEAM_SPECIALIST), derived at finalize and stored in

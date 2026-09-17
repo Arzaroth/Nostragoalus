@@ -4,6 +4,11 @@ Match data, odds and FIFA rankings come from external sources behind
 provider-agnostic adapters. All of these are keyless and somewhat fragile (they
 are unofficial or undocumented endpoints), so the quirks below are load-bearing.
 
+Because they are undocumented, nothing warns us when one changes shape - and the
+adapters are defensive enough that drift does not throw, it just quietly produces
+less. A daily off-CI canary asks the live feeds directly:
+[provider-canary.md](provider-canary.md).
+
 ## Match data: FIFA (default, keyless)
 
 `api.fifa.com/api/v3` is the default provider. It needs no key.
@@ -404,6 +409,7 @@ container, check that binary is present before blaming the provider.
 
 ## Sources
 
+- [provider-canary.md](provider-canary.md) (the daily shape check over the live feeds)
 - `apps/web-nuxt/server/utils/providers/**` (FIFA, UEFA, ESPN, football-data, World Rugby adapters, `cycle-tls.ts`)
 - `apps/web-nuxt/shared/sport.ts` (sport enum mirror, per-provider sub-feeds)
 - `apps/web-nuxt/server/utils/providers/worldrugby-ranking.ts`, `apps/web-nuxt/server/utils/champion/ranking.ts` (per-sport ranking source)

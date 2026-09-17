@@ -939,3 +939,50 @@ every round after it.
 This unblocks the SHAPE, not the product. EU top-5 leagues now ingest, but
 whether a 38-round league is worth playing, and what a champion pick means in a
 competition with no final, are their own question.
+
+## The feeds are asked directly, daily, and off the CI
+
+The provider unit tests build their own payloads. That is right for the parsing
+logic and useless against the failure that actually threatens this app: an
+undocumented feed renaming a key. We write the bytes those tests parse, so no
+number of them - 676 assertions, 99% coverage - can notice that ESPN moved
+`scoringPlay`. And nothing throws when it happens: the adapters read with `?.`
+everywhere, so drift degrades instead of breaking. Fewer goals. No group letter.
+A competition that ingests nothing. Serving perfectly, with less in it.
+
+So a program that talks to the real feeds, daily:
+[architecture/provider-canary.md](architecture/provider-canary.md). Three
+decisions in it are the whole design.
+
+**It is never run by `ci.yml`.** The gate has to stay offline and deterministic.
+A FIFA outage or a July Tuesday with nothing played would repaint a pull request
+that had nothing to do with it, and a red that fires for reasons outside the
+change is a red people learn to click past. The canary owns its own workflow, on
+a cron.
+
+**Three levels of demand, not two.** A key that is absent and a key that has
+nothing to say today are different facts. REQUIRED must be everywhere; SAMPLED
+must appear once across everything inspected; RARE is watched and printed but
+never fails on absence, because an own goal does not happen every night. Plus
+`unchecked` when no object of that kind turned up at all. Four verdicts sounds
+like over-engineering until the first run: on a two-level design, a single
+sampled match reported half of UEFA's event vocabulary missing, and that alarm
+would have been switched off inside a month.
+
+**Presence is not enough, so the payload goes back through the real
+normalizers.** Every key can be in place and produce nothing - a value that
+changes shape, a vocabulary that gets renumbered, an array that empties. The
+canary counts by hand, then runs `normalizeEspnEvent` and friends over the same
+bytes and compares. That is what catches the class of bug where a status name
+drifts and every played match parks on SCHEDULED for ever.
+
+Its own specs were wrong five times on the first live run, and each correction is
+a fact about a feed: FIFA's `GroupName` is `[]` on knockout ties; its
+`BallPossession` goes null once an edition is archived; ESPN period markers carry
+an empty clock; the ESPN soccer scoreboard answers 400 to a date range; World
+Rugby writes explicit `null` where ESPN omits the key. Those live in the key
+tables now, which is the point - they were not written down anywhere before.
+
+Sofascore and football-data are deliberately out of scope for now: one goes
+through cycletls (TLS fingerprinting) and the other needs a key, and neither is
+known to work from a GitHub-hosted runner.

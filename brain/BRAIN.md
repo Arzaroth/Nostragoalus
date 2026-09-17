@@ -43,6 +43,7 @@ use the indexes.
 | [storage.md](architecture/storage.md) | Pluggable fs/s3 blob storage, avatars, chat ciphertext, migration. |
 | [rendering.md](architecture/rendering.md) | satori/resvg share images + PWA service worker, the SSR footguns. |
 | [providers.md](architecture/providers.md) | FIFA/UEFA/ESPN match data, Sofascore odds, FIFA ranking, the cycletls engine. |
+| [provider-canary.md](architecture/provider-canary.md) | The daily off-CI canary that asks the live feeds whether they still have the shape the adapters expect. |
 | [testing.md](architecture/testing.md) | The 98% gate, vitest projects, pglite, factories, and the out-of-band Playwright e2e harness. |
 | [i18n.md](architecture/i18n.md) | Five locales (en/fr/th/tlh/ar), the all-locales rule. |
 | [rtl.md](architecture/rtl.md) | Right-to-left: dynamic `<html dir>`, logical CSS, the mirrored bracket, icon flipping (Arabic). |
@@ -110,6 +111,7 @@ use the indexes.
 | How does an admin onboard an SSO provider (test/verify) or use SCIM? | [features/sso-provisioning.md](features/sso-provisioning.md) |
 | How do I cut a release? What bumps major? | [operations.md](operations.md) |
 | Why Sofascore / FIFA ranking and not odds? | [decisions.md](decisions.md) |
+| How would we know a provider feed silently changed shape? | [architecture/provider-canary.md](architecture/provider-canary.md) |
 | How does a brand-new player learn the app (the spotlight tour)? | [features/onboarding-tour.md](features/onboarding-tour.md) |
 | What's the konami easter egg? | [features/easter-eggs.md](features/easter-eggs.md) |
 | How do I run or gate the Flutter mobile app? | [features/mobile-app.md](features/mobile-app.md) |

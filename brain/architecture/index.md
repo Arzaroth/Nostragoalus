@@ -16,6 +16,7 @@ Back to the root map: [../BRAIN.md](../BRAIN.md).
 | [storage.md](storage.md) | Pluggable image storage (fs/s3), avatars, chat blobs, migration | StorageDriver, rustfs, aws4fetch, avatar, migrate-blobs |
 | [rendering.md](rendering.md) | Server-rendered OG/share images (satori+resvg) and the PWA service worker | satori, resvg, og, woff, injectManifest, service-worker |
 | [providers.md](providers.md) | External data: FIFA/UEFA/ESPN/World Rugby match data, odds, FIFA ranking, the cycletls engine | FIFA, UEFA, ESPN, World Rugby, rugby, sofascore, betexplorer, cycletls, JA3, ranking |
+| [provider-canary.md](provider-canary.md) | The daily off-CI canary: does the live feed still have the shape the adapters read? Levels, cross-checks, why it never runs on push | canary, drift, undocumented, REQUIRED, SAMPLED, RARE, unchecked, ledger, schedule, silent failure |
 | [testing.md](testing.md) | The merge gate, coverage rules, pglite test DB, factories, Playwright e2e | vitest, coverage, 98%, pglite, factories, nuxt.test, e2e, playwright |
 | [i18n.md](i18n.md) | The five locales and the all-locales rule | i18n, locales, en fr th tlh ar, Klingon |
 | [rtl.md](rtl.md) | Right-to-left mechanics: html dir, logical CSS, mirrored bracket, icon flip | rtl, right-to-left, Arabic, ar, dir, logical properties, mirror |

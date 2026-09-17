@@ -17,6 +17,15 @@ separately or `set -o pipefail`), or all at once with `mise run check`. The
    errors the other steps miss (import shared via the `#shared` alias, not deep
    `../../../../shared/*`, from nested route pages).
 
+`pnpm typecheck` is two checks behind one name: `nuxt typecheck` for app/ and
+server/, then `tsc -p tsconfig.canary.json` for `scripts/canary/` + its tests,
+which neither of Nuxt's generated tsconfigs reaches.
+
+The gate is **offline on purpose**, and so is `.github/workflows/ci.yml`. The one
+thing it therefore cannot see is an upstream feed changing shape under the
+providers; that is the daily canary's job, off this gate entirely -
+[provider-canary.md](provider-canary.md).
+
 ## Coverage scope (and why it shapes the code)
 
 `apps/web-nuxt/vitest.config.ts` defines two projects:
