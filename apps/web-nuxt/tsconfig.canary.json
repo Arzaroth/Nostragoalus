@@ -1,0 +1,24 @@
+{
+  // `nuxt typecheck` covers app/ and server/, and neither of its two generated
+  // tsconfigs reaches scripts/. Without this the canary would compile against
+  // provider signatures that had already moved, and rot in silence - which is
+  // the exact failure it exists to catch.
+  //
+  // Wired into `pnpm typecheck` rather than added beside it, so "the gate" stays
+  // one command.
+  "compilerOptions": {
+    "target": "ES2023",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2023"],
+    "types": ["node"],
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "verbatimModuleSyntax": true,
+    // The `#shared` alias the app resolves natively: the provider modules the
+    // canary imports reach db/ through it.
+    "paths": { "#shared/*": ["./shared/*"] }
+  },
+  "include": ["scripts/canary/**/*.ts", "tests/canary/**/*.ts"]
+}

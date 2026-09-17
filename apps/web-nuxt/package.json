@@ -11,7 +11,7 @@
     "dev": "nuxt dev",
     "build": "nuxt build",
     "postbuild": "node scripts/build-integrity",
-    "typecheck": "nuxt typecheck",
+    "typecheck": "nuxt typecheck && tsc --noEmit -p tsconfig.canary.json",
     "preview": "nuxt preview",
     "start": "node .output/server/index.mjs",
     "postinstall": "nuxt prepare",
