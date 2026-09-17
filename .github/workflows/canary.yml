@@ -12,6 +12,11 @@ name: canary
 # Otherwise a FIFA outage, or a Tuesday in July with nothing played, would
 # repaint changes that have nothing to do with it - and we would all learn to
 # ignore the red.
+#
+# NOTE: GitHub disables a `schedule` trigger after 60 days with no activity in
+# the repository, silently. A quiet close-season is exactly when a feed gets
+# reorganised, so if this has not run in a while, check it is still enabled
+# before trusting the absence of an alarm.
 on:
   schedule:
     - cron: '23 6 * * *' # every day, 06:23 UTC
@@ -26,13 +31,30 @@ permissions:
   contents: read
   issues: write # so the alarm is seen somewhere other than a tab nobody opens
 
+# A manual dispatch overlapping the scheduled run would otherwise race the
+# de-duplication check and open two issues for the same morning.
+concurrency:
+  group: canary
+  cancel-in-progress: false
+
+env:
+  ALARM_LABEL: canary-drift
+  ALARM_TITLE: 'The canary is red: a match feed changed shape'
+
 jobs:
   shape:
     name: have the feeds moved?
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # The canary's own budget is 16 requests x 2 attempts x 20s = ~10 minutes of
+    # pure waiting on a bad upstream day, plus install. 15 cut it too close on
+    # exactly the morning the report matters most.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Nothing here pushes, and this job fetches bytes from four
+          # third-party hosts and runs install lifecycle scripts.
+          persist-credentials: false
 
       - uses: actions/setup-node@v4
         with:
@@ -42,23 +64,36 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       # The verdict is carried by the exit code, and `| tee` would swallow it -
-      # so it is captured by hand rather than left to the pipeline's status.
-      # 0 all well, 1 the shape moved, 2 a source could not be reached.
+      # so it is captured by hand. 0 all well, 1 the canary itself is broken,
+      # 2 a source could not be reached, 3 the shape moved.
+      #
+      # `inputs.sources` goes through env and is quoted: a `${{ }}` inside a
+      # `run:` block is expanded by GitHub into the script text BEFORE bash
+      # parses it, which is a shell injection that needs no commit and no
+      # review. The array keeps an empty value from becoming a stray argument.
       - name: canary
         id: canary
         shell: bash
+        env:
+          SOURCES: ${{ inputs.sources }}
         run: |
-          args=""
-          if [ -n "${{ inputs.sources }}" ]; then args="--sources ${{ inputs.sources }}"; fi
+          args=()
+          if [ -n "$SOURCES" ]; then args=(--sources "$SOURCES"); fi
           set +e
-          pnpm -C apps/web-nuxt canary $args > canary.txt 2>&1
+          pnpm -C apps/web-nuxt canary "${args[@]}" > canary.txt 2>&1
           code=$?
           set -e
           cat canary.txt
           echo "code=$code" >> "$GITHUB_OUTPUT"
+          # Belt and braces: pnpm and node both exit 1 on their own errors, so
+          # the code alone cannot tell our breakage from a feed change. The
+          # canary prints a verdict line that only it can produce.
+          verdict="$(grep -m1 '^canary-verdict:' canary.txt | cut -d' ' -f2 || true)"
+          echo "verdict=${verdict:-none}" >> "$GITHUB_OUTPUT"
 
-      # The report stays readable even when all is well: it is what says what was
-      # checked, and what could not be for want of a match to look at.
+      # `always()` and not just the default: every later step carries an implicit
+      # success(), so an artifact-service blip here used to skip the alarm AND
+      # the verdict, leaving a genuine red day with no issue and no report.
       - name: keep the report
         if: always()
         uses: actions/upload-artifact@v4
@@ -68,37 +103,64 @@ jobs:
           retention-days: 30
 
       # A red cross in the Actions tab is a thing nobody looks at. An issue is
-      # not. Only one is kept open: the following mornings comment on it rather
-      # than opening one a day.
+      # not. One is kept open and the following mornings comment on it.
       #
-      # Only on exit 1. An unreachable source (2) is an upstream having a bad
-      # morning, not the feed moving, and filing it as drift is how an alarm
-      # stops meaning anything.
+      # Only on the drift verdict. An unreachable source is an upstream having a
+      # bad morning and our own breakage is our bug - filing either as drift is
+      # how an alarm stops meaning anything.
       - name: raise the alarm
-        if: steps.canary.outputs.code == '1'
+        if: always() && steps.canary.outputs.verdict == 'drift'
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TITLE: 'The canary is red: a match feed changed shape'
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          report="$(tail -n 80 canary.txt 2>/dev/null || echo 'no report was produced')"
-          body="$(printf 'The canary of %s found drift.\n\n```\n%s\n```\n\nThe run: %s/%s/actions/runs/%s\n\nWhat to do: the report names the key and what was expected of it. The code that reads it lives in `apps/web-nuxt/server/utils/providers/`.\n' \
-            "$(date -u '+%Y-%m-%d')" "$report" \
-            "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID")"
-          number="$(gh issue list --state open --search "\"$TITLE\" in:title" \
-                    --json number --jq '.[0].number // empty')"
+          gh label create "$ALARM_LABEL" --color B60205 \
+            --description "The provider canary found a feed shape change" --force >/dev/null 2>&1 || true
+
+          # The summary first: it names every key and cross-check that failed.
+          # The full report follows, capped well under GitHub's 65536-character
+          # body limit. `tail` used to cut the report to its last 80 lines,
+          # which is the LAST source's all-green key table and nothing else.
+          summary="$(sed -n '/--- what to look at ---/,/^canary-verdict/p' canary.txt | head -c 8000)"
+          report="$(head -c 45000 canary.txt)"
+          body="$(printf 'The canary of %s found drift.\n\n%s\n\n<details><summary>Full report</summary>\n\n```\n%s\n```\n\n</details>\n\nThe run: %s\n\nWhat to do: the summary names the key and what was expected of it. The code that reads it lives in `apps/web-nuxt/server/utils/providers/`.\n' \
+            "$(date -u '+%Y-%m-%d')" "$summary" "$report" "$RUN_URL")"
+
+          # Filtered by LABEL, not by a full-text title search: search is
+          # fuzzy and eventually consistent, so a human issue whose title
+          # merely contains ours could absorb every future alarm.
+          number="$(gh issue list --state open --label "$ALARM_LABEL" --limit 1 --json number --jq '.[0].number // empty')"
           if [ -n "$number" ]; then
             gh issue comment "$number" --body "$body"
           else
-            gh issue create --title "$TITLE" --body "$body"
+            gh issue create --title "$ALARM_TITLE" --label "$ALARM_LABEL" --body "$body"
+          fi
+
+      # Without this the thread lives for ever: the fix lands, nobody closes it,
+      # and six weeks later a genuinely new drift arrives as comment #47 on a
+      # thread everyone has muted.
+      - name: stand the alarm down
+        if: always() && steps.canary.outputs.verdict == 'green'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          number="$(gh issue list --state open --label "$ALARM_LABEL" --limit 1 --json number --jq '.[0].number // empty')"
+          if [ -n "$number" ]; then
+            gh issue close "$number" --comment "Green again on $(date -u '+%Y-%m-%d'): every watched key is back where the providers expect it. $RUN_URL"
           fi
 
       # Last, so the report and the alarm are both in hand first. An unreachable
       # source still turns the run red - nothing was verified that day, and that
       # has to be visible - but it opens no issue.
       - name: verdict
-        if: steps.canary.outputs.code != '0'
+        if: always() && steps.canary.outputs.code != '0'
         shell: bash
+        env:
+          CODE: ${{ steps.canary.outputs.code }}
+          VERDICT: ${{ steps.canary.outputs.verdict }}
         run: |
-          echo "canary exited ${{ steps.canary.outputs.code }}"
-          exit ${{ steps.canary.outputs.code }}
+          echo "canary exited $CODE ($VERDICT)"
+          exit "$CODE"
