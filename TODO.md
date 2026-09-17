@@ -3620,34 +3620,55 @@ Deferred by the review fix pass (each was a deliberate call, not an oversight):
 
 The daily off-CI shape check over the live feeds
 (`apps/web-nuxt/scripts/canary/`, `.github/workflows/canary.yml`, see
-`brain/architecture/provider-canary.md`). It covers ESPN, FIFA, UEFA and World
-Rugby; these are what it deliberately does not cover yet.
+`brain/architecture/provider-canary.md`). It watches 271 keys across ESPN, FIFA,
+UEFA and World Rugby; these are what it deliberately does not watch yet, plus
+what it has already found.
 
+- [ ] **The canary is red on UEFA, and it is right.** `competitionId=3` returns
+      no played match for `seasonYear=2026` or `2025`; only 2024 answers, and
+      that season ended in May 2025. Either the Champions League has moved to a
+      different competition id, or UEFA numbers its seasons differently now -
+      and until we know which, `listFixtures` for a current-season UEFA
+      competition returns nothing. This is the first thing the canary caught and
+      it needs a human to decide what the id should be.
 - [ ] **Sofascore odds and football-data are not watched.** Sofascore goes
       through the cycletls engine (TLS fingerprinting, a spawned Go helper) and
       football-data needs an API key. Neither is known to work from a
       GitHub-hosted runner, so both were left out rather than shipped red. Needs
-      one probe run from Actions to find out, plus a repo secret for
+      one dispatch run from Actions to find out, plus a repo secret for
       football-data. Until then a Sofascore key rename is still invisible.
-- [ ] **A RARE key that is gone can stay `absent` for ever.** The level exists
-      so an own goal or a VAR free text does not fail a quiet morning, but
-      nothing notices that one of them has been absent for six weeks rather than
-      six days. The report prints the count each run and nothing reads the
-      series. A streak file, or the workflow diffing today's `absent` list
-      against the last green artifact, would close it.
-- [ ] **ESPN's group shape is probed on a frozen 2022 document.** A single-table
-      league has no standings `children`, so the group keys are checked against
-      the finished World Cup instead - deterministic, and green in July, but it
-      cannot notice ESPN changing the shape it serves for a LIVE group stage
-      while leaving the archive alone. Worth re-pointing at a real group stage
-      whenever one is running.
-- [ ] **UEFA's `competitionId=3` is assumed to be the Champions League.** The
-      canary walks back four `seasonYear`s and takes the first that answers with
-      fixtures; at the time of writing only 2024 does, which is already odd. If
-      that id is ever repurposed the canary would happily verify the shape of
-      the wrong competition. Nothing checks the name it got back.
-- [ ] **No coverage of the discovery endpoints.** `discoverCompetitions()` reads
-      ESPN's core league index and World Rugby's paged event catalog with their
-      own shapes; the canary only touches the World Rugby one, and only its
-      first page. An admin's add-a-competition flow can therefore break without
-      the canary noticing.
+- [ ] **ESPN's core API is not visited at all**, and it is the most
+      magic-string-dependent path we have. `getTopScorers` picks
+      `categories.find(c => c.name === 'goalsLeaders')` and returns [] when it
+      misses; `mapEspnSeasonStats` matches `totalGoals`, `possessionPct`,
+      `passPct` and friends literally; `mapEspnPosition` matches position
+      tokens. A rename empties the Golden Boot board and the team panels with no
+      alarm. The canary reads scoreboard, summary, teams and standings only.
+- [ ] **Neither provider's discovery endpoint is watched.** ESPN's core league
+      index and World Rugby's paged event catalog have their own shapes; the
+      canary touches the World Rugby one and only its first page. An admin's
+      add-a-competition flow can break without the canary noticing.
+- [ ] **FIFA's `IdAssistPlayer` is unwatched.** `mergeTimelineAssists` reads it,
+      and the goal table watches Type/IdPlayer/IdTeam/Minute/Period but not that
+      one - so assists could stop reaching the timeline with every other key in
+      place.
+- [ ] **A RARE key that is gone can stay `absent` for ever.** The level exists so
+      an own goal or a VAR free text does not fail a quiet morning, but nothing
+      notices that one has been absent for six weeks rather than six days. The
+      report prints the count each run and nothing reads the series. A streak
+      file, or the workflow diffing today's `absent` list against the last green
+      artifact, would close it.
+- [ ] **ESPN's group and knockout shapes are probed on a frozen 2022 document.**
+      A single-table league has no standings `children` and never produces a
+      knockout slug, so those are checked against the finished World Cup -
+      deterministic, and green in July, but it cannot notice ESPN changing the
+      shape it serves for a LIVE group stage while leaving the archive alone.
+      Worth re-pointing at a real group stage whenever one is running.
+- [ ] **Nothing checks that UEFA's `competitionId=3` is still the Champions
+      League.** The canary verifies the shape of whatever that id returns; if it
+      were repurposed it would happily verify the wrong competition. The
+      response carries no competition name to assert against.
+- [ ] **The canary workflow pins actions to mutable major tags**, like the rest
+      of the repo. It is the one workflow that both fetches attacker-influenced
+      bytes and runs install lifecycle scripts, so it is the best candidate for
+      SHA pinning if we ever do that repo-wide.
