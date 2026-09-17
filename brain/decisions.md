@@ -951,37 +951,60 @@ everywhere, so drift degrades instead of breaking. Fewer goals. No group letter.
 A competition that ingests nothing. Serving perfectly, with less in it.
 
 So a program that talks to the real feeds, daily:
-[architecture/provider-canary.md](architecture/provider-canary.md). Three
+[architecture/provider-canary.md](architecture/provider-canary.md). Four
 decisions in it are the whole design.
 
 **It is never run by `ci.yml`.** The gate has to stay offline and deterministic.
 A FIFA outage or a July Tuesday with nothing played would repaint a pull request
-that had nothing to do with it, and a red that fires for reasons outside the
-change is a red people learn to click past. The canary owns its own workflow, on
-a cron.
+that had nothing to do with the change, and a red that fires for reasons outside
+the change is a red people learn to click past. The canary owns its own workflow,
+on a cron.
 
 **Three levels of demand, not two.** A key that is absent and a key that has
 nothing to say today are different facts. REQUIRED must be everywhere; SAMPLED
 must appear once across everything inspected; RARE is watched and printed but
-never fails on absence, because an own goal does not happen every night. Plus
-`unchecked` when no object of that kind turned up at all. Four verdicts sounds
-like over-engineering until the first run: on a two-level design, a single
-sampled match reported half of UEFA's event vocabulary missing, and that alarm
-would have been switched off inside a month.
+never fails on absence, because an own goal does not happen every night and a
+World Cup bracket has no winner between editions. Plus `unchecked` when no object
+of that kind turned up at all. Four verdicts sounds like over-engineering until
+the first run: on a two-level design, a single sampled match reported half of
+UEFA's event vocabulary missing, and that alarm would have been switched off
+inside a month.
 
 **Presence is not enough, so the payload goes back through the real
 normalizers.** Every key can be in place and produce nothing - a value that
 changes shape, a vocabulary that gets renumbered, an array that empties. The
 canary counts by hand, then runs `normalizeEspnEvent` and friends over the same
-bytes and compares. That is what catches the class of bug where a status name
-drifts and every played match parks on SCHEDULED for ever.
+bytes and compares. A cross-check only earns its place if it can actually fire:
+comparing the output of a normalizer that never returns null against the count of
+what was fed to it compares a number with itself, and four of the first draft's
+twelve checks did exactly that.
 
-Its own specs were wrong five times on the first live run, and each correction is
-a fact about a feed: FIFA's `GroupName` is `[]` on knockout ties; its
-`BallPossession` goes null once an edition is archived; ESPN period markers carry
-an empty clock; the ESPN soccer scoreboard answers 400 to a date range; World
-Rugby writes explicit `null` where ESPN omits the key. Those live in the key
-tables now, which is the point - they were not written down anywhere before.
+**Drift exits 3, and 1 means the canary itself is broken.** An unhandled throw, a
+missing script, a tsx that will not load: all of them exit 1 already. Giving
+drift its own code is what stops the workflow filing our own breakage as a feed
+change and opening an issue that blames ESPN - and, worse, stops a real drift
+being indistinguishable from a broken canary. The run also prints a
+`canary-verdict:` line, because an exit code cannot prove it came from the canary
+rather than from pnpm.
+
+The calibration is the hard part, and it is not guessable from the types. Each of
+these was a live run or a review finding, and each is now a comment on the key it
+explains: FIFA's `GroupName` is `[]` on knockout ties and its `BallPossession`
+goes null once an edition is archived; ESPN period markers carry an empty clock,
+its scoreboard answers 400 to a date range, and its `displayClock` disappears the
+moment a match ends; World Rugby writes explicit `null` where ESPN omits the key,
+publishes no phase at all on a round-robin event, and leaves `countryCode` empty
+on every international fixture. The general rules underneath them - a `| null` in
+the provider type is nullable by contract, an empty string is absence, a
+fallback-only key is RARE, a phase-only key is checked only in that phase - are
+in the architecture doc.
+
+Two findings were worth the review on their own. ESPN's detail scope was gated
+behind `scoringPlay`, the very key it watches, so renaming it would have left
+every detail key `unchecked` and the canary green on its own motivating example.
+And UEFA's season walk-back accepted the first non-empty year, which greenlit a
+two-year-old archive while the live season's endpoint answered with nothing -
+the canary reporting health about a feed the app could no longer read.
 
 Sofascore and football-data are deliberately out of scope for now: one goes
 through cycletls (TLS fingerprinting) and the other needs a key, and neither is

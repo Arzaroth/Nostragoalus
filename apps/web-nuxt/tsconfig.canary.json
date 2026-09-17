@@ -16,8 +16,10 @@
     "noEmit": true,
     "skipLibCheck": true,
     "verbatimModuleSyntax": true,
-    // The `#shared` alias the app resolves natively: the provider modules the
-    // canary imports reach db/ through it.
+    // The `#shared` alias the app resolves natively. The canary reaches it
+    // transitively and not obviously: fifa.ts imports ../stats/insights, which
+    // imports db/schema, whose app-schema.ts is written against #shared/types.
+    // Dropping this entry breaks `pnpm typecheck`.
     "paths": { "#shared/*": ["./shared/*"] }
   },
   "include": ["scripts/canary/**/*.ts", "tests/canary/**/*.ts"]
