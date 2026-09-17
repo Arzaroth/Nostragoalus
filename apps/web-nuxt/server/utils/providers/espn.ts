@@ -372,14 +372,14 @@ export interface EspnLeagueDoc {
 
 const DEFAULT_CORE_BASE_URL = 'https://sports.core.api.espn.com/v2/sports/soccer/leagues'
 
-const DEFAULT_BASE_URL = 'https://site.api.espn.com/apis/site/v2/sports/soccer'
+export const ESPN_SITE_BASE_URL = 'https://site.api.espn.com/apis/site/v2/sports/soccer'
 // Standings live on apis/v2, not apis/site/v2. The site path also answers 200,
 // with an almost empty object - a wrong address that looks like a working one.
-const DEFAULT_STANDINGS_BASE_URL = 'https://site.api.espn.com/apis/v2/sports/soccer'
+export const ESPN_STANDINGS_BASE_URL = 'https://site.api.espn.com/apis/v2/sports/soccer'
 
 // An Akamai in front of the API 403s on the User-Agent, in HTML rather than
 // JSON. Branded and browser-shaped agents are refused; a plain tool agent passes.
-const USER_AGENT = 'curl/8.0'
+export const USER_AGENT = 'curl/8.0'
 
 const DEFAULT_TIMEOUT_MS = 20_000
 
@@ -398,8 +398,8 @@ const MAX_DISCOVERED = 400
 const DISCOVERY_CONCURRENCY = 6
 
 export function espnProvider(options: EspnOptions): MatchDataProvider {
-  const baseUrl = options.baseUrl ?? DEFAULT_BASE_URL
-  const standingsBaseUrl = options.standingsBaseUrl ?? DEFAULT_STANDINGS_BASE_URL
+  const baseUrl = options.baseUrl ?? ESPN_SITE_BASE_URL
+  const standingsBaseUrl = options.standingsBaseUrl ?? ESPN_STANDINGS_BASE_URL
   const coreBaseUrl = options.coreBaseUrl ?? DEFAULT_CORE_BASE_URL
   const league = encodeURIComponent(options.league)
   const doFetch = options.fetchImpl ?? fetch

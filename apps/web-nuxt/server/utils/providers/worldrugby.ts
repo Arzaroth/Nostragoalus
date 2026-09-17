@@ -37,7 +37,7 @@ import {
 // over together: typed pool letters, a typed bronze final, and the World Rugby
 // rankings that drive champion tiers.
 
-const DEFAULT_BASE_URL = 'https://api.wr-rims-prod.pulselive.com/rugby/v3'
+export const WORLDRUGBY_BASE_URL = 'https://api.wr-rims-prod.pulselive.com/rugby/v3'
 
 // The feed's sport codes. Union and sevens, men's / women's / age-grade; a
 // competition binds to exactly one, and it is what discovery filters on. The
@@ -302,7 +302,7 @@ export interface WorldRugbyOptions {
 }
 
 export function worldRugbyProvider(options: WorldRugbyOptions): MatchDataProvider {
-  const baseUrl = options.baseUrl ?? DEFAULT_BASE_URL
+  const baseUrl = options.baseUrl ?? WORLDRUGBY_BASE_URL
   const eventId = options.eventId
   const sport = (options.sport ?? 'mru').toLowerCase()
   const doFetch = options.fetchImpl ?? fetch

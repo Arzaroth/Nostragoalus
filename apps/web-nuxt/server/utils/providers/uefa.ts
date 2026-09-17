@@ -496,13 +496,13 @@ export interface UefaOptions {
   rateLimiter?: RateLimiter
 }
 
-const DEFAULT_BASE_URL = 'https://match.uefa.com'
+export const UEFA_BASE_URL = 'https://match.uefa.com'
 const DEFAULT_STATS_BASE_URL = 'https://compstats.uefa.com'
 const DEFAULT_MATCH_STATS_BASE_URL = 'https://matchstats.uefa.com'
 const DEFAULT_COMP_BASE_URL = 'https://comp.uefa.com'
 
 export function uefaProvider(options: UefaOptions): MatchDataProvider {
-  const baseUrl = options.baseUrl ?? DEFAULT_BASE_URL
+  const baseUrl = options.baseUrl ?? UEFA_BASE_URL
   const statsBaseUrl = options.statsBaseUrl ?? DEFAULT_STATS_BASE_URL
   const matchStatsBaseUrl = options.matchStatsBaseUrl ?? DEFAULT_MATCH_STATS_BASE_URL
   const compBaseUrl = options.compBaseUrl ?? DEFAULT_COMP_BASE_URL

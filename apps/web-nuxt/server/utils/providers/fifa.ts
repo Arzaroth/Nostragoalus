@@ -918,7 +918,7 @@ export interface FifaOptions {
   rateLimiter?: RateLimiter
 }
 
-const DEFAULT_BASE_URL = 'https://api.fifa.com/api/v3'
+export const FIFA_BASE_URL = 'https://api.fifa.com/api/v3'
 const DEFAULT_FDH_BASE_URL = 'https://fdh-api.fifa.com'
 
 interface FifaSeason {
@@ -962,7 +962,7 @@ export async function resolveFifaSeasonId(opts: {
   baseUrl?: string
   fetchImpl?: typeof fetch
 }): Promise<string> {
-  const baseUrl = opts.baseUrl ?? DEFAULT_BASE_URL
+  const baseUrl = opts.baseUrl ?? FIFA_BASE_URL
   const doFetch = opts.fetchImpl ?? fetch
   const response = await doFetch(`${baseUrl}/seasons?idCompetition=${opts.competitionId}&count=100&language=en`)
   if (!response.ok) throw new ProviderUpstreamError(response.status, await response.text())
@@ -971,7 +971,7 @@ export async function resolveFifaSeasonId(opts: {
 }
 
 export function fifaProvider(options: FifaOptions): MatchDataProvider {
-  const baseUrl = options.baseUrl ?? DEFAULT_BASE_URL
+  const baseUrl = options.baseUrl ?? FIFA_BASE_URL
   const fdhBaseUrl = options.fdhBaseUrl ?? DEFAULT_FDH_BASE_URL
   const doFetch = options.fetchImpl ?? fetch
   const gamedayFetch = options.gamedayFetch ?? defaultGamedayFetch
