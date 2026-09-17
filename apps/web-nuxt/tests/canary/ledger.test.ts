@@ -7,7 +7,7 @@
  * the key), and an empty one (it must not cry wolf).
  */
 import { describe, expect, it } from 'vitest'
-import { CHECKS, dig, Ledger, nullable, oneOf, RARE, REQUIRED, SAMPLED } from '../../scripts/canary/ledger'
+import { CHECKS, dig, isObject, Ledger, nullable, oneOf, RARE, REQUIRED, SAMPLED } from '../../scripts/canary/ledger'
 
 describe('dig', () => {
   it('walks a dotted path through objects and arrays', () => {
@@ -172,5 +172,109 @@ describe('Ledger verdicts', () => {
     ledger.check('row', { id: '1' }, table)
     ledger.check('row', {}, table)
     expect(ledger.lines()[0]).toContain('1/2')
+  })
+})
+
+describe('numeric checks', () => {
+  it('accepts a number written either way', () => {
+    for (const value of [5, '5', ' 5 ']) expect(CHECKS.integer.test(value)).toBe(true)
+    expect(CHECKS.number.test('55.1')).toBe(true)
+  })
+
+  it('refuses a scalar wrapped in a list, which is how a feed adds multi-value', () => {
+    // `digits([5])` is '5', so stringifying first let this through and the
+    // app's Number() broke while the canary stayed green.
+    expect(CHECKS.integer.test([5])).toBe(false)
+    expect(CHECKS.number.test([5])).toBe(false)
+  })
+
+  it('refuses a boolean, an object and an empty string', () => {
+    for (const value of [true, {}, '', null, undefined]) {
+      expect(CHECKS.integer.test(value)).toBe(false)
+      expect(CHECKS.number.test(value)).toBe(false)
+    }
+  })
+
+  it('refuses a number that is not one', () => {
+    expect(CHECKS.integer.test('three')).toBe(false)
+    expect(CHECKS.integer.test('5.5')).toBe(false)
+    expect(CHECKS.number.test('5.5')).toBe(true)
+  })
+
+  it('wants epoch millis to be an actual number, not a numeric string', () => {
+    expect(CHECKS.epochMillis.test(1770000000000)).toBe(true)
+    expect(CHECKS.epochMillis.test('1770000000000')).toBe(false)
+    expect(CHECKS.epochMillis.test(0)).toBe(false)
+  })
+
+  it('wants an http url, not any text', () => {
+    expect(CHECKS.url.test('https://example.test/a.png')).toBe(true)
+    expect(CHECKS.url.test('example.test/a.png')).toBe(false)
+  })
+
+  it('separates a list from a non-empty one, and an object from a list', () => {
+    expect(CHECKS.list.test([])).toBe(true)
+    expect(CHECKS.filledList.test([])).toBe(false)
+    expect(CHECKS.object.test([])).toBe(false)
+    expect(CHECKS.object.test(null)).toBe(false)
+    expect(CHECKS.object.test({})).toBe(true)
+  })
+})
+
+describe('isObject', () => {
+  it('is the one definition the sources share', () => {
+    expect(isObject({})).toBe(true)
+    expect(isObject([])).toBe(false)
+    expect(isObject(null)).toBe(false)
+    expect(isObject('text')).toBe(false)
+  })
+})
+
+describe('an empty string on a contextual key', () => {
+  const sampled = [['name', SAMPLED, CHECKS.filledText] as const]
+
+  it('reads as absence, the way an omitted key does', () => {
+    // ESPN serializes an undrawn side with empty strings and the adapters read
+    // that as absence; reporting TYPE for it says "the feed changed shape"
+    // about a value the app handles by design.
+    const ledger = new Ledger([['row', sampled]])
+    ledger.check('row', { name: '' }, sampled)
+    expect(ledger.verdict('row.name')).toBe('MISSING')
+    ledger.check('row', { name: 'Alpha' }, sampled)
+    expect(ledger.verdict('row.name')).toBe('ok')
+  })
+
+  it('is still held against a required key', () => {
+    const strict = [['name', REQUIRED, CHECKS.filledText] as const]
+    const ledger = new Ledger([['row', strict]])
+    ledger.check('row', { name: '' }, strict)
+    expect(ledger.verdict('row.name')).toBe('TYPE')
+  })
+})
+
+describe('checkEach', () => {
+  const table = [['id', REQUIRED, CHECKS.identifier] as const]
+
+  it('inspects every object and counts them', () => {
+    const ledger = new Ledger([['row', table]])
+    expect(ledger.checkEach('row', [{ id: '1' }, { id: '2' }], table)).toBe(2)
+    expect(ledger.verdict('row.id')).toBe('ok')
+  })
+
+  it('records an anomaly for an entry that is not an object', () => {
+    // Half the hand-written copies of this loop used to `continue` silently, so
+    // a list of strings was reported in some scopes and swallowed in others.
+    const ledger = new Ledger([['row', table]])
+    expect(ledger.checkEach('row', [{ id: '1' }, 'nope'], table, 'the rows')).toBe(1)
+    expect(ledger.anomalies).toEqual(['an entry of the rows is not an object'])
+    expect(ledger.failures()).toContain('an entry of the rows is not an object')
+  })
+
+  it('treats a missing list as nothing to look at, and a non-list as an anomaly', () => {
+    const ledger = new Ledger([['row', table]])
+    expect(ledger.checkEach('row', null, table, 'the rows')).toBe(0)
+    expect(ledger.anomalies).toEqual([])
+    ledger.checkEach('row', { id: '1' }, table, 'the rows')
+    expect(ledger.anomalies).toEqual(['the rows is not a list'])
   })
 })

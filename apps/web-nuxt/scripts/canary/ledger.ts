@@ -42,8 +42,13 @@ export type Plan = readonly (readonly [scope: string, table: Table])[]
 
 const check = (label: string, test: (value: unknown) => boolean): Check => ({ label, test })
 
-function isObject(value: unknown): value is Record<string, unknown> {
+export function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+/** A value the providers are willing to put through String() or Number(). */
+function scalar(value: unknown): value is string | number {
+  return typeof value === 'string' || typeof value === 'number'
 }
 
 function digits(value: unknown): string {
@@ -75,8 +80,17 @@ export const CHECKS = {
     'identifier',
     (value) => (typeof value === 'string' || typeof value === 'number') && digits(value) !== '',
   ),
-  integer: check('integer', (value) => digits(value) !== '' && Number.isInteger(Number(digits(value)))),
-  number: check('number', (value) => digits(value) !== '' && Number.isFinite(Number(digits(value)))),
+  // `scalar` first: without it `digits([5])` is '5', so a feed that started
+  // wrapping a number in a one-element array - an ordinary way for an upstream
+  // to add multi-value support - read as OK while the app's Number() broke.
+  integer: check(
+    'integer',
+    (value) => scalar(value) && digits(value) !== '' && Number.isInteger(Number(digits(value))),
+  ),
+  number: check(
+    'number',
+    (value) => scalar(value) && digits(value) !== '' && Number.isFinite(Number(digits(value))),
+  ),
   boolean: check('boolean', (value) => typeof value === 'boolean'),
   // What every normalizer hands to `new Date()` before calling .toISOString().
   date: check('date', (value) => typeof value === 'string' && Number.isFinite(new Date(value).getTime())),
@@ -135,12 +149,14 @@ export class Ledger {
   observe(path: string, level: Level, expected: Check, found: boolean, value?: unknown): void {
     this.declare(path, level, expected)
     const entry = this.entries.get(path)!
-    // An explicit null on a contextual key is the feed saying "nothing here this
-    // time", which is what SAMPLED and RARE already mean - World Rugby spells it
-    // out where ESPN just omits the key, and the two must read the same. Only
-    // REQUIRED holds a null against the feed, and a REQUIRED key that is allowed
-    // to be null says so with nullable().
-    if (!found || (value === null && level !== REQUIRED)) {
+    // An explicit null or an empty string on a contextual key is the feed saying
+    // "nothing here this time", which is what SAMPLED and RARE already mean.
+    // World Rugby spells it out with null where ESPN just omits the key, and
+    // ESPN serializes an undrawn side with empty strings (see `toTeam` in
+    // providers/espn.ts) - all three must read the same. Only REQUIRED holds
+    // them against the feed, and a REQUIRED key allowed to be empty says so
+    // with nullable() or a check that admits it.
+    if (!found || (level !== REQUIRED && (value === null || value === ''))) {
       entry.missing += 1
       return
     }
@@ -156,6 +172,32 @@ export class Ledger {
       const { found, value } = dig(target, path)
       this.observe(`${scope}.${path}`, level, expected, found, value)
     }
+  }
+
+  /**
+   * Every object of a list against the table describing its kind. Returns how
+   * many were inspected.
+   *
+   * This exists because the same loop was written out at every call site and
+   * half of those copies dropped a non-object entry silently, so a feed turning
+   * a list of objects into a list of strings was reported in some scopes and
+   * swallowed in others.
+   */
+  checkEach(scope: string, list: unknown, table: Table, what = scope): number {
+    if (!Array.isArray(list)) {
+      if (list != null) this.anomaly(`${what} is not a list`)
+      return 0
+    }
+    let seen = 0
+    for (const entry of list) {
+      if (!isObject(entry)) {
+        this.anomaly(`an entry of ${what} is not an object`)
+        continue
+      }
+      seen += 1
+      this.check(scope, entry, table)
+    }
+    return seen
   }
 
   /** Something that fits no table: an entry of a list that is not an object. */
