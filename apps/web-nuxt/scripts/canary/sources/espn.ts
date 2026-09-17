@@ -1,35 +1,47 @@
-import { espnMinute, mapEspnStage, normalizeEspnEvent, type EspnEvent } from '../../../server/utils/providers/espn'
-import { espnEventKind, type EspnKeyEvent, type EspnSummary } from '../../../server/utils/providers/espn-summary'
-import { CHECKS, dig, Ledger, oneOf, RARE, REQUIRED, SAMPLED, type Plan, type Table } from '../ledger'
-import { europeanSeasonYear, type CanaryContext, type CanarySource } from '../source'
+import {
+  ESPN_SITE_BASE_URL,
+  ESPN_STANDINGS_BASE_URL,
+  espnMinute,
+  mapEspnStage,
+  normalizeEspnEvent,
+  USER_AGENT,
+  type EspnEvent,
+} from '../../../server/utils/providers/espn'
+import {
+  espnEventKind,
+  espnSummaryTeams,
+  parseEspnGoals,
+  parseEspnLineups,
+  parseEspnMatchDetail,
+  parseEspnMatchStats,
+  parseEspnTimeline,
+  type EspnKeyEvent,
+  type EspnSummary,
+} from '../../../server/utils/providers/espn-summary'
+import { parseGroupNameStrict } from '../../../server/utils/providers/stage'
+import { CHECKS, dig, isObject, oneOf, RARE, REQUIRED, SAMPLED, type Plan, type Table } from '../ledger'
+import { describeError, europeanSeasonYear, walkBackSeasons, type CanaryContext, type CanarySource } from '../source'
 
-const SITE_BASE = 'https://site.api.espn.com/apis/site/v2/sports/soccer'
-const STANDINGS_BASE = 'https://site.api.espn.com/apis/v2/sports/soccer'
-
-// Taken from the provider, not invented: a branded or browser-shaped agent is
-// refused by the Akamai in front of this API, in HTML rather than JSON.
-const USER_AGENT = 'curl/8.0'
+// Imported, never re-typed: a canary polling a host the app has stopped reading
+// is worse than no canary, because it reports green about a feed nobody uses.
+const SITE_BASE = ESPN_SITE_BASE_URL
+const STANDINGS_BASE = ESPN_STANDINGS_BASE_URL
 
 // Asked exactly as the provider asks: `limit=500&dates=<season year>`. The
 // soccer scoreboard answers 400 to a date RANGE and serves only the current day
 // without `dates` at all, so a whole season is both what the app reads and the
 // only window that still carries played matches in July.
 const PAGE = '500'
-
-// A season year that has not started yet answers with an empty board, which is
-// a quiet August and not drift. Walking back finds the last one that was played.
 const SEASONS_BACK = 3
 
-// Two busy domestic leagues. They rarely play on the same days, which is what
-// makes it near-certain that some goal, somewhere, was scored in the window.
 const LEAGUES = ['eng.1', 'esp.1']
 
-// The group letter comes from the standings tree, and only a competition with
-// groups has one. Asked of a single-table league it would report `children`
-// MISSING every morning for a fact that is not a defect, so the group shape is
-// probed on a finished World Cup instead: a document whose shape answers "does
-// the standings tree still nest groups this way" exactly as well as a live one,
-// and answers it in July.
+// A finished World Cup, for the two shapes a domestic league cannot show: the
+// standings tree only nests `children` for a competition with groups, and a
+// single table never produces a knockout season slug. Frozen on purpose - it
+// answers those questions deterministically, in July as well as in March. What
+// it cannot see is ESPN changing the shape it serves for a LIVE group stage
+// while leaving the archive alone; see TODO.md.
 const GROUPED = { league: 'fifa.world', season: '2022' }
 
 const STATE = oneOf('pre/in/post', ['pre', 'in', 'post'])
@@ -52,20 +64,31 @@ const COMPETITION: Table = [
   ['status.type.name', REQUIRED, CHECKS.filledText],
   ['status.type.state', REQUIRED, STATE],
   ['status.type.completed', SAMPLED, CHECKS.boolean],
+]
+
+// Asked only of a match that has kicked off. A board of fixtures legitimately
+// carries neither, and demanding them of one reds every pre-season morning.
+const COMPETITION_STARTED: Table = [
   ['status.period', SAMPLED, CHECKS.integer],
-  // Absent until something happens in the match, so never REQUIRED - but a
-  // board where it stopped appearing at all is the timeline going dark.
   ['details', SAMPLED, CHECKS.list],
 ]
 
-// `winner` and `shootoutScore` are deliberately absent: a third of any board is
-// matches not yet played, which legitimately carry neither, and a watched key
-// missing on two objects in three would go red every day. The invariant that
-// matters for them is asserted in crossCheck().
+// `homeAway` is SAMPLED, not REQUIRED: normalizeEspnEvent has a written fallback
+// for a payload where NEITHER side is labelled, so a half-labelled board is
+// something the adapter survives. That the sides still resolve is asserted in
+// crossCheck(), which is the invariant that actually matters.
 const COMPETITOR: Table = [
-  ['homeAway', REQUIRED, SIDE],
+  ['homeAway', SAMPLED, SIDE],
   ['score', REQUIRED, CHECKS.integer],
   ['team', REQUIRED, CHECKS.object],
+]
+
+// Only on a decided match, so RARE rather than SAMPLED - but watched, because
+// normalizeEspnEvent reads both and nothing else would notice them going.
+// crossCheck() asserts they still resolve a winner.
+const COMPETITOR_OUTCOME: Table = [
+  ['winner', RARE, CHECKS.boolean],
+  ['shootoutScore', RARE, CHECKS.integer],
 ]
 
 const TEAM: Table = [
@@ -76,30 +99,59 @@ const TEAM: Table = [
   ['logo', SAMPLED, CHECKS.url],
 ]
 
-const DETAIL: Table = [
+// Checked on EVERY detail, before anything is filtered. Gating these behind
+// `scoringPlay` made the whole scope unfalsifiable: if ESPN renamed that key,
+// every detail was skipped, all five keys ended `unchecked`, and the canary went
+// green on the one drift its own header names as the motivating example.
+const DETAIL_FLAGS: Table = [
   ['scoringPlay', REQUIRED, CHECKS.boolean],
+  ['shootout', SAMPLED, CHECKS.boolean],
+]
+
+// On the goals only, which is all the provider reads them from.
+const DETAIL_GOAL: Table = [
   ['clock.displayValue', REQUIRED, CHECKS.filledText],
   ['team.id', REQUIRED, CHECKS.identifier],
-  ['shootout', SAMPLED, CHECKS.boolean],
   ['scoreValue', SAMPLED, CHECKS.integer],
 ]
 
-// Only asked for a match that scored, so an empty keyEvents here is drift, not
-// a quiet afternoon.
 const SUMMARY: Table = [
   ['keyEvents', REQUIRED, CHECKS.filledList],
   ['rosters', SAMPLED, CHECKS.filledList],
   ['boxscore.teams', SAMPLED, CHECKS.filledList],
-  ['header.competitions', SAMPLED, CHECKS.filledList],
-  ['gameInfo.venue.fullName', SAMPLED, CHECKS.filledText],
+  ['header.competitions', REQUIRED, CHECKS.filledList],
+  // ESPN thins gameInfo on older and lower-profile documents, and the sample is
+  // two matches - not enough to tell "gone" from "not this one".
+  ['gameInfo.venue.fullName', RARE, CHECKS.filledText],
+  ['gameInfo.attendance', RARE, CHECKS.integer],
+]
+
+// The fallback that identifies both sides before line-ups are published; every
+// goal is dropped on the floor when it stops resolving (see sideOf in
+// espn-summary.ts), so it is watched rather than assumed.
+const SUMMARY_HEADER: Table = [
+  ['competitors', REQUIRED, CHECKS.filledList],
+  ['status.type.name', SAMPLED, CHECKS.filledText],
+  // Only while a match is running: verified live that ESPN drops the key
+  // entirely once the state is 'post', and the canary always samples a match
+  // that has already scored.
+  ['status.displayClock', RARE, CHECKS.filledText],
+]
+
+const SUMMARY_HEADER_SIDE: Table = [
+  ['homeAway', REQUIRED, SIDE],
+  ['team.id', REQUIRED, CHECKS.identifier],
+  ['team.displayName', SAMPLED, CHECKS.filledText],
+  ['team.abbreviation', SAMPLED, CHECKS.filledText],
 ]
 
 const KEY_EVENT: Table = [
-  ['type.id', REQUIRED, CHECKS.identifier],
-  ['type.text', REQUIRED, CHECKS.filledText],
+  // Read as `?? ''` by espnEventTypeId, so an unlabelled event is survivable -
+  // but the VOCABULARY is asserted in summaryCrossCheck().
+  ['type.id', SAMPLED, CHECKS.identifier],
+  ['type.text', SAMPLED, CHECKS.filledText],
   // `text` and not `filledText`: a period marker legitimately carries an empty
-  // clock. That the clock can still be READ is asserted in summaryCrossCheck(),
-  // which is the invariant that actually matters.
+  // clock. That the clock can still be READ is asserted in summaryCrossCheck().
   ['clock.displayValue', REQUIRED, CHECKS.text],
   ['period.number', SAMPLED, CHECKS.integer],
   ['team.id', SAMPLED, CHECKS.identifier],
@@ -108,23 +160,24 @@ const KEY_EVENT: Table = [
 ]
 
 const PARTICIPANT: Table = [
-  ['athlete', REQUIRED, CHECKS.object],
+  // `athlete?: ... | null` upstream, read as `p.athlete?.id` - one participant
+  // without an athlete must not red the source.
+  ['athlete', SAMPLED, CHECKS.object],
   ['athlete.id', SAMPLED, CHECKS.identifier],
   ['athlete.displayName', SAMPLED, CHECKS.filledText],
 ]
 
 const ROSTER: Table = [
-  ['homeAway', REQUIRED, SIDE],
+  ['homeAway', SAMPLED, SIDE],
   ['team.id', REQUIRED, CHECKS.identifier],
   ['roster', SAMPLED, CHECKS.filledList],
   ['formation', SAMPLED, CHECKS.filledText],
 ]
 
 const ROSTER_ENTRY: Table = [
-  ['athlete', REQUIRED, CHECKS.object],
+  ['athlete', SAMPLED, CHECKS.object],
   ['athlete.displayName', SAMPLED, CHECKS.filledText],
-  // Read only behind displayName (espn-summary.ts), so its absence costs
-  // nothing while that one holds - watched for a type change, not for presence.
+  // Read only behind displayName, so its absence costs nothing while that holds.
   ['athlete.shortName', RARE, CHECKS.filledText],
   ['starter', SAMPLED, CHECKS.boolean],
   ['jersey', SAMPLED, CHECKS.filledText],
@@ -138,7 +191,10 @@ const BOXSCORE_TEAM: Table = [
 
 const BOXSCORE_STAT: Table = [
   ['name', REQUIRED, CHECKS.filledText],
-  ['displayValue', SAMPLED, CHECKS.text],
+  // ESPN ships no `value` key at all on these (verified live: 28/28 undefined),
+  // so parseEspnMatchStats depends entirely on displayValue parsing as a bare
+  // number. The day it becomes "40%" every stat silently goes null.
+  ['displayValue', REQUIRED, CHECKS.number],
 ]
 
 const TEAM_LIST: Table = [
@@ -162,14 +218,19 @@ const STANDINGS_GROUP: Table = [
 
 const STANDINGS_ENTRY: Table = [['team.id', REQUIRED, CHECKS.identifier]]
 
-const PLAN: Plan = [
+export const ESPN_PLAN: Plan = [
   ['payload', PAYLOAD],
   ['event', EVENT],
   ['competition', COMPETITION],
+  ['competition.started', COMPETITION_STARTED],
   ['competitor', COMPETITOR],
+  ['competitor', COMPETITOR_OUTCOME],
   ['competitor.team', TEAM],
-  ['detail', DETAIL],
+  ['detail', DETAIL_FLAGS],
+  ['detail.goal', DETAIL_GOAL],
   ['summary', SUMMARY],
+  ['summary.header.competitions[]', SUMMARY_HEADER],
+  ['summary.header.competitors[]', SUMMARY_HEADER_SIDE],
   ['summary.keyEvents[]', KEY_EVENT],
   ['summary.keyEvents[].participants[]', PARTICIPANT],
   ['summary.rosters[]', ROSTER],
@@ -187,6 +248,7 @@ interface Tally {
   events: number
   usable: number
   finished: number
+  decided: number
   goals: number
 }
 
@@ -194,12 +256,14 @@ interface Scoreboard {
   events?: EspnEvent[] | null
 }
 
+type Ledger = CanaryContext['ledger']
+
 function inspectScoreboard(payload: Scoreboard, ledger: Ledger): Tally {
-  const tally: Tally = { events: 0, usable: 0, finished: 0, goals: 0 }
+  const tally: Tally = { events: 0, usable: 0, finished: 0, decided: 0, goals: 0 }
   ledger.check('payload', payload, PAYLOAD)
 
   for (const event of payload.events ?? []) {
-    if (typeof event !== 'object' || event === null) {
+    if (!event || typeof event !== 'object') {
       ledger.anomaly('an entry of events is not an object')
       continue
     }
@@ -212,34 +276,41 @@ function inspectScoreboard(payload: Scoreboard, ledger: Ledger): Tally {
       continue
     }
     ledger.check('competition', competition, COMPETITION)
-    if (competition.status?.type?.state === 'post') tally.finished += 1
+    const state = competition.status?.type?.state
+    const finished = state === 'post'
+    if (state && state !== 'pre') ledger.check('competition.started', competition, COMPETITION_STARTED)
+    if (finished) tally.finished += 1
 
     const sides = new Set<string>()
+    const scores: number[] = []
     for (const competitor of competition.competitors ?? []) {
-      if (typeof competitor !== 'object' || competitor === null) {
+      if (!competitor || typeof competitor !== 'object') {
         ledger.anomaly('an entry of competitors is not an object')
         continue
       }
       ledger.check('competitor', competitor, COMPETITOR)
+      // Only asked of a decided match: a fixture legitimately carries neither.
+      if (finished) ledger.check('competitor', competitor, COMPETITOR_OUTCOME)
       if (competitor.team && typeof competitor.team === 'object') {
         ledger.check('competitor.team', competitor.team, TEAM)
       }
-      if (competitor.homeAway) sides.add(competitor.homeAway)
+      if (competitor.homeAway) sides.add(String(competitor.homeAway))
+      scores.push(Number(competitor.score) || 0)
     }
     if (sides.has('home') && sides.has('away')) tally.usable += 1
     else ledger.anomaly('a match with no home side and away side')
+    if (finished && scores.length === 2 && scores[0] !== scores[1]) tally.decided += 1
 
     for (const detail of competition.details ?? []) {
-      if (typeof detail !== 'object' || detail === null) {
+      if (!detail || typeof detail !== 'object') {
         ledger.anomaly('an entry of details is not an object')
         continue
       }
-      // A yellow card is in the list and nothing reads it; the shootout kick
-      // carries scoringPlay without moving the score, and counting it as a goal
-      // would go red on every cup night for behaviour that is intended.
+      // Every detail, unconditionally - see DETAIL_FLAGS.
+      ledger.check('detail', detail, DETAIL_FLAGS)
       if (!detail.scoringPlay || detail.shootout) continue
       tally.goals += 1
-      ledger.check('detail', detail, DETAIL)
+      ledger.check('detail.goal', detail, DETAIL_GOAL)
     }
   }
   return tally
@@ -255,82 +326,123 @@ function crossCheck(payload: Scoreboard, tally: Tally): string[] {
   try {
     matches = (payload.events ?? []).map((event) => normalizeEspnEvent(event)).filter((m) => m !== null)
   } catch (error) {
-    return [`normalizeEspnEvent() threw ${error instanceof Error ? error.message : String(error)}`]
+    return [`normalizeEspnEvent() threw ${describeError(error)}`]
   }
 
   if (matches.length !== tally.usable) {
     problems.push(`normalizeEspnEvent() yields ${matches.length} match(es) for ${tally.usable} usable in the response`)
   }
-  if (matches.length && !matches.some((m) => m.homeTeam.name && m.awayTeam.name)) {
-    problems.push('no match carries the name of both its teams')
+  // Not `some(m => m.homeTeam.name)`: toTeam falls back to 'TBD', which is
+  // truthy, so the obvious form of this check can never fire. What matters is
+  // that the names are not ALL the placeholder.
+  if (matches.length && !matches.some((m) => m.homeTeam.name !== 'TBD' && m.awayTeam.name !== 'TBD')) {
+    problems.push(`all ${matches.length} matches resolved both sides to the TBD placeholder`)
   }
-  // The status vocabulary drifting would leave every key in place and quietly
-  // park a finished tournament on SCHEDULED, which is how a board stops scoring.
   if (tally.finished && !matches.some((m) => m.status === 'FINISHED')) {
     problems.push(`${tally.finished} match(es) in state 'post' and not one maps to FINISHED`)
   }
-  // Only a board that actually carries knockout ties can be asked to produce
-  // one: a domestic league is a single table, so every match of it mapping to
-  // GROUP is correct, not a collapse. The slug is what the provider maps from,
-  // so this asks the question with the same input the provider uses.
-  const knockout = (payload.events ?? []).filter((e) => mapEspnStage(e.season?.slug) !== 'GROUP')
-  if (knockout.length && !matches.some((m) => m.stage !== 'GROUP')) {
-    problems.push(`${knockout.length} event(s) carry a knockout season slug and not one yields a stage past GROUP`)
+  // `winner` is what carries knockout progression and the derived bracket. A
+  // decided match that resolves no winner is the silent half of that failure.
+  if (tally.decided && !matches.some((m) => m.winner === 'HOME' || m.winner === 'AWAY')) {
+    problems.push(`${tally.decided} finished match(es) were not a draw and not one resolved a winner`)
   }
   return problems
 }
 
-function inspectSummary(payload: EspnSummary, ledger: Ledger): { events: number; goals: number; named: number } {
-  const found = { events: 0, goals: 0, named: 0 }
+function inspectSummary(payload: EspnSummary, ledger: Ledger) {
+  const found = { events: 0, goals: 0, named: 0, kinds: new Set<string>() }
   ledger.check('summary', payload, SUMMARY)
 
+  for (const competition of payload.header?.competitions ?? []) {
+    if (!isObject(competition)) continue
+    ledger.check('summary.header.competitions[]', competition, SUMMARY_HEADER)
+    ledger.checkEach('summary.header.competitors[]', competition.competitors, SUMMARY_HEADER_SIDE, 'header competitors')
+  }
+
   for (const event of payload.keyEvents ?? []) {
-    if (typeof event !== 'object' || event === null) {
+    if (!isObject(event)) {
       ledger.anomaly('an entry of keyEvents is not an object')
       continue
     }
     found.events += 1
     ledger.check('summary.keyEvents[]', event, KEY_EVENT)
     const kind = espnEventKind(event as EspnKeyEvent)
+    if (kind) found.kinds.add(kind)
     if (kind === 'goal' || kind === 'own-goal' || kind === 'penalty-goal') found.goals += 1
-    for (const participant of event.participants ?? []) {
-      if (typeof participant !== 'object' || participant === null) continue
-      ledger.check('summary.keyEvents[].participants[]', participant, PARTICIPANT)
-      if (participant.athlete?.displayName) found.named += 1
-    }
+    const participants = (event as EspnKeyEvent).participants
+    ledger.checkEach('summary.keyEvents[].participants[]', participants, PARTICIPANT, 'keyEvent participants')
+    found.named += (participants ?? []).filter((p) => p?.athlete?.displayName).length
   }
 
   for (const roster of payload.rosters ?? []) {
-    if (typeof roster !== 'object' || roster === null) continue
+    if (!isObject(roster)) continue
     ledger.check('summary.rosters[]', roster, ROSTER)
-    for (const entry of roster.roster ?? []) {
-      if (typeof entry !== 'object' || entry === null) continue
-      ledger.check('summary.rosters[].roster[]', entry, ROSTER_ENTRY)
-    }
+    ledger.checkEach('summary.rosters[].roster[]', roster.roster, ROSTER_ENTRY, 'roster entries')
   }
 
   for (const team of payload.boxscore?.teams ?? []) {
-    if (typeof team !== 'object' || team === null) continue
+    if (!isObject(team)) continue
     ledger.check('summary.boxscore.teams[]', team, BOXSCORE_TEAM)
-    for (const stat of team.statistics ?? []) {
-      if (typeof stat !== 'object' || stat === null) continue
-      ledger.check('summary.boxscore.teams[].statistics[]', stat, BOXSCORE_STAT)
-    }
+    ledger.checkEach('summary.boxscore.teams[].statistics[]', team.statistics, BOXSCORE_STAT, 'boxscore statistics')
   }
 
   return found
 }
 
-function summaryCrossCheck(payload: EspnSummary, found: { events: number; goals: number }): string[] {
+function summaryCrossCheck(
+  payload: EspnSummary,
+  eventId: string,
+  found: { events: number; goals: number; kinds: Set<string> },
+): string[] {
   const problems: string[] = []
   if (found.events && !found.goals) {
     problems.push(`${found.events} key event(s) in a match that scored, and not one recognised as a goal`)
   }
+
+  // espnEventKind falls back to `scoringPlay` for a goal, so a goal alone proves
+  // nothing about the type-id vocabulary. Cards, substitutions and the period
+  // markers are matched by literal id and nothing else would notice them going.
+  const ids = new Set((payload.keyEvents ?? []).map((e) => String(e.type?.id ?? '')))
+  const structural = ['yellow', 'red', 'second-yellow', 'sub', 'period']
+  if (ids.size > 3 && !structural.some((kind) => found.kinds.has(kind))) {
+    problems.push(`${ids.size} distinct event type ids and not one maps to a card, a substitution or a period marker`)
+  }
+
   // A clock the reader cannot parse is the drift that hides best: the key stays,
   // the value changes shape, and stoppage-time goals silently stop counting.
   const clocks = (payload.keyEvents ?? []).map((e) => e.clock?.displayValue).filter((c): c is string => !!c)
   if (clocks.length && !clocks.some((c) => espnMinute(c) !== null)) {
     problems.push(`none of the ${clocks.length} event clock(s) is readable (e.g. ${clocks.slice(0, 3).join(', ')})`)
+  }
+
+  // ESPN was the only source never re-feeding its detail document to the real
+  // parsers, so its stat, line-up and side-resolution paths were watched as
+  // shapes and never as behaviour.
+  try {
+    const teams = espnSummaryTeams(payload)
+    if (!teams.homeId || !teams.awayId) {
+      problems.push('espnSummaryTeams() could not resolve both sides, so every goal would be dropped')
+    }
+    const goals = parseEspnGoals(payload, teams)
+    if (found.goals && goals.length === 0) {
+      problems.push(`${found.goals} goal(s) recognised and parseEspnGoals() returned none`)
+    }
+    const rows = parseEspnTimeline(payload, { homeTeamId: teams.homeId, awayTeamId: teams.awayId })
+    if (found.events && rows.length === 0) {
+      problems.push(`${found.events} key event(s) and parseEspnTimeline() rendered no row`)
+    }
+    parseEspnMatchDetail(payload, eventId, teams)
+
+    const stats = Object.values(parseEspnMatchStats(payload))
+    if ((payload.boxscore?.teams ?? []).length && !stats.some((s) => s.possession != null || s.attempts != null)) {
+      problems.push('the boxscore carries teams and parseEspnMatchStats() read no possession or shots from any of them')
+    }
+
+    if ((payload.rosters ?? []).length && !parseEspnLineups(payload)?.available) {
+      problems.push('the summary carries rosters and parseEspnLineups() reports none available')
+    }
+  } catch (error) {
+    problems.push(`the ESPN summary parsers threw ${describeError(error)}`)
   }
   return problems
 }
@@ -345,84 +457,124 @@ function scoredEvent(payload: Scoreboard): string {
   return ''
 }
 
+function playedBoard(board: Scoreboard): boolean {
+  return (board.events ?? []).some((event) => event.competitions?.[0]?.status?.type?.state === 'post')
+}
+
 export function espnSource(leagues: string[] = LEAGUES): CanarySource {
   return {
     name: 'espn',
+    plan: ESPN_PLAN,
     headers: { 'user-agent': USER_AGENT },
     async visit(ctx: CanaryContext) {
-      const ledger = new Ledger(PLAN)
+      const { ledger } = ctx
       const problems: string[] = []
       const newest = europeanSeasonYear(ctx.now)
 
       for (const league of leagues) {
-        let board: Scoreboard = {}
-        let season = newest
-        const probed: number[] = []
-        for (let back = 0; back < SEASONS_BACK; back++) {
-          season = newest - back
-          probed.push(season)
-          board = await ctx.getJson<Scoreboard>(`${SITE_BASE}/${league}/scoreboard?limit=${PAGE}&dates=${season}`)
-          if ((board.events ?? []).length) break
-        }
+        // `usable` is "has a played match", not "has anything": a season whose
+        // fixtures are published but none played verifies none of the
+        // interesting keys, and accepting it is how an August morning reds on
+        // SAMPLED keys that simply had nothing to describe yet.
+        const walk = await walkBackSeasons<Scoreboard>({
+          from: newest,
+          back: SEASONS_BACK,
+          fetch: (year) => ctx.getJson<Scoreboard>(`${SITE_BASE}/${league}/scoreboard?limit=${PAGE}&dates=${year}`),
+          usable: playedBoard,
+        })
+        const board: Scoreboard = walk.value ?? {}
 
         const tally = inspectScoreboard(board, ledger)
         problems.push(...crossCheck(board, tally))
         if (!tally.events) {
-          problems.push(`${league} returned no match for any of the seasons ${probed.join(', ')}`)
+          problems.push(`${league} returned no match for any of the seasons ${walk.probed.join(', ')}`)
         }
         ctx.note(
-          `board ${league.padEnd(10)} season ${season}: ${tally.events} match(es), ${tally.finished} finished, ${tally.goals} goal(s)`,
+          `board ${league.padEnd(10)} season ${walk.year}: ${tally.events} match(es), ${tally.finished} finished, ${tally.goals} goal(s)`,
         )
+        if (walk.skipped.length) ctx.note(`      ${league.padEnd(10)} nothing played in ${walk.skipped.join(', ')}`)
 
         const eventId = scoredEvent(board)
         if (!eventId) {
           ctx.note(`summary ${league.padEnd(8)} no match with a goal: nothing to inspect`)
         } else {
-          // One summary per league is enough: the question asked here - are the
-          // keyEvents keys still there - is answered as well by one match as by
-          // thirty, and the document is not small.
           const summary = await ctx.getJson<EspnSummary>(
             `${SITE_BASE}/${league}/summary?event=${encodeURIComponent(eventId)}`,
           )
           const found = inspectSummary(summary, ledger)
-          problems.push(...summaryCrossCheck(summary, found))
+          problems.push(...summaryCrossCheck(summary, eventId, found))
           ctx.note(
-            `summary ${league.padEnd(8)} match ${eventId}, ${found.events} event(s), ${found.goals} goal(s), ${found.named} named`,
+            `summary ${league.padEnd(8)} match ${eventId}, ${found.events} event(s), ${found.goals} goal(s), ${found.kinds.size} kind(s)`,
           )
         }
 
         const teams = await ctx.getJson<Record<string, unknown>>(`${SITE_BASE}/${league}/teams`)
         ledger.check('teams', teams, TEAM_LIST)
-        const roster = (dig(teams, 'sports.0.leagues.0.teams').value ?? []) as unknown[]
-        for (const entry of roster) {
-          if (typeof entry !== 'object' || entry === null) {
-            ledger.anomaly('an entry of teams is not an object')
-            continue
-          }
-          ledger.check('teams.teams[]', entry, TEAM_LIST_ENTRY)
-        }
-        ctx.note(`teams ${league.padEnd(10)} ${roster.length} team(s)`)
+        const count = ledger.checkEach(
+          'teams.teams[]',
+          dig(teams, 'sports.0.leagues.0.teams').value,
+          TEAM_LIST_ENTRY,
+          'the team list',
+        )
+        ctx.note(`teams ${league.padEnd(10)} ${count} team(s)`)
       }
 
-      const standings = await ctx.getJson<Record<string, unknown>>(
-        `${STANDINGS_BASE}/${GROUPED.league}/standings?season=${GROUPED.season}`,
-      )
-      ledger.check('standings', standings, STANDINGS)
-      const children = (standings.children ?? []) as unknown[]
-      for (const child of children) {
-        if (typeof child !== 'object' || child === null) continue
-        ledger.check('standings.children[]', child, STANDINGS_GROUP)
-        const entries = ((child as { standings?: { entries?: unknown[] } }).standings?.entries ?? []) as unknown[]
-        for (const entry of entries) {
-          if (typeof entry !== 'object' || entry === null) continue
-          ledger.check('standings.children[].entries[]', entry, STANDINGS_ENTRY)
-        }
-      }
-      ctx.note(`standings ${GROUPED.league} ${GROUPED.season}  ${children.length} group(s)`)
-
-      return { ledger, problems }
+      problems.push(...(await inspectGrouped(ctx)))
+      return problems
     },
   }
+}
+
+/**
+ * The two questions a single-table league cannot answer: does the standings tree
+ * still nest groups, and does a knockout season slug still map past GROUP.
+ */
+async function inspectGrouped(ctx: CanaryContext): Promise<string[]> {
+  const { ledger } = ctx
+  const problems: string[] = []
+
+  const standings = await ctx.getJson<Record<string, unknown>>(
+    `${STANDINGS_BASE}/${GROUPED.league}/standings?season=${GROUPED.season}`,
+  )
+  ledger.check('standings', standings, STANDINGS)
+  const children = Array.isArray(standings.children) ? standings.children : []
+  let letters = 0
+  for (const child of children) {
+    if (!isObject(child)) {
+      ledger.anomaly('an entry of standings.children is not an object')
+      continue
+    }
+    ledger.check('standings.children[]', child, STANDINGS_GROUP)
+    ledger.checkEach(
+      'standings.children[].entries[]',
+      (child.standings as { entries?: unknown } | null)?.entries,
+      STANDINGS_ENTRY,
+      'standings entries',
+    )
+    // The letter is what fetchGroups resolves, with a strictly anchored parser.
+    // 'Group A - Final Standings' keeps every key intact and empties the whole
+    // team-to-letter map, which blanks stored letters on the next upsert.
+    const abbreviation = typeof child.abbreviation === 'string' ? child.abbreviation : null
+    const name = typeof child.name === 'string' ? child.name : null
+    if (parseGroupNameStrict(abbreviation) ?? parseGroupNameStrict(name)) letters += 1
+  }
+  if (children.length && !letters) {
+    problems.push(`${children.length} standings group(s) and parseGroupNameStrict() read a letter from none of them`)
+  }
+  ctx.note(`standings ${GROUPED.league} ${GROUPED.season}  ${children.length} group(s), ${letters} letter(s)`)
+
+  const board = await ctx.getJson<Scoreboard>(
+    `${SITE_BASE}/${GROUPED.league}/scoreboard?limit=${PAGE}&dates=${GROUPED.season}`,
+  )
+  const slugs = (board.events ?? []).map((e) => e.season?.slug).filter((s): s is string => !!s)
+  const knockout = slugs.filter((slug) => mapEspnStage(slug) !== 'GROUP')
+  if (slugs.length && !knockout.length) {
+    // eng.1 and esp.1 are single tables, so their slugs never leave GROUP and
+    // the ladder that decides FINAL and double points was covered by nothing.
+    problems.push(`${slugs.length} season slug(s) on a knockout tournament and not one maps past GROUP`)
+  }
+  ctx.note(`ladder ${GROUPED.league} ${GROUPED.season}  ${knockout.length}/${slugs.length} slug(s) past GROUP`)
+  return problems
 }
 
 export const espnInternals = {
@@ -431,5 +583,5 @@ export const espnInternals = {
   inspectSummary,
   summaryCrossCheck,
   scoredEvent,
-  PLAN,
+  playedBoard,
 }

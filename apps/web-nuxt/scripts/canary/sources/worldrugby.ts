@@ -1,4 +1,5 @@
 import {
+  WORLDRUGBY_BASE_URL,
   isScoringEvent,
   mapWorldRugbyTimelineKind,
   normalizeWorldRugbyMatch,
@@ -6,17 +7,16 @@ import {
   type WrMatch,
   type WrTimelineEvent,
 } from '../../../server/utils/providers/worldrugby'
-import { CHECKS, Ledger, RARE, REQUIRED, SAMPLED, type Plan, type Table } from '../ledger'
-import type { CanaryContext, CanarySource } from '../source'
+import { CHECKS, RARE, REQUIRED, SAMPLED, type Plan, type Table } from '../ledger'
+import { describeError, type CanaryContext, type CanarySource } from '../source'
 
-const BASE = 'https://api.wr-rims-prod.pulselive.com/rugby/v3'
+const BASE = WORLDRUGBY_BASE_URL
 
 // The feed's default sub-feed: men's fifteens.
 const SPORT = 'mru'
 
 // The newest started event can be a four-fixture tournament, which is too small
 // a population to tell "this key is gone" from "nothing like that happened".
-// Events are added until there are enough fixtures to draw a conclusion from.
 const ENOUGH_FIXTURES = 20
 const MAX_EVENTS = 3
 
@@ -42,18 +42,21 @@ const MATCH: Table = [
   ['matchId', REQUIRED, CHECKS.identifier],
   ['status', REQUIRED, CHECKS.filledText],
   ['teams', REQUIRED, CHECKS.filledList],
-  // Everything without a clock is dropped on the floor by the provider's own
-  // `timed` filter, so this key going missing empties a whole competition in
-  // silence.
-  ['time.millis', REQUIRED, CHECKS.epochMillis],
+  // NOT required: the provider is built around untimed fixtures - `timed()`
+  // drops them on purpose and normalizeWorldRugbyMatch returns an empty kickoff
+  // rather than a fake one. A "date TBC" tie before a draw is routine, and
+  // requiring this reds the source for a payload the app handles by design.
+  ['time.millis', SAMPLED, CHECKS.epochMillis],
   ['time.label', SAMPLED, CHECKS.filledText],
   ['scores', SAMPLED, CHECKS.list],
-  ['eventPhase', SAMPLED, CHECKS.filledText],
-  ['eventPhaseId.type', SAMPLED, CHECKS.filledText],
-  ['eventPhaseId.subType', SAMPLED, CHECKS.filledText],
+  // Verified live: a round-robin event (Six Nations, Nations Championship,
+  // Super Rugby) publishes null for all three on EVERY fixture. With a
+  // three-event sample, a February morning can see nothing but round-robin.
+  ['eventPhase', RARE, CHECKS.filledText],
+  ['eventPhaseId.type', RARE, CHECKS.filledText],
+  ['eventPhaseId.subType', RARE, CHECKS.filledText],
   ['venue.name', SAMPLED, CHECKS.filledText],
-  // Published on a handful of fixtures a year and null on the rest, so its
-  // absence on a given day says nothing.
+  // Published on a handful of fixtures a year and null on the rest.
   ['attendance', RARE, CHECKS.integer],
   ['description', SAMPLED, CHECKS.filledText],
   ['sport', SAMPLED, CHECKS.filledText],
@@ -64,9 +67,8 @@ const TEAM: Table = [
   ['id', REQUIRED, CHECKS.identifier],
   ['name', REQUIRED, CHECKS.filledText],
   ['abbreviation', SAMPLED, CHECKS.filledText],
-  // Read only behind `abbreviation` (worldrugby.ts toTeam), and the schedule
-  // route has not filled it on any international event we sample - a dormant
-  // fallback, watched for a type change rather than for presence.
+  // Read only behind `abbreviation`, and the schedule route has not filled it
+  // on any international event we sample - a dormant fallback.
   ['countryCode', RARE, CHECKS.filledText],
 ]
 
@@ -74,13 +76,16 @@ const TIMELINE: Table = [['timeline', REQUIRED, CHECKS.filledList]]
 
 const TIMELINE_EVENT: Table = [
   ['type', REQUIRED, CHECKS.filledText],
+  // `integer` accepts "1234", so the ledger alone cannot see secs becoming a
+  // string; timelineCrossCheck() asserts the type the reader needs.
   ['time.secs', REQUIRED, CHECKS.integer],
   ['typeLabel', SAMPLED, CHECKS.filledText],
   ['teamIndex', SAMPLED, CHECKS.integer],
   ['playerId', SAMPLED, CHECKS.identifier],
   ['points', SAMPLED, CHECKS.integer],
   ['group', SAMPLED, CHECKS.filledText],
-  ['link', SAMPLED, CHECKS.identifier],
+  // Both halves of a substitution carry it, and nothing else does.
+  ['link', RARE, CHECKS.identifier],
 ]
 
 const SUMMARY: Table = [['teams', REQUIRED, CHECKS.filledList]]
@@ -97,7 +102,7 @@ const SUMMARY_PLAYER: Table = [
   ['number', SAMPLED, CHECKS.identifier],
 ]
 
-const PLAN: Plan = [
+export const WR_PLAN: Plan = [
   ['catalog', CATALOG],
   ['catalog.content[]', EVENT],
   ['schedule', SCHEDULE],
@@ -122,17 +127,16 @@ interface Tally {
   matches: number
   played: number
   timed: number
-  withPhase: number
+  untimed: number
 }
 
-const isObject = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value)
+type Ledger = CanaryContext['ledger']
 
 function inspectCatalog(payload: { content?: unknown[] | null }, ledger: Ledger): WrEventRow[] {
   ledger.check('catalog', payload, CATALOG)
   const events: WrEventRow[] = []
   for (const event of payload.content ?? []) {
-    if (!isObject(event)) {
+    if (!event || typeof event !== 'object') {
       ledger.anomaly('an entry of the event catalog is not an object')
       continue
     }
@@ -143,9 +147,12 @@ function inspectCatalog(payload: { content?: unknown[] | null }, ledger: Ledger)
 }
 
 /**
- * The newest events of this sub-feed that have already started. Newest-first is
- * how the catalog is sorted, but the very newest is often still in the future,
- * and an event with no played match verifies none of the interesting keys.
+ * The newest events of this sub-feed that have already started.
+ *
+ * An event with no `sport` at all is NOT treated as ours: `sport` is the only
+ * thing separating men's fifteens from sevens, women's and age-grade, and
+ * silently adopting an untagged event means probing the wrong competition
+ * entirely while the key that would have said so is only SAMPLED.
  */
 export function pickEvents(events: WrEventRow[], sport: string, now: Date, limit = MAX_EVENTS): WrEventRow[] {
   const started = (event: WrEventRow) => {
@@ -154,17 +161,17 @@ export function pickEvents(events: WrEventRow[], sport: string, now: Date, limit
     const at = new Date(label).getTime()
     return Number.isFinite(at) && at <= now.getTime()
   }
-  const mine = events.filter((e) => !e.sport || e.sport.toLowerCase() === sport)
+  const mine = events.filter((e) => (e.sport ?? '').toLowerCase() === sport)
   const ours = mine.filter(started)
   return (ours.length ? ours : mine).slice(0, limit)
 }
 
 function inspectSchedule(payload: { matches?: unknown[] | null }, ledger: Ledger): Tally {
-  const tally: Tally = { matches: 0, played: 0, timed: 0, withPhase: 0 }
+  const tally: Tally = { matches: 0, played: 0, timed: 0, untimed: 0 }
   ledger.check('schedule', payload, SCHEDULE)
 
   for (const match of payload.matches ?? []) {
-    if (!isObject(match)) {
+    if (!match || typeof match !== 'object') {
       ledger.anomaly('an entry of the schedule is not an object')
       continue
     }
@@ -172,11 +179,9 @@ function inspectSchedule(payload: { matches?: unknown[] | null }, ledger: Ledger
     ledger.check('match', match, MATCH)
     const row = match as unknown as WrMatch
     if (row.time?.millis) tally.timed += 1
-    if (row.eventPhase || row.eventPhaseId?.type) tally.withPhase += 1
+    else tally.untimed += 1
     if ((row.scores ?? []).some((score) => Number(score) > 0)) tally.played += 1
-    for (const team of row.teams ?? []) {
-      if (isObject(team)) ledger.check('match.teams[]', team, TEAM)
-    }
+    ledger.checkEach('match.teams[]', row.teams, TEAM, 'the teams of a fixture')
   }
   return tally
 }
@@ -187,27 +192,22 @@ function crossCheck(matches: WrMatch[], tally: Tally, eventId: string): string[]
   try {
     normalized = matches.map((m) => normalizeWorldRugbyMatch(m, eventId))
   } catch (error) {
-    return [`normalizeWorldRugbyMatch() threw ${error instanceof Error ? error.message : String(error)}`]
+    return [`normalizeWorldRugbyMatch() threw ${describeError(error)}`]
   }
 
-  // The provider drops every untimed fixture before anything downstream sees it.
-  // All of them dropping at once is a competition that silently ingests nothing,
-  // and it is exactly the failure a mocked test cannot reach.
+  // The provider drops every untimed fixture before anything downstream sees it,
+  // so a whole competition losing its clocks ingests nothing at all - and it
+  // does it in silence. Asked only when the feed HAD clocks to lose, because an
+  // untimed fixture is a legitimate state, not a defect.
   const kept = normalized.filter((m) => m.kickoffTime)
-  if (tally.matches && kept.length === 0) {
-    problems.push(`${tally.matches} fixture(s) in the schedule and every one lost its kickoff time`)
-  }
-  if (tally.timed && kept.length < tally.timed) {
-    problems.push(`${tally.timed} fixture(s) carry a clock but only ${kept.length} kept a kickoff time`)
+  if (tally.timed && kept.length === 0) {
+    problems.push(`${tally.timed} fixture(s) carry a clock and every one lost its kickoff time`)
   }
   if (tally.played && !normalized.some((m) => m.status === 'FINISHED')) {
     problems.push(`${tally.played} fixture(s) have points on the board and not one maps to FINISHED`)
   }
-  if (tally.withPhase && normalized.length > 8 && normalized.every((m) => m.stage === normalized[0]?.stage)) {
-    problems.push(`all ${normalized.length} fixtures collapsed onto stage ${normalized[0]?.stage}`)
-  }
-  if (normalized.length && !normalized.some((m) => m.homeTeam.name && m.awayTeam.name)) {
-    problems.push('no fixture carries the name of both its teams')
+  if (normalized.length && !normalized.some((m) => m.homeTeam.name !== 'TBD' && m.awayTeam.name !== 'TBD')) {
+    problems.push(`all ${normalized.length} fixtures resolved both sides to the TBD placeholder`)
   }
   return problems
 }
@@ -217,8 +217,8 @@ function timelineCrossCheck(events: WrTimelineEvent[]): string[] {
   if (!events.length) return problems
 
   // World Rugby sorts nothing by a flag: the kind of an action is read off
-  // `type`, so a renamed vocabulary leaves every key in place and renders an
-  // empty play-by-play.
+  // `type`/`group`, so a renamed vocabulary leaves every key in place and
+  // renders an empty play-by-play.
   if (!events.some((e) => mapWorldRugbyTimelineKind(e) !== null)) {
     problems.push(`${events.length} timeline event(s) and not one maps to a known kind`)
   }
@@ -226,18 +226,24 @@ function timelineCrossCheck(events: WrTimelineEvent[]): string[] {
   if (events.some((e) => Number(e.points) > 0) && scoring.length === 0) {
     problems.push('events carry points and isScoringEvent() recognises none of them')
   }
-  const clocks = events.map((e) => e.time?.secs).filter((s): s is number => typeof s === 'number')
-  if (clocks.length && !clocks.some((s) => worldRugbyMinute(s) !== null)) {
-    problems.push(`none of the ${clocks.length} event clock(s) yields a readable minute`)
+  // worldRugbyMinute only refuses null and negatives, so asking it to parse
+  // proves nothing. What can actually drift is secs arriving as a string, which
+  // the ledger's `integer` check happily accepts.
+  const untyped = events.filter((e) => e.time?.secs != null && typeof e.time.secs !== 'number')
+  if (untyped.length) {
+    problems.push(`${untyped.length} timeline clock(s) are not numbers, so the running order cannot be trusted`)
   }
+  const usable = events.filter((e) => typeof e.time?.secs === 'number' && worldRugbyMinute(e.time.secs) !== null)
+  if (!usable.length) problems.push(`none of the ${events.length} event clock(s) yields a readable minute`)
   return problems
 }
 
 export function worldRugbySource(sport: string = SPORT): CanarySource {
   return {
     name: 'worldrugby',
+    plan: WR_PLAN,
     async visit(ctx: CanaryContext) {
-      const ledger = new Ledger(PLAN)
+      const { ledger } = ctx
       const problems: string[] = []
 
       const catalog = await ctx.getJson<{ content?: unknown[] | null }>(`${BASE}/event?page=0&pageSize=100&sort=desc`)
@@ -245,7 +251,7 @@ export function worldRugbySource(sport: string = SPORT): CanarySource {
       const candidates = pickEvents(events, sport, ctx.now)
       if (!candidates.length) {
         problems.push(`the event catalog carries no ${sport} event at all`)
-        return { ledger, problems }
+        return problems
       }
       ctx.note(`catalog     ${events.length} event(s), ${candidates.length} candidate(s)`)
 
@@ -261,7 +267,7 @@ export function worldRugbySource(sport: string = SPORT): CanarySource {
         problems.push(...crossCheck(matches, tally, ref))
         fixtures.push(...matches)
         ctx.note(
-          `schedule    ${event.label ?? ref}: ${tally.matches} fixture(s), ${tally.timed} timed, ${tally.played} played, ${tally.withPhase} with a phase`,
+          `schedule    ${event.label ?? ref}: ${tally.matches} fixture(s), ${tally.timed} timed, ${tally.played} played`,
         )
         sample ??= matches.find((m) => (m.scores ?? []).some((s) => Number(s) > 0))
         if (fixtures.length >= ENOUGH_FIXTURES && sample) break
@@ -269,20 +275,14 @@ export function worldRugbySource(sport: string = SPORT): CanarySource {
 
       if (!sample) {
         ctx.note('timeline    no played fixture in these events: nothing to inspect')
-        return { ledger, problems }
+        return problems
       }
 
       const timeline = await ctx.getJson<{ timeline?: unknown[] | null }>(
         `${BASE}/match/${encodeURIComponent(sample.matchId)}/timeline?language=en`,
       )
       ledger.check('timeline', timeline, TIMELINE)
-      for (const entry of timeline.timeline ?? []) {
-        if (!isObject(entry)) {
-          ledger.anomaly('an entry of the timeline is not an object')
-          continue
-        }
-        ledger.check('timeline.timeline[]', entry, TIMELINE_EVENT)
-      }
+      ledger.checkEach('timeline.timeline[]', timeline.timeline, TIMELINE_EVENT, 'the timeline')
       problems.push(...timelineCrossCheck((timeline.timeline ?? []) as WrTimelineEvent[]))
       ctx.note(`timeline    match ${sample.matchId}, ${(timeline.timeline ?? []).length} event(s)`)
 
@@ -292,20 +292,19 @@ export function worldRugbySource(sport: string = SPORT): CanarySource {
       ledger.check('summary', summary, SUMMARY)
       let players = 0
       for (const team of summary.teams ?? []) {
-        if (!isObject(team)) continue
-        ledger.check('summary.teams[]', team, SUMMARY_TEAM)
-        const list = ((team.teamList as { list?: unknown[] } | null)?.list ?? []) as unknown[]
-        for (const entry of list) {
-          if (!isObject(entry)) continue
-          players += 1
-          ledger.check('summary.teams[].teamList.list[]', entry, SUMMARY_PLAYER)
+        if (!team || typeof team !== 'object') {
+          ledger.anomaly('an entry of summary.teams is not an object')
+          continue
         }
+        ledger.check('summary.teams[]', team, SUMMARY_TEAM)
+        const list = (team as { teamList?: { list?: unknown } | null }).teamList?.list
+        players += ledger.checkEach('summary.teams[].teamList.list[]', list, SUMMARY_PLAYER, 'the team sheet')
       }
       ctx.note(`summary     match ${sample.matchId}, ${players} player(s)`)
 
-      return { ledger, problems }
+      return problems
     },
   }
 }
 
-export const wrInternals = { inspectCatalog, inspectSchedule, crossCheck, timelineCrossCheck, pickEvents, PLAN }
+export const wrInternals = { inspectCatalog, inspectSchedule, crossCheck, timelineCrossCheck, pickEvents }

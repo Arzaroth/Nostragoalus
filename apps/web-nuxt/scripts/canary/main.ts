@@ -4,6 +4,7 @@
  *
  *   pnpm -C apps/web-nuxt canary
  *   pnpm -C apps/web-nuxt canary --sources espn,uefa
+ *   pnpm -C apps/web-nuxt canary --sources=espn
  *
  * Every provider in server/utils/providers/ reads a public but UNDOCUMENTED
  * feed. Nobody will tell us the day ESPN renames `scoringPlay` or FIFA moves
@@ -17,31 +18,30 @@
  * that really talks to the network, and therefore never run by ordinary CI (see
  * .github/workflows/canary.yml, daily, and ci.yml, offline and deterministic).
  *
- * Exit codes: 0 all well, 1 a key is gone or changed type, 2 a source could not
- * be reached. The full report prints either way - the point is the list of
- * damage, not the first line of it.
+ * Exit codes: 0 all well, 1 the canary itself is broken, 2 a source could not be
+ * reached, 3 a key is gone or changed type, 64 a bad argument. 1 is our own
+ * breakage rather than drift because an unhandled throw already exits 1, and the
+ * workflow must never file our bug as a feed change. The full report prints
+ * whatever happens - the point is the list of damage, not its first line.
  */
 
+import { parseArgs, USAGE_ERROR } from './cli'
 import { allSources, run } from './run'
 
-function wanted(argv: string[]): string[] | null {
-  const index = argv.indexOf('--sources')
-  const value = index === -1 ? null : argv[index + 1]
-  if (!value) return null
-  return value
-    .split(',')
-    .map((name) => name.trim())
-    .filter(Boolean)
+const all = allSources()
+const parsed = parseArgs(
+  process.argv.slice(2),
+  all.map((source) => source.name),
+)
+
+if (parsed.error) {
+  console.error(parsed.error)
+  // Not 1, 2 or 3: a mistyped argument is the operator's mistake, not the
+  // feed's, and it must not be filed as drift nor pass for a green run.
+  process.exit(USAGE_ERROR)
 }
 
-const names = wanted(process.argv.slice(2))
-const sources = names ? allSources().filter((source) => names.includes(source.name)) : allSources()
-
-if (names && sources.length === 0) {
-  console.error(`no such source: ${names.join(', ')} (known: ${allSources().map((s) => s.name).join(', ')})`)
-  // Not 1: a mistyped argument is the operator's, not the feed's, and it must
-  // not be filed as drift - nor pass for a green run.
-  process.exit(64)
-}
+const chosen = parsed.names
+const sources = chosen ? all.filter((source) => chosen.includes(source.name)) : all
 
 process.exit(await run({ sources }))
