@@ -1,0 +1,104 @@
+name: canary
+
+# The only workflow in the repo that talks to the network, and it is alone on
+# purpose.
+#
+# Every match provider reads a public but undocumented feed. The day ESPN
+# renames a key or FIFA moves one, nothing breaks: the adapters are defensive,
+# so they just quietly stop producing a goal, a group letter, a kickoff time.
+# This daily appointment goes and asks the sources themselves.
+#
+# Never on push or pull_request: ci.yml has to stay offline and deterministic.
+# Otherwise a FIFA outage, or a Tuesday in July with nothing played, would
+# repaint changes that have nothing to do with it - and we would all learn to
+# ignore the red.
+on:
+  schedule:
+    - cron: '23 6 * * *' # every day, 06:23 UTC
+  workflow_dispatch:
+    inputs:
+      sources:
+        description: 'Comma-separated subset (espn,fifa,uefa,worldrugby). Empty = all.'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+  issues: write # so the alarm is seen somewhere other than a tab nobody opens
+
+jobs:
+  shape:
+    name: have the feeds moved?
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+
+      # The verdict is carried by the exit code, and `| tee` would swallow it -
+      # so it is captured by hand rather than left to the pipeline's status.
+      # 0 all well, 1 the shape moved, 2 a source could not be reached.
+      - name: canary
+        id: canary
+        shell: bash
+        run: |
+          args=""
+          if [ -n "${{ inputs.sources }}" ]; then args="--sources ${{ inputs.sources }}"; fi
+          set +e
+          pnpm -C apps/web-nuxt canary $args > canary.txt 2>&1
+          code=$?
+          set -e
+          cat canary.txt
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+
+      # The report stays readable even when all is well: it is what says what was
+      # checked, and what could not be for want of a match to look at.
+      - name: keep the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: canary
+          path: canary.txt
+          retention-days: 30
+
+      # A red cross in the Actions tab is a thing nobody looks at. An issue is
+      # not. Only one is kept open: the following mornings comment on it rather
+      # than opening one a day.
+      #
+      # Only on exit 1. An unreachable source (2) is an upstream having a bad
+      # morning, not the feed moving, and filing it as drift is how an alarm
+      # stops meaning anything.
+      - name: raise the alarm
+        if: steps.canary.outputs.code == '1'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TITLE: 'The canary is red: a match feed changed shape'
+        run: |
+          report="$(tail -n 80 canary.txt 2>/dev/null || echo 'no report was produced')"
+          body="$(printf 'The canary of %s found drift.\n\n```\n%s\n```\n\nThe run: %s/%s/actions/runs/%s\n\nWhat to do: the report names the key and what was expected of it. The code that reads it lives in `apps/web-nuxt/server/utils/providers/`.\n' \
+            "$(date -u '+%Y-%m-%d')" "$report" \
+            "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID")"
+          number="$(gh issue list --state open --search "\"$TITLE\" in:title" \
+                    --json number --jq '.[0].number // empty')"
+          if [ -n "$number" ]; then
+            gh issue comment "$number" --body "$body"
+          else
+            gh issue create --title "$TITLE" --body "$body"
+          fi
+
+      # Last, so the report and the alarm are both in hand first. An unreachable
+      # source still turns the run red - nothing was verified that day, and that
+      # has to be visible - but it opens no issue.
+      - name: verdict
+        if: steps.canary.outputs.code != '0'
+        shell: bash
+        run: |
+          echo "canary exited ${{ steps.canary.outputs.code }}"
+          exit ${{ steps.canary.outputs.code }}
