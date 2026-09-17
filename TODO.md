@@ -3615,3 +3615,39 @@ Deferred by the review fix pass (each was a deliberate call, not an oversight):
       sort, same termination rule, different per-event body. An
       `async function* eventPages()` would put the cap, the sort and the
       termination in one place, so the next feed change lands once.
+
+## Provider canary - deferred (feat/provider-canary)
+
+The daily off-CI shape check over the live feeds
+(`apps/web-nuxt/scripts/canary/`, `.github/workflows/canary.yml`, see
+`brain/architecture/provider-canary.md`). It covers ESPN, FIFA, UEFA and World
+Rugby; these are what it deliberately does not cover yet.
+
+- [ ] **Sofascore odds and football-data are not watched.** Sofascore goes
+      through the cycletls engine (TLS fingerprinting, a spawned Go helper) and
+      football-data needs an API key. Neither is known to work from a
+      GitHub-hosted runner, so both were left out rather than shipped red. Needs
+      one probe run from Actions to find out, plus a repo secret for
+      football-data. Until then a Sofascore key rename is still invisible.
+- [ ] **A RARE key that is gone can stay `absent` for ever.** The level exists
+      so an own goal or a VAR free text does not fail a quiet morning, but
+      nothing notices that one of them has been absent for six weeks rather than
+      six days. The report prints the count each run and nothing reads the
+      series. A streak file, or the workflow diffing today's `absent` list
+      against the last green artifact, would close it.
+- [ ] **ESPN's group shape is probed on a frozen 2022 document.** A single-table
+      league has no standings `children`, so the group keys are checked against
+      the finished World Cup instead - deterministic, and green in July, but it
+      cannot notice ESPN changing the shape it serves for a LIVE group stage
+      while leaving the archive alone. Worth re-pointing at a real group stage
+      whenever one is running.
+- [ ] **UEFA's `competitionId=3` is assumed to be the Champions League.** The
+      canary walks back four `seasonYear`s and takes the first that answers with
+      fixtures; at the time of writing only 2024 does, which is already odd. If
+      that id is ever repurposed the canary would happily verify the shape of
+      the wrong competition. Nothing checks the name it got back.
+- [ ] **No coverage of the discovery endpoints.** `discoverCompetitions()` reads
+      ESPN's core league index and World Rugby's paged event catalog with their
+      own shapes; the canary only touches the World Rugby one, and only its
+      first page. An admin's add-a-competition flow can therefore break without
+      the canary noticing.
