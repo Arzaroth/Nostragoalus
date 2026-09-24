@@ -1,8 +1,11 @@
 # Providers (external data)
 
 Match data, odds and FIFA rankings come from external sources behind
-provider-agnostic adapters. All of these are keyless and somewhat fragile (they
-are unofficial or undocumented endpoints), so the quirks below are load-bearing.
+provider-agnostic adapters (`createProvider` in
+[factory.ts](../../apps/web-nuxt/server/utils/providers/factory.ts); an admin may
+bind a competition to `fifa`, `uefa`, `espn`, `football-data` or `worldrugby`).
+All but football-data are keyless and somewhat fragile (they are unofficial or
+undocumented endpoints), so the quirks below are load-bearing.
 
 Because they are undocumented, nothing warns us when one changes shape - and the
 adapters are defensive enough that drift does not throw, it just quietly produces
@@ -13,15 +16,23 @@ less. A daily off-CI canary asks the live feeds directly:
 
 `api.fifa.com/api/v3` is the default provider. It needs no key.
 
-- **Season resolution:** via `/seasons`, resolved by hint or date and cached on
-  the `competition` row.
+- **Season resolution:** via `/seasons` (`resolveFifaSeasonId` ->
+  `pickFifaSeason`: name hint, else the running edition, else the next, else the
+  latest; throws on none), cached on `competition.externalSeasonId`
+  (`resolveCompetitionSeason` in `server/utils/sync/competition.ts`).
 - **Group matchday:** FIFA's `MatchDay` field is null, so the group matchday is
   derived by date-within-group.
 - **Per-match detail:** `/live/football/{comp}/{season}/{stage}/{match}` gives the
-  goal timeline and possession. It needs the match's `providerStageId`, which
-  must be captured at fixtures sync. Two traps: exclude **Period 11**
-  (penalty-shootout goals) from the score, and the goal feed's `IdAssistPlayer`
-  is the **beaten keeper, NOT an assister** - ignore it.
+  goal timeline and possession. It wants the match's `providerStageId`, captured
+  at fixtures sync (the adapter falls back to the bare `/live/football/{match}`
+  when none is passed, but `syncMatchDetails` only picks matches that carry one).
+  Two traps: exclude **Period 11** (penalty-shootout goals) from the score, and
+  the goal feed's `IdAssistPlayer` is the **beaten keeper, NOT an assister** -
+  ignore it. Real assists come from one extra `/timelines/{match}` fetch, made
+  only when there are goals (`mergeTimelineAssists`); a miss there leaves goals
+  unassisted, but a 429 propagates so the match retries. Per-match team stats
+  come from a third host, `fdh-api.fifa.com/v1/stats/match/{IdIFES}/teams.json`,
+  keyed by the `IdIFES` the detail doc carries.
 - **Knockout bracket:** `/seasonbracket/season/{id}`. Three traps. Its season-level
   `Winner` is **not the champion** - FIFA fills it as soon as the last semi-final
   resolves the final's placeholder slot, so trusting it crowns a winner before the
@@ -56,13 +67,38 @@ less. A daily off-CI canary asks the live feeds directly:
   are CloudFront WAFs reached through the shared [cycletls engine](#the-shared-http-engine-cycletls).
 
 `matches:finalize` fetches match details (bounded) into `goal_event` and
-`match.possession*`. A football-data.org adapter exists as a fallback (its
-`/scorers` needs a token; FIFA is keyless), and an [ESPN adapter](#match-data-espn-keyless-whole-season-in-one-call)
-covers fixtures for the group-and-knockout competitions ESPN carries. An api-football adapter is
-mapped but not implemented.
+`match.possession*`. A football-data.org adapter exists as a fallback (it needs
+`NUXT_FOOTBALL_DATA_TOKEN`; without one `createProvider` throws a
+`ValidationError`, since the admin screen offers every provider), and an [ESPN adapter](#match-data-espn-keyless-whole-season-in-one-call)
+covers the competitions ESPN carries, single-table leagues included. An
+api-football key is plumbed through `ProviderSelection`, but `createProvider`
+throws "not implemented" for it and it is not in `MATCH_PROVIDERS`.
 
 This feeds [../features/predictions-and-scoring.md](../features/predictions-and-scoring.md)
 and [../features/best-scorer.md](../features/best-scorer.md).
+
+## Match data: UEFA (keyless)
+
+`server/utils/providers/uefa.ts` reads `match.uefa.com/v5` (the API uefa.com
+itself uses) with a `Mozilla/5.0` agent; `externalCompetitionId` is UEFA's
+numeric competition id (`3` = EURO), `seasonHint` the `seasonYear`.
+
+- **Fixtures** page `/v5/matches` 100 at a time and keep only
+  `matchday.phase === 'TOURNAMENT'`: the qualifying play-offs share the season.
+  UEFA is the one feed that publishes a matchday (`matchday.name` = `MD<n>`),
+  so no `assignMatchdays` pass; `providerStageId` is the round id.
+  `getLiveMatches` keeps LIVE/PAUSED only (no recently-finished window, unlike
+  FIFA and ESPN).
+- **Four hosts:** events and line-ups on `match.uefa.com`, the per-match team
+  stats on `matchstats.uefa.com/v1/team-statistics/{id}` (falling back to an
+  aggregate rebuilt from the event stream), the scorer and team rankings on
+  `compstats.uefa.com/v1/{player,team}-ranking` (the player board paged 200 at
+  a time, so it does not stop at ~200 players), the squad on `comp.uefa.com/v2/players`.
+- **Line-ups** carry no formation and no captain, but every field player ships
+  a real `fieldCoordinate` on a 0-1000 grid, so the XI is placed exactly.
+- **The bracket** is rebuilt from the knockout fixtures by the shared
+  `bracketFromKnockoutMatches`; there is no bracket endpoint.
+- No `discoverCompetitions`: its ids are a curated handful, typed by the admin.
 
 ## Match data: ESPN (keyless, whole-season in one call)
 
@@ -70,8 +106,11 @@ and [../features/best-scorer.md](../features/best-scorer.md).
 undocumented, no announced quota. `externalCompetitionId` is the ESPN league slug
 (`fifa.world`, `uefa.euro`, `uefa.champions`), `seasonHint` the season year. It
 implements the whole `MatchDataProvider` contract except `getMatchLineups`'
-pitch coordinates: fixtures, bracket, per-match detail, timeline, line-ups,
-per-match team stats, the scorer board and the per-team season aggregate. The
+pitch coordinates: catalog discovery, fixtures, bracket, per-match detail,
+timeline, line-ups, per-match team stats, the scorer board and the per-team
+season aggregate. Every request carries a 20 s `AbortSignal.timeout`, since
+`scores:poll` walks competitions serially and one hung socket would stall them
+all. The
 three fixture reads all go through one season fetch, so the derived group
 matchdays always see a whole group rather than the slice one day or the live
 poll would return.
@@ -100,7 +139,8 @@ poll would return.
 - **The stage is `event.season.slug`** (`group-stage`, `round-of-32`,
   `quarterfinals`, `3rd-place-match`, `final`): hyphens out, then the shared ladder
   in [stage.ts](../../apps/web-nuxt/server/utils/providers/stage.ts) reads it.
-- **No feed publishes a matchday**, and a group match without one is *dropped*:
+- **ESPN publishes no matchday** (nor do FIFA and World Rugby; only UEFA does),
+  and a group match without one is *dropped*:
   `ensureRounds` files group rounds under `matchday` 1..N while `findRoundId`
   looks a null matchday up as `IS NULL`, so it never matches and every group
   fixture is silently skipped at insert. The adapter runs the shared
@@ -113,12 +153,11 @@ poll would return.
   threshold, which a midweek round would break. A fixture moved out of its round
   lands in a later one, which is the same answer a date rule gives and the feeds
   carry nothing to do better with.
-  Measured against the live API: the Premier League returns 374 fixtures, and
-  the new-format Champions League 189 of which 29 are ingestible (its league
-  phase is a
-  single table with no letters, and R16/QF/SF are two-legged). The competition
-  probe (`server/utils/competitions/probe.ts`) reports exactly this before an
-  admin can add such a competition - see
+  Before this numbering, the live API's Premier League (374 fixtures) was 0%
+  ingestible and the new-format Champions League 29/189; a single table now
+  ingests, so the Champions League is refused only for its two-legged R16/QF/SF.
+  The competition probe (`server/utils/competitions/probe.ts`) reports this
+  before an admin can add such a competition - see
   [../features/competitions.md](../features/competitions.md).
 - **The group letter is not on the scoreboard.** It comes from a second call,
   `…/apis/v2/sports/soccer/{league}/standings` (**`apis/v2`, not `apis/site/v2`** -
@@ -178,12 +217,14 @@ pooling adapters has to revisit it, or a LIVE match freezes at its first fetch. 
 [espn-summary.ts](../../apps/web-nuxt/server/utils/providers/espn-summary.ts) as
 pure functions over the document.
 
-- **Events are typed by a numeric id**, not by their English text: 70/137/138/173
-  are goal variants named after the finish, 97 own goal, 98 penalty scored, 94/95/93
-  the cards, 76 a substitution, 80-87 the period markers, 167+ the VAR decisions.
-  Types 129/130 (delay opened, delay closed) wrap every VAR check and injury and
-  run to several hundred entries per match - they are dropped, as are 85/86, the
-  extra-time interval markers the app has no kind for.
+- **Events are typed by a numeric id**, not by their English text: 97 own goal,
+  98 penalty scored, 99 penalty missed, 94/95/93 the cards, 76 a substitution,
+  80-84 and 87 the period markers. The goal variants named after the finish
+  ("Goal - Header") are recognised by `scoringPlay` rather than one id each, and
+  VAR decisions by a `type.text` starting "VAR". Types 129/130 (delay opened,
+  delay closed) wrap every VAR check and injury and run to several hundred
+  entries per match - they are dropped, as are 85/86, the extra-time interval
+  markers the app has no kind for (`espnEventKind`).
 - **An own goal sits under the team it benefits** while the scorer is on the
   other roster, the same convention FIFA uses. Verified against the real feed: in
   USA 4-1 Paraguay the own goal carries `team.id` = USA and names the Paraguay
@@ -199,8 +240,9 @@ pure functions over the document.
   commentary text. The provider's free text is kept only for VAR rows, the one
   kind the app cannot phrase from structure.
 - **ESPN publishes no captain flag and no pitch coordinates**, so `SquadPlayer`
-  gets `captain: false` and no `x`/`y`; the pitch falls back to formation bands,
-  as it does for UEFA. The match rosters carry no coach either - that only comes
+  gets `captain: false` and no `x`/`y`; the pitch falls back to formation bands
+  from the roster's `formation` (UEFA is the reverse: coordinates, no
+  formation). The match rosters carry no coach either - that only comes
   from the team endpoint, so a line-up's `coach` is null while the team page's is
   not. Bench players are all position `SUB`, so only the starting XI has real
   positions.
@@ -232,15 +274,16 @@ The scorer board and the per-team season aggregate exist only on
   `…/seasons/{year}/types/1/leaders` -> `goalsLeaders`, 25 entries, each a `$ref`
   to an athlete and a team rather than a name. That is **one request per player**
   plus the teams (cached within the call, since a top-25 board repeats clubs
-  heavily), so roughly 26-30 requests against the single request FIFA and UEFA
+  heavily; a `$ref` is only followed when it points back at the core API host,
+  so a spoofed response cannot make the server fetch an arbitrary URL), so roughly 26-30 requests against the single request FIFA and UEFA
   each need. Be careful about what that costs in wall clock: the adapter's main
   limiter spaces requests a second apart, which would make this a ~30 second read
   route, so the `$ref` hops run on their own much tighter limiter and the board is
   capped at 25 rows. `/api/competitions/scorers` tries `getPlayerStats` **before**
   the local `goal_event` aggregation, not after, so this path is reached whenever
-  its 10-minute cache has expired - it is only cheap because `matches:finalize`
-  keeps `goal_event` populated, which in turn is only true because ESPN matches
-  now carry a `providerStageId` (see below). Assists are read out of the board's
+  its 10-minute cache has expired. The local fallback only has data because
+  `matches:finalize` keeps `goal_event` populated, which in turn is only true
+  because ESPN matches carry a `providerStageId` (see above). Assists are read out of the board's
   own label ("M: 8, G: 10: A: 4") to avoid a second `$ref` hop per player.
 - **`getTeamTournament`** maps the app's three-letter code to ESPN's numeric id
   through `…/{league}/teams` (48 entries, memoized per instance), then reads the
@@ -268,9 +311,12 @@ typed bronze final, and the World Rugby rankings that will drive champion tiers.
   fixture list, so `listFixtures` ignores its `season` argument - the event id
   already pins the season. `getBracket` and `getLiveMatches` filter that same
   document rather than calling anything else.
-- **Event ids are two shapes:** numeric for legacy seasons (`1893` = RWC 2023),
-  a uuid from 2025 on. Both resolve on the same route, so
-  `externalCompetitionId` stays opaque text.
+- **Events are addressed by uuid.** The catalog lists a legacy numeric `id`
+  (`1893` = RWC 2023) beside a uuid `altId`, and the `/event/{id}/...` routes now
+  answer 400 ("Invalid UUID string") to the numeric one. Discovery stores the
+  `altId`; a competition bound before the migration still holds the number, so
+  `eventUuid()` swaps it for its `altId` by walking the catalog (five pages,
+  memoised, re-armed on failure). `externalCompetitionId` stays opaque text.
 - **Phases are typed, except when they are not.** `eventPhaseId` gives
   `{type: "Pool", subType: "A"}` for pools and `Quarter` / `Semi` /
   `Final:Final` / `Final:Bronze` for the knockout. The 2027 World Cup's new
@@ -287,10 +333,11 @@ typed bronze final, and the World Rugby rankings that will drive champion tiers.
   a live feed - nothing was in play when the adapter was written. The in-play
   codes are mapped from the same Pulselive vocabulary used elsewhere, and
   anything unrecognised falls through to `SCHEDULED`, never `FINISHED`.
-- **Discovery:** `/event?page&pageSize&sort=desc` enumerates ~2400 events, each
-  tagged with a sport code (`mru` men's union, `wru` women's, `jmu`/`jwu` U20,
-  `mrs`/`wrs` sevens). The adapter filters to its own sport and stops after five
-  pages - an admin is choosing a season to run, not browsing an archive.
+- **Discovery:** `/event?page&pageSize=100&sort=desc` enumerates ~2400 events,
+  each tagged with a sport code (`mru` men's union, `wru` women's, `jmu`/`jwu`
+  U20, `mrs`/`wrs` sevens, `mjs`/`wjs` junior sevens; the list is
+  `PROVIDER_SPORTS` in `shared/sport.ts`). The adapter filters to its own sport
+  and stops after five pages - an admin is choosing a season to run, not browsing an archive.
 - **Rankings:** `/rankings/{sport}` gives the World Rugby table (114 men's
   sides, 70 women's) as `{team: {abbreviation}, pos}` - the same three-letter
   alphabet the match feed uses, so a champion pick's code looks up directly.
@@ -299,19 +346,23 @@ typed bronze final, and the World Rugby rankings that will drive champion tiers.
   the same shape. The sevens feeds answer 400; that surfaces as null ranks,
   which the champion routes already treat as "use the flat bonus".
 - **Match detail** comes from three documents: `/match/{id}` (venue,
-  attendance, team ids), `/match/{id}/timeline` (typed `T5` try 5, `C2`
-  conversion 2, `P3` penalty 3, `D3` drop goal 3, plus `Yellow`, `Red`,
-  `Sub On`/`Sub Off`), and `/match/{id}/stats` (137 team figures). Three things
-  the mapping has to get right:
-  - **Only a try becomes a `goal_event`.** The scorers board counts rows, not
-    points, so folding in conversions and penalties would make it a kickers
-    board. The other scores still move the play-by-play's running total, which
-    is why it lands on the real full-time score.
-  - **A conversion gets no timeline line of its own** - it follows its try by
-    seconds and would read as a second score for the same move.
+  attendance, team ids), `/match/{id}/timeline` (scoring entries carry `points`
+  and a `group` of `try` / `con` / `pen` / `dg`, plus `Miss Con`, `Miss Pen`,
+  `Yellow`, `Red`, `Sub On`/`Sub Off`), and `/match/{id}/stats` (137 team
+  figures, possession among them). Three things the mapping has to get right:
+  - **Every scoring play becomes a `goal_event`, with its `points`**, not just
+    the tries: the try board counts the rows worth at least a try
+    (`TRY_POINTS` in `server/utils/stats/scorers.ts`) and the points board sums
+    them, so neither turns into a kickers board. See
+    [../features/rugby.md](../features/rugby.md).
+  - **A conversion is its own timeline line** (`mapWorldRugbyTimelineKind`:
+    try, conversion, penalty kick, drop goal, and the missed conversion and
+    penalty): a converted try is two plays by two players. The running score
+    sums every entry's `points`, so it lands on the real full-time score.
   - **Substitutions pair on `link`, not on the clock.** Both halves carry the
     same link id, and `Sub On` is emitted *before* its `Sub Off`, so a running
-    map never has the partner yet.
+    map never has the partner yet. An unpaired half still ships (a blood
+  replacement, or a player off with no cover).
 - **Squads:** `/event/{id}/squads` gives every squad for the tournament, with
   `management[].role` naming the head coach (anchor the match - the roles also
   include "Head Strength & Conditioning Coach"). One call serves both the squad
@@ -362,7 +413,8 @@ seeded with `provider='fixture'` - see
   explicitly over The Odds API: keyless and retroactive on finished matches, so
   historical seasons backfill). Verified ids: World Cup `uniqueTournament=16`
   (2026 season `58210`, 2022 `41087`), Euro `uniqueTournament=1`. Pattern:
-  `/unique-tournament/{id}/season/{sid}/events/{next|last}/{page}` then
+  `/unique-tournament/{id}/seasons` (the season id picked by the competition's
+  year hint), then `/unique-tournament/{id}/season/{sid}/events/{next|last}/{page}`, then
   `/event/{eid}/odds/1/all` (marketId 1 = Full time, 1/X/2). Display is decimal
   only.
 - **BetExplorer** is a selectable provider (the admin odds switch) but has no
@@ -392,9 +444,13 @@ Used to snapshot a picked team's tier (see
 
 Cloudflare-class WAFs (Sofascore, and many link-unfurl targets like 9gag) block
 Node's default TLS by JA3 fingerprint. The shared engine
-`apps/web-nuxt/server/utils/providers/cycle-tls.ts` uses **cycletls** (uTLS) with a Chrome JA3
-to pass, exposing `cycleGet` / `withOk` / `cycleHeader`. It is used by both the
-odds client and the chat link unfurl (see [../features/chat.md](../features/chat.md)).
+`apps/web-nuxt/server/utils/providers/cycle-tls.ts` uses **cycletls** (uTLS) to send a
+chosen JA3, exposing `cycleGet` / `withOk` / `cycleHeader` and a desktop-Chrome
+`CHROME_JA3` + `CHROME_UA` pair. FIFA's gameday stats stories and the chat link
+unfurl (see [../features/chat.md](../features/chat.md)) use the Chrome pair.
+Sofascore (`sofascore-http.ts`, odds and line-ups) uses its own allow-listed
+curl JA3 with an honest `curl/8.15.0` User-Agent, since a browser UA over a
+non-browser handshake is what gets blocked.
 
 Operational note: cycletls' Go helper is glibc-linked, and cycletls spawns it via
 `/bin/sh -c` (`shell: true` on non-Windows). The Docker images run on `node:22-slim`
@@ -410,7 +466,9 @@ container, check that binary is present before blaming the provider.
 ## Sources
 
 - [provider-canary.md](provider-canary.md) (the daily shape check over the live feeds)
-- `apps/web-nuxt/server/utils/providers/**` (FIFA, UEFA, ESPN, football-data, World Rugby adapters, `cycle-tls.ts`)
+- `apps/web-nuxt/server/utils/providers/**` (FIFA, UEFA, ESPN, football-data, World Rugby adapters, `factory.ts`, `stage.ts`, `bracket-order.ts`, `cycle-tls.ts`)
+- `apps/web-nuxt/server/utils/sync/{competition,details,rounds}.ts` (season cache, the `providerStageId` detail gate, round lookup)
+- `apps/web-nuxt/server/utils/stats/scorers.ts` (`TRY_POINTS`, the rugby try/points boards)
 - `apps/web-nuxt/shared/sport.ts` (sport enum mirror, per-provider sub-feeds)
 - `apps/web-nuxt/server/utils/providers/worldrugby-ranking.ts`, `apps/web-nuxt/server/utils/champion/ranking.ts` (per-sport ranking source)
 - `apps/web-nuxt/app/components/LogoMark.vue`, `apps/web-nuxt/app/components/logos/LogoRugby.vue` (the mark follows skin, then sport)

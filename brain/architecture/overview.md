@@ -5,12 +5,15 @@ keep the test gate green. Read this first, then jump to the specific layer file.
 
 ## What it is
 
-A football score-prediction game (branded **Nostragoalus**, repo dir `nostragoalus`).
+A score-prediction game (branded **Nostragoalus**, repo dir `nostragoalus`).
 Friends predict match scores, earn points by closeness, ranked **per
 competition**. Multi-competition by design (add a `competition` row, no rebuild);
-first competition is the FIFA World Cup 2026. See
-[../features/competitions.md](../features/competitions.md) and the product
-glossary in [../glossary.md](../glossary.md).
+the default competition is the FIFA World Cup 2026. Football is the default
+sport, not the only one: a competition's `sport` (`FOOTBALL` / `RUGBY_UNION`)
+picks its provider, scoring and ranking. See
+[../features/competitions.md](../features/competitions.md),
+[../features/rugby.md](../features/rugby.md) and the product glossary in
+[../glossary.md](../glossary.md).
 
 ## Layering (the cardinal rule)
 
@@ -36,7 +39,7 @@ HTTP route (thin)  ->  service (all logic)  ->  Drizzle / AppDatabase  ->  Postg
 | Server logic | `apps/web-nuxt/server/utils/**` | yes (98%) | services, scoring, providers, auth glue, tasks |
 | Shared isomorphic | `apps/web-nuxt/shared/**` | yes (98%) | types, commitment crypto, pure helpers used both sides |
 | Client logic | `apps/web-nuxt/app/utils/**` | yes (98%) | formatters, pure UI helpers |
-| Thin edges | `apps/web-nuxt/server/api/**`, `apps/web-nuxt/server/tasks/**`, `apps/web-nuxt/app/pages/**`, `*.vue` | no | routes, Nitro tasks, pages, components |
+| Thin edges | `apps/web-nuxt/server/{api,routes,middleware,plugins,tasks}/**`, `apps/web-nuxt/app/pages/**`, `*.vue` | no | routes, Nitro middleware/plugins/tasks, pages, components |
 
 `#shared` is the import alias for `apps/web-nuxt/shared/**` - use it from nested route pages,
 not deep `../../../../shared/*`, or the SSR/rollup build fails on link errors.
@@ -45,12 +48,17 @@ not deep `../../../../shared/*`, or the SSR/rollup build fails on link errors.
 
 1. Nitro file-based route in `apps/web-nuxt/server/api/**` matches (e.g.
    `predictions/index.put.ts`).
-2. `defineValidatedHandler` enforces auth (session user / admin / API key) and
-   zod-validates the body. See [server.md](server.md).
+2. A mutation's `defineValidatedHandler` enforces auth (session user / admin, or
+   an API key where the route opts in), rejects a cross-origin cookie-session
+   request (CSRF), and zod-validates the body; a read's `defineReadHandler` does
+   optional auth and zod-validates the query string. See [server.md](server.md).
 3. The handler calls a service function with the singleton `db`.
 4. The service does the work, throwing typed errors on failure.
-5. `toHttpError` (`apps/web-nuxt/server/utils/http.ts`) maps a thrown domain error to the right
-   status code; `defineRouteMeta` documents the route for OpenAPI.
+5. Both wrappers pass a thrown domain error through `toHttpError`
+   (`apps/web-nuxt/server/utils/http.ts`) for the right status code, and parse
+   the return through the zod `response` schema (required on reads, optional on
+   mutations); `defineRouteMeta` documents the route for OpenAPI. See
+   [cross-stack-contract.md](cross-stack-contract.md).
 
 ## Client lifecycle
 
@@ -69,11 +77,17 @@ not deep `../../../../shared/*`, or the SSR/rollup build fails on link errors.
 | Schema, migrations, test DB | [database.md](database.md) |
 | better-auth, SSO, passkeys, 2FA, API keys, admin | [auth.md](auth.md) |
 | WebSocket hub, live push, presence | [realtime.md](realtime.md) |
+| Peer-to-peer voice (WebRTC, TURN) | [webrtc.md](webrtc.md) |
+| E2EE chat/DM threat model | [e2ee-trust-model.md](e2ee-trust-model.md) |
 | Pluggable image storage (fs/s3) | [storage.md](storage.md) |
 | OG/share images + PWA service worker | [rendering.md](rendering.md) |
-| External data: FIFA match data, odds, FIFA ranking | [providers.md](providers.md) |
+| External data: FIFA/UEFA/ESPN/World Rugby match data, odds, rankings | [providers.md](providers.md) |
+| Daily live-feed shape canary | [provider-canary.md](provider-canary.md) |
 | Test gate, coverage, pglite, factories | [testing.md](testing.md) |
 | i18n, five locales | [i18n.md](i18n.md) |
+| Right-to-left (Arabic) mechanics | [rtl.md](rtl.md) |
+| OpenAPI contract + golden vectors for the Dart client | [cross-stack-contract.md](cross-stack-contract.md) |
+| Client-JS bundle fingerprint | [build-integrity.md](build-integrity.md) |
 | Deployed containers, memory cap, heap diagnosis | [runtime.md](runtime.md) |
 
 ## Hard rules that shape the code
@@ -87,3 +101,10 @@ not deep `../../../../shared/*`, or the SSR/rollup build fails on link errors.
 - The merge gate (run from `apps/web-nuxt`): `pnpm typecheck`, `pnpm test:coverage`,
   `pnpm test:components`, `pnpm build` (the build catches SSR/rollup link errors the
   others miss).
+
+## Sources
+
+- `CLAUDE.md` (hard rules, gate)
+- `apps/web-nuxt/vitest.config.ts` (coverage include + thresholds)
+- `apps/web-nuxt/server/utils/validated-handler.ts`, `apps/web-nuxt/server/utils/read-handler.ts`, `apps/web-nuxt/server/utils/http.ts`, `apps/web-nuxt/server/utils/errors.ts`
+- `apps/web-nuxt/db/app-schema.ts` (`competition`, `sportEnum`)

@@ -66,7 +66,8 @@ faces the next one is read off the measured geometry rather than assumed.
 
 ## Icons
 
-Directional glyphs (back/forward arrows, chevrons) are font glyphs, so a global
+Directional PrimeIcons glyphs (`pi-arrow-*`, `pi-chevron-*`, `pi-angle-*`,
+`pi-caret-*`, left and right) are font glyphs, so a global
 rule in `apps/web-nuxt/app/assets/css/main.css` flips them under RTL:
 
 ```css
@@ -78,8 +79,9 @@ rule in `apps/web-nuxt/app/assets/css/main.css` flips them under RTL:
 
 The satori share card stays **LTR** (a score graphic - home left, away right, a
 universal convention). Arabic **glyphs** still render: the card's font fallback
-(`apps/web-nuxt/server/utils/share/og-assets.ts`, `SCRIPT_FAMILY` maps `ar` to `Noto Sans
-Arabic`) already fetches Noto Sans Arabic on demand for Arabic text. Bundling
+(`SCRIPT_FAMILY` in `apps/web-nuxt/server/utils/share/font-fallback.ts` maps `ar` to
+`Noto Sans Arabic`; `og-assets.ts` does the fetch) already pulls Noto Sans
+Arabic on demand for Arabic text. Bundling
 `NotoSansArabic-*.woff` alongside
 the Thai fonts (for offline reliability, like Thai) is a deferred nicety (see
 [TODO.md](../../TODO.md)).
@@ -99,5 +101,7 @@ after locale-churn/edits (dir/cookie detection goes stale); a container
 - `apps/web-nuxt/nuxt.config.ts` (per-locale `dir`/`language`), `apps/web-nuxt/app/app.vue` (`<html>` binding)
 - `apps/web-nuxt/app/assets/css/main.css` (icon-flip rule)
 - `apps/web-nuxt/app/pages/[competition]/bracket.vue`, `apps/web-nuxt/app/components/BracketMatchCard.vue`
+- `apps/web-nuxt/uno.config.ts` (`presetWind3`)
+- `apps/web-nuxt/server/utils/share/font-fallback.ts`, `apps/web-nuxt/server/utils/share/og-assets.ts`
 - `apps/web-nuxt/tests/e2e/rtl.e2e.ts`
 - [i18n.md](i18n.md)

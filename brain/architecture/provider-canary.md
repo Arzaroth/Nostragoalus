@@ -175,7 +175,7 @@ the exact failure it exists to catch.
 - `apps/web-nuxt/scripts/canary/source.ts` (the error taxonomy, fetch with backoff, the season walk-back, the source contract)
 - `apps/web-nuxt/scripts/canary/sources/{espn,fifa,uefa,worldrugby}.ts` (key tables + cross-checks)
 - `apps/web-nuxt/scripts/canary/{run,main,cli}.ts` (orchestration, report, exit codes, arguments)
-- `apps/web-nuxt/tests/canary/{helpers,ledger,sources,runner}.test.ts` (the canary, offline)
+- `apps/web-nuxt/tests/canary/{ledger,sources,runner}.test.ts` + `helpers.ts` (the canary, offline)
 - `apps/web-nuxt/tsconfig.canary.json`, `apps/web-nuxt/package.json` (`canary`, `typecheck`)
 - `.github/workflows/canary.yml` (daily schedule, artifact, label-scoped issue alarm)
 - Prior art: [github.com/boubou666/butbutbut](https://github.com/boubou666/butbutbut) `tools/canari.py`

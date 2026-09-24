@@ -42,8 +42,8 @@ the h3/Nitro globals, imports every `apps/web-nuxt/server/api` route, reads that
 and builds one operation per route via `buildOperation` +
 [route-path.ts](../../apps/web-nuxt/server/utils/openapi/route-path.ts) (Nitro filename ->
 `{ path, method }`). Normal run asserts the rebuilt spec equals the committed
-`shared/contracts-openapi/openapi.snapshot.json` (drift gate, like `db:generate`); `CONTRACT_BLESS=1`
-re-freezes. The gate **ratchets**: every route not contract-bound (no response
+`shared/contracts-openapi/openapi.snapshot.json` (drift gate, like `db:generate`);
+`CONTRACT_BLESS=1 pnpm test:run tests/contract` re-freezes. The gate **ratchets**: every route not contract-bound (no response
 schema, or fails to import) must appear in the test's `NO_CONTRACT` exempt list,
 so a new raw-handler route - or a converted route that starts failing to
 import - trips the gate instead of silently missing from the spec. Two files
@@ -64,10 +64,15 @@ compile error, not a runtime 500. Shared DB-projection shapes are derived from
 the drizzle tables with `drizzle-zod` in [apps/web-nuxt/server/schemas/](../../apps/web-nuxt/server/schemas)
 (out of the coverage gate; route files stay thin).
 
-Fan-out is COMPLETE: 186 routes carry a compile-verified response schema. The 7
-routes without one are excluded by design - binary (media, share OG images),
-XML (SAML SP metadata), HTML (SSO test-callback), the `.ics` calendar feed, the
-better-auth `[...all]` catch-all, and the `_schema` helper (not a route).
+Fan-out is COMPLETE: 193 routes carry a compile-verified response schema (the
+emitter logs `[contract] converted=N without-contract=M`). The 10 files without
+one are excluded by design - binary (avatar + reward media), XML (SAML SP
+metadata), HTML (SSO test-callback), the `.ics` calendar feed, the better-auth
+`[...all]` catch-all, the three mobile SSO routes (`mobile-authorize` and
+`mobile-callback` are 302 redirects, `mobile-exchange` runs before any session
+exists), and the `notifications/_schema.ts` helper (not a route). The OG share
+images are Nitro `server/routes/`, outside `server/api`, so the emitter never
+sees them.
 
 ## Logic parity: frozen golden vectors
 
@@ -90,12 +95,15 @@ can.
 Suite factored into
 [apps/web-nuxt/tests/parity/harness.ts](../../apps/web-nuxt/tests/parity/harness.ts) (`parityVectors`);
 `dispatch.ts` marshals `Uint8Array` args/results as `{ $b64 }` so crypto vectors
-cross the JSON boundary. Nine modules: `commitment` (commit-reveal ledger),
+cross the JSON boundary. Vectors are frozen to `shared/parity-json/<module>.json`.
+Ten modules: `commitment` (commit-reveal ledger),
 `key-transparency` (chat-key hash chain), `e2ee` (libsodium interop KATs -
 decrypt/unseal/derive direction, since encrypt/seal is random), `scoring` (the
 points engine), `fergie` (added-time replay), `standings` (group table),
 `consensus` (bot scoreline), `match` (stage/status predicates), `match-view`
-(play-by-play label spec + icon table + the SHOUTED-name formatter). Only db-bound
+(play-by-play label spec + icon table + the SHOUTED-name formatter),
+`chat-content` (the chat wire format: `@<id>` mention storage, composer
+`@Name` mapping, tokenizing into mentions / links / inline images). Only db-bound
 logic (criteria, achievements) is out of scope for pure vectors.
 
 ## Dart consumer side
@@ -108,16 +116,27 @@ both artifacts above:
   is async and needs libsodium, so it replays in its own
   `test/e2ee_interop_test.dart` (`dlopen` of the system libsodium).
 - `parity/` is a **path dependency of the Flutter app**, not a parallel copy. The
-  app's `lib/e2ee/e2ee.dart`, `lib/kt/key_transparency.dart` and
-  `lib/ui/match/timeline_label.dart` are one-line re-exports of the parity
+  app's `lib/e2ee/e2ee.dart`, `lib/kt/key_transparency.dart`,
+  `lib/chat/chat_content.dart` and `lib/ui/match/timeline_label.dart` are
+  re-exports of the parity
   package, so the vectors replay against the exact code the device ships. A fork
   under `app/lib/` would let the shipped crypto drift from the server with a
   green gate - that is the failure mode this layer exists to prevent. New
   cross-stack logic goes in `parity/lib/` + the vector generator + both
   dispatchers, never in a widget file.
-- `tool/gen_models.sh` generates Dart request/response classes from
-  `shared/contracts-openapi/openapi.snapshot.json` (openapi-generator), single-sourcing the wire contract
-  from the server's zod.
+- `apps/mobile-flutter/app/tool/gen_models.sh` runs the in-repo pure-Dart
+  generator `tool/gen_models.dart`, which walks the operations the app consumes
+  in `shared/contracts-openapi/openapi.snapshot.json` and emits deterministic
+  immutable models into `lib/api/models.gen.dart` (CI asserts it is not stale),
+  single-sourcing the wire contract from the server's zod.
 
 Related: [e2ee-trust-model.md](e2ee-trust-model.md),
 [build-integrity.md](build-integrity.md), [testing.md](testing.md).
+
+## Sources
+
+- `apps/web-nuxt/server/utils/openapi/contract.ts`, `apps/web-nuxt/server/utils/openapi/route-path.ts`
+- `apps/web-nuxt/server/utils/validated-handler.ts`, `apps/web-nuxt/server/utils/read-handler.ts`, `apps/web-nuxt/server/schemas/*`
+- `apps/web-nuxt/tests/contract/openapi.test.ts` (`NO_CONTRACT`), `shared/contracts-openapi/openapi.snapshot.json`
+- `apps/web-nuxt/tests/parity/{dispatch,harness}.ts`, `apps/web-nuxt/tests/parity/cases/*`, `apps/web-nuxt/tests/parity/*.parity.test.ts`, `shared/parity-json/*.json`, `apps/web-nuxt/package.json` (`parity:bless`)
+- `apps/mobile-flutter/parity/{lib,test}/*`, `apps/mobile-flutter/app/tool/gen_models.{sh,dart}`

@@ -1,6 +1,7 @@
 # Storage (image blobs)
 
-Image blobs (user avatars and end-to-end-encrypted chat images) live in a
+Image blobs (user avatars, league reward / description images, and
+end-to-end-encrypted chat images) live in a
 pluggable object store, not in Postgres. This shipped in **v2.0.0** (a MAJOR
 release: it added a required stateful service and changed the backup contract).
 The product-level story is in
@@ -23,8 +24,9 @@ Two implementations, mirroring the providers/odds factory pattern:
 - `drivers/s3.ts` - `aws4fetch` SigV4, path-style addressing, with an
   injectable `fetchImpl` for tests. Keys pass `assertSafeKey` as a backstop.
 
-`factory.ts` picks the driver; `keys.ts` derives the object keys (and holds
-`assertSafeKey`); `service.ts` wraps put/get.
+`factory.ts` picks the driver; `keys.ts` derives the object keys
+(`chatImageKey`, `avatarKey`, `rewardKey`) and holds `assertSafeKey`;
+`service.ts` wraps the chat-image and avatar put/get/delete.
 `index.ts` holds the `useRuntimeConfig` glue (`useStorageDriver()` /
 `resolveStorage(driver?)`) and is excluded from coverage like the providers
 index. Services that may touch images take an optional `driver?` resolved lazily
@@ -35,10 +37,12 @@ from `apps/web-nuxt/tests/storage.ts`.
 
 Environment, read in `apps/web-nuxt/nuxt.config.ts` runtimeConfig:
 
-- `NUXT_STORAGE_DRIVER` = `fs` | `s3` (the Docker deploy defaults to `s3`).
-- `NUXT_STORAGE_FS_ROOT` for the fs driver.
-- `NUXT_STORAGE_S3_*` (endpoint, bucket, access key, secret) for s3. The compose
-  deploy points these at rustfs.
+- `NUXT_STORAGE_DRIVER` = `fs` | `s3` (runtimeConfig default `fs`; the Docker
+  deploy in `compose.yaml` defaults to `s3`).
+- `NUXT_STORAGE_FS_ROOT` for the fs driver (unset in dev falls back to
+  `./.data/storage`).
+- `NUXT_STORAGE_S3_*` (endpoint, region, bucket, access key id, secret access
+  key) for s3. The compose deploy points these at rustfs.
 
 `StorageError` is the one storage failure class; `toHttpError` maps it to a
 **generic** 500 (it deliberately does not leak the fs path or S3 key). See
@@ -53,8 +57,20 @@ Environment, read in `apps/web-nuxt/nuxt.config.ts` runtimeConfig:
   photos on SSO login), both via `storeAvatarFromDataUrl` in
   `apps/web-nuxt/server/utils/auth/avatar.ts`.
 - `user.image` holds a serving URL `/api/media/avatar/{key}`; the GET route
-  requires a user and serves the bytes with an immutable cache header. There is
+  requires a user and serves the bytes with a `private, immutable` cache header. There is
   no new upload route: avatars reuse the proven updateUser path.
+
+## Reward and league-description images
+
+- Content-addressed like avatars: `reward/{sha256}.{ext}`, written by
+  `storeRewardFromDataUrl` (`apps/web-nuxt/server/utils/rewards/image.ts`: base64
+  data URL only, jpeg/png/webp/gif, max 512 KB), which returns the key.
+- Callers are the league rewards save (`PUT /api/leagues/:id/rewards`) and the
+  owner/moderator description-image upload
+  (`POST /api/leagues/:id/description-image`, returns `/api/media/reward/{key}`).
+- `GET /api/media/reward/{key}` is **public** (key must be 64-hex + image
+  extension) with a `public, immutable` cache header. See
+  [../features/rewards.md](../features/rewards.md).
 
 ## Chat images (server-opaque)
 
@@ -65,7 +81,8 @@ Environment, read in `apps/web-nuxt/nuxt.config.ts` runtimeConfig:
   [database.md](database.md)). `postMessage` pre-generates the message id and
   writes storage BEFORE the DB transaction; `editMessage` writes added images
   before the tx and deletes removed objects after commit.
-  `getAttachmentCiphertext` reads from storage when the column is null, so the
+  `getAttachmentCiphertext` (`apps/web-nuxt/server/utils/chat/attachments.ts`)
+  reads from storage when the column is null, so the
   wire shape to clients is unchanged regardless of backend.
 
 ## Migration and backup
@@ -87,5 +104,7 @@ Environment, read in `apps/web-nuxt/nuxt.config.ts` runtimeConfig:
 - `apps/web-nuxt/server/utils/storage/drivers/{fs,s3}.ts`
 - `apps/web-nuxt/server/tasks/media/migrate-blobs.ts` (the Nitro task wrapper)
 - `apps/web-nuxt/server/utils/auth/avatar.ts`, `apps/web-nuxt/server/api/media/avatar/[key].get.ts`
+- `apps/web-nuxt/server/utils/rewards/image.ts`, `apps/web-nuxt/server/api/media/reward/[key].get.ts`, `apps/web-nuxt/server/api/leagues/[id]/description-image.post.ts`
+- `apps/web-nuxt/server/utils/chat/attachments.ts`, `apps/web-nuxt/nuxt.config.ts` (runtimeConfig `storage*`)
 - `apps/web-nuxt/db/app-schema.ts` (`chat_attachment`), `apps/web-nuxt/tests/storage.ts`
 - `apps/web-nuxt/compose.yaml` (rustfs, rustfs-init, mc), `mise-tasks/db-backup`

@@ -8,8 +8,9 @@ which is why the app is single-instance today (see
 ## The socket
 
 - Endpoint `/_ws`, handled by `apps/web-nuxt/server/routes/_ws.ts`.
-- The user's session is resolved once, at socket open, and pinned to that
-  connection. All later authorization (which league rooms a socket may receive)
+- The socket is registered synchronously at open (so an early `subscribe` or
+  close is not lost), then the user's session is resolved once and pinned to that
+  connection (`userId` null for a guest, who still gets the global broadcasts). All later authorization (which league rooms a socket may receive)
   is gated against that resolved identity, so a client cannot subscribe itself
   into a league it is not a member of.
 
@@ -22,23 +23,32 @@ fire-and-forget after a successful mutation or during a scheduled task.
 | Publisher | Targets | Used by |
 |---|---|---|
 | `publishUserNotification(userId, dto)` | that user's own sockets | [../features/notifications.md](../features/notifications.md) |
-| `publishCrowdUpdate(...)` | match subscribers (optionally league-scoped) | [../features/crowd-bot.md](../features/crowd-bot.md) |
-| `publishLeagueReactionUpdate(...)` | league members | [../features/chat.md](../features/chat.md), reactions |
-| `publishMemberNameChanged(...)` | affected leagues (`chat:roster`) | [../features/chat.md](../features/chat.md) |
+| `publishCrowdUpdate` / `publishLeagueCrowdUpdate` | every socket (`crowd:update`) / league members only (`crowd:league-update`) | [../features/crowd-bot.md](../features/crowd-bot.md) |
+| `publishReactionUpdate` / `publishLeagueReactionUpdate` | every socket (`reaction:update`) / league members only (`reaction:league-update`) | match reactions |
+| `publishLeagueChatMessage`, `publishChatEdit`, `publishChatReactionUpdate`, `publishChatModeration`, `publishChatStateChanged`, `publishChatRekeyRequest`, `publishChatKeysAdded`, `publishChatTyping`, `publishChatRoster` | league members (one members-only gate in the hub) | [../features/chat.md](../features/chat.md); wrapped with the DB lookups in `live/league-chat.ts` (e.g. `publishMemberNameChanged` -> `chat:roster`) |
+| `publishDmMessage`, `publishDmEdit`, `publishDmReaction`, `publishDmTyping` | the two participants (`live/dm-chat.ts` wraps typing) | [../features/dms.md](../features/dms.md) |
+| `publishVoiceRoster`, `sendVoiceToToken`, `publishVoiceToUser`, `publishVoicePresence`, `publishVoiceLog` | the one in-call socket / every socket of a user / league members | [webrtc.md](webrtc.md) |
 | presence broadcasts | all sockets / a new socket | presence, below |
 | `syncMatchViewers` / `dropMatchViewer` | a match's viewer room (`viewers:update`) | [../features/live-viewers.md](../features/live-viewers.md) |
-| score/match updates | the live match view, fixtures list and knockout bracket | `scores:poll`, [providers.md](providers.md) |
+| `publishMatchUpdates` / `sendMatchSnapshot` | subscribers of those matches (`match:update`) + every socket (`scores:changed`) / one re-subscribing socket | `scores:poll`, [providers.md](providers.md) |
 
 ## Live event types (client message names)
 
+- `subscribe` (client -> server: the match ids a view shows); the server answers
+  with a `match:update` snapshot of each so a transition missed while
+  disconnected converges.
 - `chat:new` - a new message (replies ride this too and bump the parent thread
-  count); `chat:moderation` - hide/restore/pending; `chat:roster` - member name
-  change (keyed by `leagueIds`, handled BEFORE the per-room leagueId guard);
-  `chat:state-changed` - chat turned off / key rotated; `chat:typing` - a member
-  is composing (client -> server with the `leagueId`, server -> the room's other
-  members).
-- `dm:typing` - the same hint for a 1:1 thread (`{threadId}`), authorized through
-  `requireParticipant` and delivered only to the other participant. See
+  count); `chat:edit` - new ciphertext for an edited message; `chat:reaction` -
+  a message's emoji counts; `chat:moderation` - pending/removed/restored;
+  `chat:roster` - member name change (keyed by `leagueIds`, handled BEFORE the
+  per-room leagueId guard); `chat:state-changed` - chat turned on/off or
+  re-keyed; `chat:rekey-request` / `chat:keys-added` - E2EE group-key re-seal
+  nudges (no key material); `chat:typing` - a member is composing (client ->
+  server with the `leagueId`, server -> the room's other members).
+- `dm:new`, `dm:edit`, `dm:reaction` - the DM counterparts, to both
+  participants' sockets. `dm:typing` - the typing hint for a 1:1 thread
+  (`{threadId}`, capped at 64 chars), authorized through `requireParticipant`
+  and delivered only to the other participant. See
   [../features/dms.md](../features/dms.md).
 - `notification:new` - a new in-app notification.
 - `presence:update` (a user's online/idle state changed), `presence:snapshot`
@@ -51,16 +61,23 @@ fire-and-forget after a successful mutation or during a scheduled task.
 - `ping` (client -> server keepalive) and `pong` (server -> client answer). App-level
   heartbeat, distinct from the `presence:ping` idle report - it detects a silently
   half-open socket (see the heartbeat note under `useReconnectingSocket`).
-- `voice:*` - WebRTC call signaling relayed for [voice chat](../features/voice-chat.md):
-  `voice:join`/`voice:leave`, `voice:signal` (SDP/ICE relayed between two members of
-  a room), `voice:invite`/`voice:ring`/`voice:decline`/`voice:cancel`,
+- `voice:*` - WebRTC call signaling relayed for [voice chat](../features/voice-chat.md).
+  Client -> server: `voice:join`/`voice:leave`, `voice:signal`, `voice:invite`,
+  `voice:decline`, `voice:cancel`. Server -> client: `voice:signal` (SDP/ICE
+  relayed between two members of a room), `voice:ring`, `voice:declined`,
+  `voice:cancelled`, `voice:ended` (a DM call hung up for the other side),
   `voice:roster` (a room's participants), `voice:presence` (a league room's count to
-  all members, for the "N in voice" badge) and `voice:peer-reset` (a takeover: the
-  other members re-establish their peer connection to the user who re-joined from a
-  new tab). The media itself is peer-to-peer, not
+  all members, for the "N in voice" badge), `voice:log` (a call-log line changed:
+  open chats refetch), `voice:evicted` (to the old tab on a takeover) and
+  `voice:peer-reset` (the other members re-establish their peer connection to the
+  user who re-joined from a new tab). The media itself is peer-to-peer, not
   on this socket - see [webrtc.md](webrtc.md). Handled by `apps/web-nuxt/server/utils/live/voice.ts`
   + `voice-rooms.ts`, dispatched in `_ws.ts`.
-- crowd totals update and live score/match updates. Three views patch
+- `crowd:update` / `crowd:league-update` and `reaction:update` /
+  `reaction:league-update` - global vs members-only totals, distinct types so a
+  global handler never folds league counts in.
+- `match:update` and `scores:changed` (a score moved: refetch derived views such
+  as provisional standings). Three views patch
   `match:update` frames: the match detail (`useLiveMatch`), the fixtures list
   (`useLiveMatches`, into the `['matches', slug]` cache) and the knockout bracket
   (`useLiveBracket`). The bracket's scores live in a cached provider base (10-min
@@ -69,9 +86,10 @@ fire-and-forget after a successful mutation or during a scheduled task.
   live group-qualifier projections; a knockout match finishing busts that cache
   from `scores:poll` so the next slot fills without waiting out the TTL.
 - The match detail header must agree with the goal event list beneath it. Both
-  come from FIFA feeds on different clocks: the goal count off the detail/insights
-  feed (~45 s, VAR-aware, the same source the list renders) and the WS
-  `match:update` value patched from the football-data `scores:poll` (~2 min). A
+  come from provider feeds on different clocks: the goal count off the
+  detail/insights feed (~45 s, VAR-aware, the same source the list renders) and
+  the WS `match:update` value patched from `scores:poll` (cron every 30 s through
+  the competition's own provider, `providerForCompetition`). A
   plain max of the two can never drop when VAR disallows a goal (the stale-high WS
   side pins it), and recency arbitration can't tell a stale WS poll from a fresh
   goal - so `apps/web-nuxt/app/utils/live-score.ts` (`liveHeaderScore`) makes the fresher goal
@@ -123,6 +141,7 @@ everyone else. Both paths converge on the same vue-query cache keys (see
 
 - `apps/web-nuxt/server/routes/_ws.ts`
 - `apps/web-nuxt/server/utils/live/hub.ts` (subscriber registry, presence map, every `publish*` helper), `apps/web-nuxt/server/utils/live/viewers.ts`
-- `apps/web-nuxt/server/utils/live/league-chat.ts` (`publishMemberNameChanged`), `apps/web-nuxt/server/utils/live/league-reactions.ts` (`publishLeagueReactionUpdates`), `apps/web-nuxt/server/utils/live/league-crowd.ts`
+- `apps/web-nuxt/server/utils/live/league-chat.ts` (`publishMemberNameChanged`), `apps/web-nuxt/server/utils/live/dm-chat.ts`, `apps/web-nuxt/server/utils/live/league-reactions.ts` (`publishLeagueReactionUpdates`), `apps/web-nuxt/server/utils/live/league-crowd.ts`
+- `apps/web-nuxt/server/utils/live/voice.ts`, `apps/web-nuxt/server/utils/live/voice-rooms.ts`
 - `apps/web-nuxt/app/composables/useReconnectingSocket.ts`, `apps/web-nuxt/app/utils/heartbeat.ts`, `apps/web-nuxt/app/composables/usePresence.ts`, `apps/web-nuxt/app/composables/useMatchPresence.ts`
 - `apps/web-nuxt/app/components/UserAvatar.vue` (presence dot), `apps/web-nuxt/app/components/MatchViewers.vue` ("N watching now")

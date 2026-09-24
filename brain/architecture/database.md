@@ -1,12 +1,12 @@
 # Database
 
-Postgres 17 via Drizzle ORM (`drizzle-orm/node-postgres`). The schema is the
+Postgres 17 (`postgres:17.10-alpine` in `apps/web-nuxt/compose.yaml`) via Drizzle ORM (`drizzle-orm/node-postgres`). The schema is the
 source of truth; migrations are generated, never hand-written.
 
 ## Files and connection
 
 - `apps/web-nuxt/db/index.ts` - one `pg.Pool` + `drizzle(pool, { schema })`. Connection from
-  `DATABASE_URL ?? NUXT_DATABASE_URL`. Exports the singleton `db`.
+  `DATABASE_URL ?? NUXT_DATABASE_URL`. Exports the singleton `db` (and `pool`).
 - `apps/web-nuxt/db/schema.ts` - re-exports `auth-schema.ts` + `app-schema.ts`.
 - `apps/web-nuxt/db/auth-schema.ts` - better-auth tables (`user`, `session`, `account`,
   `verification`, `passkey`, `two_factor`, `sso_provider`, `scim_provider`,
@@ -18,8 +18,8 @@ source of truth; migrations are generated, never hand-written.
 
 ## Migrations
 
-- Generate with `pnpm db:generate` (drizzle-kit) into `apps/web-nuxt/drizzle/NNNN_name.sql`
-  plus the journal/snapshot. Currently 62 migrations (0000 through 0061).
+- Generate with `pnpm db:generate` (drizzle-kit) into `apps/web-nuxt/drizzle/<NNNN>_<name>.sql`
+  plus the journal/snapshot. Currently 67 migrations (0000 through 0066).
 - Applied on boot by `apps/web-nuxt/server/plugins/migrate.ts` when `RUN_MIGRATIONS=true`.
 - **Shared-dev-DB caveat:** the local `nostragoalus_pgdata` volume is shared
   across all worktrees/branches, and the node-postgres migrator applies journal
@@ -38,23 +38,29 @@ Logical names are the Drizzle TS exports; the SQL tables are snake_case
 - **Auth:** `user`, `session`, `account`, `verification`, `passkey`, `two_factor`,
   `sso_provider` (lifecycle `status` + `last_tested_at`/`last_test_result` +
   `domainVerified`), `scim_provider` (per-provider hashed SCIM token), `apikey`.
-  `user` carries app additionalFields (push* toggles, profilePrivate,
-  skin/skinsUnlocked, hiddenFromLeaderboard). See
+  `user` carries app additionalFields (locale, theme, showCrowd/showOdds, push*
+  toggles, profilePrivate, skin/skinsUnlocked, dmDiscoverable,
+  hiddenFromLeaderboard, lastSeenChangelogVersion, onboarding/league-prompt
+  dismissals, feedTokenVersion). See
   [auth.md](auth.md) and [../features/sso-provisioning.md](../features/sso-provisioning.md).
 - **Competition core:** `competition` (provider + `sport` + `providerSport`, the
-  provider's sub-feed), `round` (kind, stage, kickoffAt), `match`
-  (status, fullTimeScore), `goal_event` (side, player, minute, ownGoal),
+  provider's sub-feed), `round` (kind, stage, opensAt, firstKickoffAt), `match`
+  (status, fullTime/halfTime/extraTime/penalties home+away, winner,
+  scoringState), `goal_event` (side, playerName, minute, goalType, ownGoal),
   `match_lineups` (frozen official XI, never re-fetched once final). See
   [../features/competitions.md](../features/competitions.md).
-- **Predictions / scoring:** `prediction` (homeGoals, awayGoals, isJoker,
-  lockedAt, awardedPoints, baseResult, bonusSource, bonusPoints),
+- **Predictions / scoring:** `prediction` (homeGoals, awayGoals, isOutcomeOnly,
+  wager, isJoker, lockedAt, basePoints, baseTier, bonusSource, bonusPoints,
+  totalPoints), `league_prediction` (optional per-league override pick, see
+  [../features/league-modes.md](../features/league-modes.md)),
   `match_score_event` (the derive-don't-mutate scoring snapshot),
   `scoring_config` (versioned jsonb tiers), `champion_pick`, `best_scorer_pick`,
   `odds_snapshot`, `match_reaction`, `leaderboard_rank` (per-competition rank
   snapshot keeping prevRank for movement arrows). See
   [../features/predictions-and-scoring.md](../features/predictions-and-scoring.md).
-- **Tamper-evidence:** `prediction_commitment` (append-only, no FKs),
-  `commitment_chain_head` (singleton). See
+- **Tamper-evidence:** `prediction_commitment` and
+  `league_prediction_commitment` (append-only, no FKs), `commitment_chain_head`
+  (singleton). See
   [../features/tamper-evidence.md](../features/tamper-evidence.md).
 - **Achievements / awards:** `competition_award` (derived end-of-competition
   awards, typed `competition_award_type`), `user_achievement` (trophy cabinet;
@@ -71,6 +77,14 @@ Logical names are the Drizzle TS exports; the SQL tables are snake_case
   `chat_message_reaction` (plaintext emoji per member), `chat_message_report`
   (member reports; enough flip a message to PENDING). See
   [../features/chat.md](../features/chat.md).
+- **DMs:** `dm_thread` (one per user pair, `keyEpoch`), `dm_thread_key` (per-
+  participant sealed thread key), `dm_thread_read`; DM messages reuse
+  `chat_message` via `dmThreadId`. See [../features/dms.md](../features/dms.md).
+- **Key transparency:** `key_transparency_entry` (append-only hash-chained
+  `userId -> publicKey` log, no FKs), `key_transparency_head` (singleton). See
+  [e2ee-trust-model.md](e2ee-trust-model.md).
+- **Voice:** `voice_call` (league room or DM call lifecycle, typed
+  `voice_call_status`). See [../features/voice-chat.md](../features/voice-chat.md).
 - **Notifications / push:** `user_notification` (typed jsonb + dedupeKey),
   `push_subscription`. See [../features/notifications.md](../features/notifications.md).
 - **Roadmap:** `roadmap_item` (admin entries + user suggestions, one table two
@@ -100,21 +114,29 @@ CHAT_MENTION, DM_MESSAGE, VOICE_MISSED), `match_media_kind` (LIVE/REPLAY/HIGHLIG
 `roadmap_moderation` (PENDING/APPROVED/REJECTED), `sso_provider_status`
 (draft/enabled/disabled).
 
-All foreign keys use ON DELETE CASCADE, except the tamper-evidence ledger which
-deliberately has none (it must outlive deleted rows).
+Foreign keys are ON DELETE CASCADE by default, with three exceptions: authorship
+/ audit pointers are SET NULL (`league.created_by`/`chat_enabled_by`,
+`league_invite.created_by`, `roadmap_item.author_id`, `chat_message`
+`user_id`/`parent_id`/`thread_id`/`moderated_by`, `voice_call.initiator_id`) so
+the row outlives its author; `round_id` on `match`, `prediction` and
+`league_prediction` has no action (a round with matches cannot be deleted); and
+the tamper-evidence and key-transparency ledgers deliberately have no FKs (they
+must outlive deleted rows).
 
 ## Test database
 
 - `apps/web-nuxt/tests/db.ts` `createTestDb()` spins up `@electric-sql/pglite` (in-memory
-  Postgres) and runs the REAL `./drizzle` migrations, so service tests exercise
-  production schema. See [testing.md](testing.md).
+  Postgres) on the REAL `./drizzle` migrations, so service tests exercise
+  production schema. It migrates once per worker process, snapshots the data dir
+  (`dumpDataDir`), and restores that snapshot for every later test DB. See [testing.md](testing.md).
 - `apps/web-nuxt/tests/factories.ts` - `makeUser`, `makeCompetition`, `seedCompetition`,
-  `makeMatch`, `makeLeague`, `addLeagueMember`, `makePrediction`, `makeReaction`.
+  `makeMatch`, `makeGoalEvent`, `makeLeague`, `addLeagueMember`, `makePrediction`,
+  `makeLeaguePrediction`, `makeReaction`.
 - `apps/web-nuxt/tests/storage.ts` - `memoryStorage()` injected where a service needs a blob
   driver.
 
 ## Sources
 
 - `apps/web-nuxt/db/index.ts`, `apps/web-nuxt/db/schema.ts`, `apps/web-nuxt/db/auth-schema.ts`, `apps/web-nuxt/db/app-schema.ts`, `apps/web-nuxt/db/types.ts`
-- `apps/web-nuxt/drizzle.config.ts`, `apps/web-nuxt/drizzle/`, `apps/web-nuxt/server/plugins/migrate.ts`
+- `apps/web-nuxt/drizzle.config.ts`, `apps/web-nuxt/drizzle/`, `apps/web-nuxt/server/plugins/migrate.ts`, `apps/web-nuxt/compose.yaml`
 - `apps/web-nuxt/tests/db.ts`, `apps/web-nuxt/tests/factories.ts`, `apps/web-nuxt/tests/storage.ts`

@@ -8,10 +8,12 @@ one, and the wording matters.
 ## The crypto (recap)
 
 Each user's browser generates a libsodium keypair (`apps/web-nuxt/app/utils/e2ee.ts`
-`generateIdentity`) and uploads only the public key (`registerChatIdentity`). A
+`generateIdentity`) and uploads only the public key (`registerChatIdentity`,
+`apps/web-nuxt/server/utils/chat/service.ts`). A
 random per-league group key is sealed to each member's public key (anonymous
 sealed box); messages are `crypto_secretbox` (XSalsa20-Poly1305) under the group
-key. The private key never leaves the device (escrowed only under
+key. DMs reuse the same primitives with a per-thread key sealed to both
+participants ([../features/dms.md](../features/dms.md)). The private key never leaves the device (escrowed only under
 Argon2id(recovery code); the code is never sent to the server -
 `useChatIdentity.ts` posts the wrapped blob only). So **data at rest is genuinely
 unreadable by the server**: a "hand over the chats" order yields ciphertext.
@@ -31,6 +33,12 @@ Two vectors:
    server-served web app - it cannot be *prevented*, only made *detectable*
    (**build integrity**, below). Genuine prevention needs the client outside the
    operator's unilateral control (a store-distributed extension/app) - not built.
+   The native Android client ports the same crypto and KT verify
+   (`apps/mobile-flutter/app/lib/e2ee/e2ee.dart`,
+   `apps/mobile-flutter/app/lib/kt/key_transparency.dart`) into an installed APK
+   instead of per-load JS, but that APK is operator-built and operator-hosted
+   ([../features/app-downloads.md](../features/app-downloads.md)), so it narrows
+   this vector rather than closing it.
 
 Honest one-liner: *E2EE protects your messages against passive access / an
 honest-but-curious operator; it does not protect against a fully-compromised server,
@@ -68,3 +76,11 @@ No post-compromise security / ratchet (a leaked group key reads everything at th
 epoch until the next rotation). No protection against a first-load malicious bundle.
 No external transparency witness. These are documented deliberately rather than
 papered over.
+
+## Sources
+
+- `apps/web-nuxt/app/utils/e2ee.ts`, `apps/web-nuxt/app/composables/{useChatIdentity,useChatKeyVerification,useKeyTransparency,useLeagueChat}.ts`
+- `apps/web-nuxt/shared/key-transparency.ts`, `apps/web-nuxt/server/utils/key-transparency/service.ts`, `apps/web-nuxt/server/api/keys/{head,log}.get.ts`
+- `apps/web-nuxt/server/utils/chat/service.ts` (`registerChatIdentity`, `getChatStatus`), `apps/web-nuxt/server/utils/leagues/service.ts` (`removeMembership`)
+- `apps/web-nuxt/app/components/ChatPanel.vue`
+- `apps/mobile-flutter/app/lib/e2ee/e2ee.dart`, `apps/mobile-flutter/app/lib/kt/key_transparency.dart`

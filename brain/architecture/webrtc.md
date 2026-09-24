@@ -23,7 +23,10 @@ There is no separate signaling server: the one in-process
 [WebSocket hub](realtime.md) relays the `voice:*` frames. A socket is authenticated
 once at open, so a signaling frame inherits its `userId`. Scope authorization
 (who may be in a call) happens at join/invite (reusing the DM/league chat checks);
-relaying a candidate is authorized by live room membership alone. See
+relaying an offer/answer/ICE candidate is authorized by live room membership
+alone (sender and target in the same room, `handleVoiceSignal` in
+`apps/web-nuxt/server/utils/live/voice.ts`), and `_ws.ts` drops a relayed payload
+over 16 KB. See
 [../features/voice-chat.md](../features/voice-chat.md) for the frame list.
 
 ## ICE: STUN + TURN
@@ -31,25 +34,36 @@ relaying a candidate is authorized by live room membership alone. See
 `GET /api/voice/ice-servers` returns the ICE config the browser hands to each
 `RTCPeerConnection`:
 
-- **STUN** (a public server) is always present - enough for peers on cooperative
+- **STUN** (`stun:stun.l.google.com:19302`) is always present - enough for peers on cooperative
   NATs and for two browsers on one host (loopback candidates, which is how the e2e
   connects with no TURN).
 - **TURN** (a relay for peers behind symmetric NAT / strict firewalls) is added
-  only when self-hosted coturn is configured. Without it the app is STUN-only and
+  only when self-hosted coturn is configured (`NUXT_TURN_SECRET` and
+  `NUXT_TURN_HOST` both set), as three URLs sharing one credential:
+  `turn:` over udp and tcp on the TURN port, `turns:` over tcp on the TLS port.
+  Without it the app is STUN-only and
   such calls fail to connect; the client surfaces that.
 
 The response carries a `ttl` (seconds; `buildIceServers` defaults to 3600) because
-the TURN credential is time-limited. **Both clients refetch at 90% of it and push
-the fresh config into the live `RTCPeerConnection`s** (`setConfiguration`) - the
-web in `useVoiceCall.ensureIce`, the app in `VoiceService._refreshIce`. A call
-that outlived the credential would otherwise keep a dead one, and the next ICE
-restart or renegotiation would fail to relay. A failed refresh keeps the
-credential in hand and retries (30s on mobile) rather than dropping the call.
+the TURN credential is time-limited. A call that outlived the credential would
+otherwise keep a dead one, and the next ICE restart or renegotiation would fail
+to relay. The two clients keep it fresh differently:
+
+- **Web** (`useVoiceCall.ensureIce`) refreshes **lazily**: the cached config is
+  reused until 90% of the ttl has passed, then refetched on the next join, peer
+  reset or ICE restart. Only an ICE restart pushes the fresh config into its
+  existing `RTCPeerConnection` (`setConfiguration`, tolerated if the browser
+  refuses); a reset rebuilds the peer on it. A failed refetch on a reset keeps
+  the stale credential; on a restart it drops that peer.
+- **App** (`VoiceService._refreshIce`) refreshes **proactively**: a timer at 90%
+  of the ttl refetches and `setConfiguration`s every live peer. A failed refresh
+  keeps the credential in hand and retries after `iceRetry` (30 s) rather than
+  dropping the call.
 
 ### coturn (self-hosted relay)
 
 A `coturn` container behind the `voice` [compose](../operations.md) profile
-(`mise run up` includes it; `docker compose --profile voice up` starts it alone). Runs in `use-auth-secret` mode: the app mints an ephemeral,
+(`mise run up` and `mise run deploy` include it; `docker compose --profile voice up` brings it up with the stack). Runs in `use-auth-secret` mode: the app mints an ephemeral,
 time-limited credential per request (`turnCredential` in
 `apps/web-nuxt/server/utils/voice/service.ts` - `username = <expiry>:<userId>`,
 `credential = base64(HMAC-SHA1(secret, username))`), which coturn recomputes and
@@ -84,4 +98,6 @@ the same tiered approach as the E2EE hardening in [../decisions.md](../decisions
 - `apps/web-nuxt/server/api/voice/ice-servers.get.ts`, `apps/web-nuxt/server/utils/voice/service.ts`
   (`buildIceServers`, `turnCredential`)
 - `apps/web-nuxt/compose.yaml` (`coturn`, the `voice` profile), `apps/web-nuxt/.env.example` (`NUXT_TURN_*`)
-- `apps/web-nuxt/app/composables/useVoiceCall.ts` (the peer-connection mesh)
+- `apps/web-nuxt/app/composables/useVoiceCall.ts` (the peer-connection mesh, `ensureIce`)
+- `apps/web-nuxt/server/routes/_ws.ts`, `apps/web-nuxt/server/utils/live/voice.ts` (`voice:*` relay)
+- `apps/mobile-flutter/app/lib/voice/voice_service.dart` (`_refreshIce`)

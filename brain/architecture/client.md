@@ -14,20 +14,28 @@ composables + the query cache.
   swap mid-prediction), `periodicSyncForUpdates: 3600`, precache globs exclude
   `**/skins/**` (easter-egg assets lazy-load). See [rendering.md](rendering.md)
   and [../features/pwa.md](../features/pwa.md).
-- **runtimeConfig.public:** `vapidPublicKey`, `version`, `appName` (branding is
-  config-driven - the UI never hardcodes "Nostragoalus").
-- **runtimeConfig (private):** `vapidPrivateKey`, `vapidSubject`, `storageDriver`
-  + storage creds.
+- **runtimeConfig.public:** `authUrl`, `vapidPublicKey`, `version`, `appName`
+  (branding is config-driven - the UI never hardcodes "Nostragoalus").
+- **runtimeConfig (private):** `databaseUrl`, `betterAuthSecret`, `adminEmails`,
+  `minAndroidClient`, `vapidPrivateKey`, `vapidSubject`, `turn*` (voice TURN),
+  `appDownloadDir`, `storageDriver` + storage creds.
 - **Theme:** custom `NostraTheme` PrimeVue preset, dark mode selector `.app-dark`.
-- **Nitro:** `node-server` preset, `websocket: true`, OpenAPI at `/_docs/openapi.json`.
+- **Nitro:** `node-server` preset unless `NITRO_PRESET` overrides it (`bun` for
+  the Bun target), `websocket: true`, `tasks: true`, OpenAPI at
+  `/_docs/openapi.json` with a Scalar UI at `/_docs/api`, `scheduledTasks` built
+  from the task registry.
+- **routeRules:** security headers on `/**` (nosniff, `X-Frame-Options: DENY`,
+  HSTS, `frame-ancestors 'none'`), `/admin/cron` + `/admin/scoring` redirect into
+  `/admin?section=`, `/api/stats` cached 60 s.
 
 ## Pages and routing
 
 The active competition is a **URL path prefix**. See
 [../features/competitions.md](../features/competitions.md) for the full model.
 
-- `apps/web-nuxt/app/pages/[competition]/` - matches (list + detail), bracket, map (Leaflet),
-  leaderboard, predictions/bot, teams/[code], users/[id]. The fixtures list
+- `apps/web-nuxt/app/pages/[competition]/` - index, matches (list + detail), bracket, map
+  (Leaflet), leaderboard, bot, analytics, compare (head-to-head), multiview,
+  wrapped, teams/[code], users/[id]. The fixtures list
   auto-scrolls on load to the live (else next upcoming) match, and seeds its
   per-round collapse from the unfiltered match list: a round whose matches have
   all reached a full-time status starts collapsed, except the last round (the
@@ -39,10 +47,14 @@ The active competition is a **URL path prefix**. See
   profile splits picks at "now" (played above, admin-only upcoming below) and
   centers that boundary anchor on load, so it opens on the latest action rather
   than the top of a long history.
-- Un-prefixed global pages - `/`, login, signup, 2FA, verify-email, account,
-  preferences, about, license, roadmap, leagues (discover + join), error pages.
-- Global middleware: `apps/web-nuxt/app/middleware/auth.global.ts` (redirect to /login unless
-  the route is in `PUBLIC_ROUTES` or a session exists). It distinguishes "no
+- Un-prefixed global pages - `/`, login, signup, two-factor, verify, verify-email,
+  forgot/reset-password, account, preferences, about, license, roadmap, admin,
+  leagues (discover, `[id]`, `join/[token]`), the public share-card landings
+  `s/[token]` (pick), `p/[token]` (profile), `a/[token]` (analytics), and the
+  `418` / `500` pages.
+- Global middleware: `apps/web-nuxt/app/middleware/auth.global.ts` (client-side only; redirect
+  to /login unless the route is in `PUBLIC_ROUTES`, is an invite or share-card
+  landing (`/leagues/join/`, `/s/`, `/p/`, `/a/`), or a session exists). It distinguishes "no
   session" (redirect) from a failed `getSession()` request (a transport `error`:
   leave the session alone), so a flaky mobile connection cannot eject a signed-in
   user mid-session. Also `apps/web-nuxt/app/middleware/competition.global.ts` (validate/redirect
@@ -74,20 +86,25 @@ Rough groups:
 - Auth / device: `useAuth`, `usePasskeys`, `useTwoFactor`, `usePushNotifications`.
 - UI state: `useSkin`, `useTheme`, `useKonamiUnlock`, `useNotifications`,
   `useChangelog`, `useRoadmap`.
+- Chat / DM / voice: `useLeagueChat`, `useChatIdentity`, `useDmRoom`,
+  `useDmInbox`, `useKeyTransparency`, `useVoiceCall`, `useCallLog`.
 
 ## Components, plugins, layouts
 
-- `apps/web-nuxt/app/components/**` (flat, plus `logos/`): match (lineups, odds, bracket card,
+- `apps/web-nuxt/app/components/**` (flat, plus `logos/`, `match/`, `multiview/`): match (lineups, odds, bracket card,
   goal animation), league (cards + dialogs + members), chat (ChatDock, ChatPanel,
   ChatMessageContent, ChatImage, ChatLightbox, EmojiPicker), admin sections,
-  layout chrome (AppFooter, CompetitionPill, LeaguePill, PwaBanner,
-  NotificationBell).
+  chrome (AppFooter, CompetitionPill + LeaguePill mounted per competition page,
+  PwaBanner, NotificationBell).
 - `apps/web-nuxt/app/plugins/**`: `vue-query.ts` (universal), `theme.client.ts`,
   `preferences.client.ts`, `skin.client.ts`, `primevue-services.ts`,
   `pwa-status.client.ts`, `update-check.client.ts`, `tamper-watch.client.ts`,
-  `chat-deeplink.client.ts`, `render-time.server.ts`.
-- `apps/web-nuxt/app/layouts/`: `default.vue` (header + nav, presence broadcast, competition
-  pill, admin badge) and `auth.vue` (no nav).
+  `chat-deeplink.client.ts`, `render-time.server.ts`, `competition-meta.server.ts`
+  (resolves the competition slug set + admin default during SSR so the first
+  render knows where a slug-less link points).
+- `apps/web-nuxt/app/layouts/`: `default.vue` (header + nav with the admin link, app-wide
+  `usePresence()`, NotificationBell, ChatDock) and `auth.vue` (no nav).
+  `app.vue` mounts PwaBanner and SkinUnlockCelebration above the layout.
 
 ## Conventions and footguns
 

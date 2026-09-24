@@ -15,8 +15,8 @@ a session. `event.path` is also percent-DECODED, while the dispatcher parses the
 RAW target, so `%23`, `%3f` and `%5c` decode into path delimiters that truncate a
 naive guard's view while the router still resolves the traversal. `routedPath`
 therefore derives the path exactly as `getRequestURL` does - raw
-`originalUrl`, leading slash run collapsed - and parses that. Both the catch-all
-and the passkey middleware go through the helper.
+`originalUrl`, leading slash run collapsed - and parses that. The catch-all, the
+passkey middleware and the client-version middleware all go through the helper.
 
 The rule to keep: a guard must consume the path the dispatcher will route on,
 derived the same way, rather than re-normalizing a different string. Trailing
@@ -25,16 +25,29 @@ itself, so stripping would make the guard judge a path that is never routed.
 
 ## Local accounts
 
-- Email + password enabled. Local accounts are intentionally **never
-  email-verified**, which matters for SSO account linking (below).
-- Email verification can be required or not; the flag lives in `app_setting` and
-  is warmed into memory at boot by `apps/web-nuxt/server/plugins/warm-settings.ts` so sign-in
-  and sign-up immediately see the correct state without a per-request DB hit.
+- Email + password enabled. Local accounts **may be unverified** (verification
+  is an optional admin toggle), which matters for SSO account linking (below).
+- Email verification can be required or not; the flag lives in `app_setting`
+  (`require_email_verification`) and better-auth reads it through a synchronous
+  getter over a 30s in-memory cache
+  (`apps/web-nuxt/server/utils/auth/email-verification.ts`), warmed at boot by
+  `apps/web-nuxt/server/plugins/warm-settings.ts` so sign-in and sign-up see the
+  correct state without a per-request DB hit. When required, sign-ups get a
+  verification mail (`autoSignInAfterVerification`), unverified password
+  sign-ins are blocked (the login page offers a manual resend), and the
+  `users:prune-unverified` task drops unverified accounts older than 7 days.
+- Forgot-password mail is silently skipped for SSO-managed accounts; account
+  deletion is confirmed by a mailed link when SMTP is set, the last admin cannot
+  be deleted, and a 2FA holder must send a fresh TOTP (`x-totp-code`) unless the
+  mailed link confirmed it (`user.deleteUser` in `buildAuthOptions`).
 
 ## Plugins enabled
 
-`sso`, `scim`, `passkey`, `apiKey`, plus better-auth's built-in `twoFactor`,
-`admin`, and `haveIBeenPwned` (rejects breached passwords via Have I Been Pwned).
+`sso`, `scim`, `passkey`, `apiKey`, plus better-auth's built-in `bearer`,
+`twoFactor`, `admin`, and `haveIBeenPwned` (rejects breached passwords via Have I
+Been Pwned). `bearer()` is the native client's token auth: sign-in returns the
+session token in a `set-auth-token` header and requests send
+`Authorization: Bearer`; the web app keeps cookie sessions.
 
 ## Session guards
 
@@ -43,7 +56,7 @@ route learns who is calling:
 
 | Guard | Behaviour |
 |---|---|
-| `getSessionUser(event)` | resolves the session user or `null` |
+| `getSessionUser(event)` | resolves the session user or `null` (strips `x-api-key` first, so a key never becomes a session) |
 | `requireUser(event)` | 401 if not signed in, else the user |
 | `requireAdmin(event)` | 401 if anonymous, 403 if not an admin |
 | `requireApiKey(key, perms, mustBeAdmin)` | validates a scoped `x-api-key` |
@@ -59,6 +72,10 @@ which wires the right guard from its `admin` / `apiKey` options. See
   `session.updateAge` of **1 day** (sliding): an active session refreshes its
   expiry at most once a day, so a regularly-used session effectively never
   lapses, and an idle one survives 90 days.
+- `session.freshAge: 0` disables better-auth's freshness gate: it keys on the
+  session's `createdAt`, so with 90-day sessions it would 403 `/list-sessions`
+  (the connected-devices list) for almost every returning user. Sensitive
+  actions carry their own re-auth instead.
 - The long `expiresIn` is deliberate. better-auth mints the session cookie with
   `Max-Age = expiresIn`, so a long expiry makes it a long-lived **persistent**
   cookie. That was the fix for "logged out for no reason" reports, worst on iOS
@@ -73,8 +90,10 @@ which wires the right guard from its `admin` / `apiKey` options. See
 
 ## Admin model
 
-- Admins are seeded from the `NUXT_ADMIN_EMAILS` env var (comma-separated). An
-  env admin is promoted to `role: 'admin'` on first admin check, so the
+- Admins are seeded from the `NUXT_ADMIN_EMAILS` env var (comma-separated,
+  case-insensitive). `requireAdmin` accepts `role: 'admin'` OR an env email; an
+  env admin is written to `role: 'admin'` when the client calls
+  `GET /api/admin/status` (`apps/web-nuxt/server/api/admin/status.get.ts`), so the
   better-auth `admin` plugin and `requireAdmin` agree.
 - `mise run create-admin` provisions one from the CLI.
 - Admin endpoints live under `apps/web-nuxt/server/api/admin/**` and always require admin.
@@ -88,8 +107,8 @@ which wires the right guard from its `admin` / `apiKey` options. See
 
 ## Two-factor (TOTP)
 
-- TOTP via the built-in `twoFactor` plugin; the enrolment QR is rendered with
-  `qrcode`. SSO-managed accounts cannot enable 2FA (see managed-account
+- TOTP via the built-in `twoFactor` plugin, plus an email OTP (`sendOTP`, 5-min
+  code) when SMTP is configured; the enrolment QR is rendered with `qrcode`. SSO-managed accounts cannot enable 2FA (see managed-account
   restrictions below).
 
 ## API keys
@@ -170,8 +189,8 @@ for SSO league auto-join.
 - The avatar step re-fetches a token-gated IdP picture server-side with the
   user's OAuth bearer, so `isUnusableAvatarUrl`
   (`apps/web-nuxt/server/utils/auth/avatar.ts`) is an allow-list, not a hint: it
-  parses the stored `user.image` and requires `https:` + host exactly
-  `graph.microsoft.com`. `user.image` is client-writable through better-auth's
+  parses the stored `user.image` and requires `https:`, host exactly
+  `graph.microsoft.com` and a path ending `/photo/$value`. `user.image` is client-writable through better-auth's
   update-user endpoint, so a substring match there is an SSRF that ships the
   bearer to whatever host the string names.
 
@@ -181,7 +200,12 @@ for SSO league auto-join.
   The register route lands new providers as `draft`; the column default is
   `enabled` only so the `ADD COLUMN` migration grandfathers pre-existing rows.
   Only `enabled` providers are live (login resolver + `trustedProviders` +
-  callback gate). Disabling is non-disruptive: existing sessions keep working
+  callback gate). The callback gate (`SSO_CALLBACK_PREFIXES` in
+  `apps/web-nuxt/server/utils/auth/sso-guard-paths.ts`) redirects a draft/disabled
+  provider's callback to `/login?error=provider_disabled`. It matches the
+  providerId in the URL, so the plugin's `redirectURI` option must stay unset:
+  with it, the bare `/api/auth/sso/callback` resolves the provider from state and
+  slips past the gate (`tests/sso-bare-callback.test.ts` pins this). Disabling is non-disruptive: existing sessions keep working
   because the catch-all gate sits only on the sign-in callback paths, never on
   session validation.
 - Logic lives in the covered `apps/web-nuxt/server/utils/sso/service.ts`; the admin routes
@@ -189,7 +213,8 @@ for SSO league auto-join.
   bypass-domain,scim-token}`) stay thin.
 - **Connection test** (`testConnection`): automated checks - OIDC fetches the
   discovery endpoints + a JWKS with keys; SAML parses the X.509 cert and reaches
-  the entry point. The result (`last_test_result.ok`) is the gate to enable.
+  the entry point. Enabling (`setProviderStatus`) requires both a passing stored
+  result (`last_test_result.ok`) and `domainVerified`, else `SsoNotReadyError`.
 - **Test sign-in** (`apps/web-nuxt/server/utils/sso/test-signin.ts`, OIDC only): a real PKCE
   round-trip that captures the IdP's claims and maps them to our fields WITHOUT
   creating a user/session (it never runs `provisionUser`). A single-use 256-bit
@@ -201,7 +226,7 @@ for SSO league auto-join.
   plus the connection test instead - a live SAML ACS must be pre-registered at the
   IdP.
 - **Domain verification**: new providers are `domainVerified=false` (the plugin
-  forces this on register). The admin publishes a DNS TXT record and runs
+  forces this on register, despite the column default `true`). The admin publishes a DNS TXT record and runs
   `verifyDomainDns`, or `bypassDomainVerification` (admin-trusted, single-tenant).
   Hand-rolled rather than `auth.api.verifyDomain` so it isn't gated by the
   plugin's registering-admin-only owner check, but it matches the plugin's
@@ -303,16 +328,20 @@ strictly worse than serving nothing. See
 - `active:false` maps to the admin plugin's ban (block login + revoke sessions)
   and keeps the user's data; `active:true` reactivates.
 - The session-only management endpoints (`generate-token`,
-  `*-provider-connection`) are blocked over HTTP by the catch-all
-  (`isSsoAdminOnlyPath`) - any signed-in user could otherwise mint a provisioning
-  bearer - and exposed only through the admin `scim-token` routes (generate/
-  rotate, revoke). Provider delete drops the `scim_provider` row by hand (no FK).
+  `*-provider-connection`) 404 over HTTP in the catch-all
+  (`isSsoAdminOnlyPath`, which also covers the SSO plugin's own
+  `sso/register` / `update-provider` / `delete-provider`) - any signed-in user
+  could otherwise mint a provisioning bearer - and are exposed only through the
+  admin `scim-token` routes (generate/rotate, revoke). The SCIM connection id is
+  `<providerId>-scim` (`scimProviderId`), since the plugin refuses one colliding
+  with an SSO providerId. Provider delete drops the `scim_provider` row by hand
+  (no FK).
 
 ## Sources
 
 - `apps/web-nuxt/lib/auth.ts`, `apps/web-nuxt/server/api/auth/[...all].ts`
 - `apps/web-nuxt/server/utils/auth-guards.ts`, `apps/web-nuxt/server/utils/validated-handler.ts`
-- `apps/web-nuxt/server/plugins/warm-settings.ts`, `apps/web-nuxt/server/middleware/passkey-guard.ts`
+- `apps/web-nuxt/server/plugins/warm-settings.ts`, `apps/web-nuxt/server/middleware/passkey-guard.ts`, `apps/web-nuxt/server/utils/auth/{routed-path,email-verification,avatar}.ts`, `apps/web-nuxt/server/api/admin/status.get.ts`
 - `apps/web-nuxt/server/utils/crypto/envelope.ts`, `apps/web-nuxt/server/utils/crypto/encrypted-adapter.ts`
 - `apps/web-nuxt/server/utils/auth/sso-domains.ts`, `apps/web-nuxt/server/utils/auth/sso-guard-paths.ts`
 - `apps/web-nuxt/server/utils/sso/{service,config,test-signin,mobile-exchange}.ts`, `apps/web-nuxt/server/api/admin/sso/**`

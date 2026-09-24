@@ -10,7 +10,7 @@ prevented - it is server-delivered code).
 - `apps/web-nuxt/lib/integrity/digest.mjs` - pure, dependency-free helper. `sha256Hex`,
   `bundleDigest` (SHA-256 over the sorted `name<space>sha256` lines of every
   chunk, so it is order-independent and content-addressed), `formatDigest`
-  (octet grouping for eyeballing). Plain ESM so the build task imports it under
+  (space-separated 8-hex-char groups for eyeballing). Plain ESM so the build task imports it under
   node with no compile step; unit-tested in `apps/web-nuxt/lib/integrity/digest.test.ts` (runs
   in the `unit` vitest project; `apps/web-nuxt/lib/` is outside the coverage `include` globs).
 - `apps/web-nuxt/scripts/build-integrity` - runs post-`nuxt build` (wired as the
@@ -18,14 +18,19 @@ prevented - it is server-delivered code).
   content-hashed client chunks under `.output/public/_nuxt/*.js`, SHA-256s each,
   computes the bundle digest, and writes `.output/public/build-integrity.json`
   (`{ version, algorithm, digest, chunkCount, generatedAt }`). Tolerant of a
-  missing build dir (warns, exits 0).
+  missing build dir or zero chunks (warns, exits 0): a hardening extra, not a
+  build gate.
 - `apps/web-nuxt/server/routes/build-integrity.json.get.ts` - serves that file at
   `/build-integrity.json`. It can't be a static public asset: `postbuild` writes
   it *after* `nuxt build` freezes the node-server preset's public-asset manifest,
   so Nitro never registers it and static serving 404s. The route reads it off disk
-  (`dirname(process.argv[1])/../public/...`) at request time; absent -> 404.
+  (`dirname(process.argv[1])/../public/...`) at request time with
+  `cache-control: no-cache` (a CDN must not pin a stale digest). Only `ENOENT`
+  maps to 404; any other read error is rethrown.
 - `apps/web-nuxt/app/pages/about.vue` - fetches `/build-integrity.json` client-side (tolerant
-  of 404 on a dev server) and shows the build version + grouped digest under a
+  of 404 on a dev server) and shows the build version + digest (grouped by
+  `groupDigest` in `apps/web-nuxt/app/utils/format.ts`, the client twin of
+  `formatDigest`) under a
   "Client-code integrity" card. i18n keys `about.integrity*` in all five locales.
 
 ## What it guarantees
@@ -51,3 +56,10 @@ prevented - it is server-delivered code).
 
 Related: [../features/](../features/index.md) chat/E2EE, `apps/web-nuxt/app/utils/e2ee.ts`
 (the `fingerprint` safety-number is the analogous idea for public keys).
+
+## Sources
+
+- `apps/web-nuxt/lib/integrity/digest.mjs`, `apps/web-nuxt/lib/integrity/digest.test.ts`
+- `apps/web-nuxt/scripts/build-integrity` (+ `postbuild` in `apps/web-nuxt/package.json`, `build-integrity` in `apps/web-nuxt/.mise.toml`)
+- `apps/web-nuxt/server/routes/build-integrity.json.get.ts`
+- `apps/web-nuxt/app/pages/about.vue`, `apps/web-nuxt/app/utils/format.ts` (`groupDigest`)

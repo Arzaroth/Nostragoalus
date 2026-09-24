@@ -5,7 +5,8 @@ server-rendered share/OG images, and the PWA service worker.
 
 ## OG / share images
 
-Prediction share cards render server-side: **satori** turns a hand-rolled
+Share cards (per-pick, profile, personal analytics, Wrapped) render
+server-side: **satori** turns a hand-rolled
 HTML/CSS element tree into SVG, then **@resvg/resvg-js** rasterizes SVG to PNG.
 The app does NOT use the nuxt-og-image module: the route logic and deps are kept
 explicit. Product details in
@@ -13,13 +14,22 @@ explicit. Product details in
 
 Pipeline lives in `apps/web-nuxt/server/utils/share/*`:
 
-- `token.ts` - stateless HMAC tokens, domain-separated from the auth secret.
-  Minting (`/api/share/mint`) checks ownership; the public render trusts the
-  signed token.
-- the card model + the pure element template + `render.ts` (satori + resvg).
-- the binary route `apps/web-nuxt/server/routes/og/share/[token].get.ts` is outside the
-  coverage gate; the pure logic under `apps/web-nuxt/server/utils/share/**` is inside it.
-- Cache: finished-result cards cache ~1 day, live / pre-kickoff cards ~120s.
+- `token.ts` - stateless HMAC pick tokens over the app secret, domain-separated
+  and expiring after 180 days (`SHARE_TTL_SECONDS`), through the shared
+  `apps/web-nuxt/server/utils/signed-token/codec.ts`. `card-token.ts` is the one
+  factory behind the user+competition tokens of the profile / analytics /
+  Wrapped cards (`{profile,analytics,wrapped}-token.ts`), each with its own
+  domain tag so a token never validates for another card type. Minting
+  (`/api/share/mint`, `profile-mint`, `analytics-mint`, `wrapped-mint`) checks
+  ownership; the public render trusts the signed token.
+- per card: a model (`card.ts`, `profile-card.ts`, `analytics-card.ts`) + a pure
+  element template (`template.ts`, `profile-template.ts`, `analytics-template.ts`,
+  `wrapped-template.ts`), all through `render.ts` (satori + resvg).
+- the binary routes `apps/web-nuxt/server/routes/og/{share,profile,analytics,wrapped}/[token].get.ts`
+  are outside the coverage gate (so is `og-assets.ts`, the I/O glue); the pure
+  logic under `apps/web-nuxt/server/utils/share/**` is inside it.
+- Cache: a finished-result pick card and a Wrapped card cache 1 day, a live /
+  pre-kickoff pick card 120 s, profile and analytics cards 300 s.
 
 ### Two footguns (do not relearn these)
 
@@ -80,7 +90,8 @@ The install / download / reload UX that sits on top of this worker is
 
 ## Sources
 
-- `apps/web-nuxt/server/utils/share/{token,render,template}.ts`, `apps/web-nuxt/shared/share-card.ts`
-- `apps/web-nuxt/server/routes/og/share/[token].get.ts`, `apps/web-nuxt/server/api/share/mint.post.ts`
+- `apps/web-nuxt/server/utils/share/*` (tokens, cards, templates, `render.ts`, `font-fallback.ts`, `og-assets.ts`), `apps/web-nuxt/shared/share-card.ts`
+- `apps/web-nuxt/server/utils/signed-token/codec.ts`
+- `apps/web-nuxt/server/routes/og/*/[token].get.ts`, `apps/web-nuxt/server/api/share/*-mint.post.ts`, `apps/web-nuxt/server/api/share/mint.post.ts`
 - `apps/web-nuxt/server/assets/fonts/*`
 - `apps/web-nuxt/app/service-worker/sw.ts`, `apps/web-nuxt/nuxt.config.ts` (pwa block)
