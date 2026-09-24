@@ -508,7 +508,7 @@ feature/architecture doc that implements it.
 - **The live match header score is the FIFA goal-feed count, not the WS scoreboard,
   once the feed has landed.** The header sits above the goal event list and must
   agree with it; the list is rendered from the detail/insights goal feed (~45 s). The
-  WS/football-data score (~2 min) trails it. We first tried `Math.max(ws, feedCount)`
+  WS/stored score comes from the separate `scores:poll` cron (30 s). We first tried `Math.max(ws, feedCount)`
   (never drops on a VAR disallow - the stale-high WS pins it) then recency arbitration
   (a stale WS poll delivering the pre-disallow value is indistinguishable from a fresh
   goal, so it re-raises the struck-off score all the same). Neither can hold "the
@@ -1019,3 +1019,14 @@ the canary reporting health about a feed the app could no longer read.
 Sofascore and football-data are deliberately out of scope for now: one goes
 through cycletls (TLS fingerprinting) and the other needs a key, and neither is
 known to work from a GitHub-hosted runner.
+
+## Calendar feed links are stateless tokens, revoked by a per-user counter
+
+A calendar app polls the feed URL for months and cannot log in, so the URL itself
+is the credential: an HMAC-signed token carrying the user, the locale and the
+user's `feedTokenVersion` at mint time, with no DB row and no expiry (an expiring
+link would silently empty every subscribed calendar). Revocation is the counter:
+"regenerate" bumps `user.feed_token_version`, and the `.ics` route rejects any
+token minted under an older one. Tokens from before versioning carry no version
+and read as 0, so shipping revocation did not break the calendars already
+subscribed. See [features/ical-feed.md](features/ical-feed.md).

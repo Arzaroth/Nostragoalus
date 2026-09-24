@@ -77,6 +77,9 @@ use the indexes.
 | [reactions.md](features/reactions.md) | Match + chat emoji reactions. |
 | [live-viewers.md](features/live-viewers.md) | Real-time "N watching now" per-match viewer count. |
 | [multiview.md](features/multiview.md) | Configurable grid of live match tiles/streams, URL-persisted, focus-following chat. |
+| [match-detail.md](features/match-detail.md) | The match page: live header, timeline, line-ups, stats, form, head-to-head tabs. |
+| [match-media.md](features/match-media.md) | Curated watch links per match, embedded or opened out. |
+| [ical-feed.md](features/ical-feed.md) | Per-user calendar (.ics) feed with revocable links. |
 | [notifications.md](features/notifications.md) | In-app notification center (the bell). |
 | [web-push.md](features/web-push.md) | VAPID push, per-category toggles, live goal/kickoff. |
 | [chat.md](features/chat.md) | E2E-encrypted league chat (threads, mentions, moderation, images). |
@@ -110,6 +113,8 @@ use the indexes.
 | How do I add a user-facing string? | [architecture/i18n.md](architecture/i18n.md) |
 | How does live update reach the client? | [architecture/realtime.md](architecture/realtime.md) |
 | How is "N watching now" counted per match? | [features/live-viewers.md](features/live-viewers.md) |
+| Where does each match-page tab get its data? | [features/match-detail.md](features/match-detail.md) |
+| How do I subscribe to fixtures in a calendar? | [features/ical-feed.md](features/ical-feed.md) |
 | Where are images stored, and how do I migrate them? | [architecture/storage.md](architecture/storage.md), [features/image-storage.md](features/image-storage.md) |
 | How is SSO configured and kept secret-safe? | [architecture/auth.md](architecture/auth.md) |
 | How does an admin onboard an SSO provider (test/verify) or use SCIM? | [features/sso-provisioning.md](features/sso-provisioning.md) |

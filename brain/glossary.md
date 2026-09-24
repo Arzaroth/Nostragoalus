@@ -80,6 +80,9 @@ the code. Grouped by area.
 - **Scoring tiers** - EXACT / DIFF / OUTCOME / MISS (`base_tier`), worth 3/2/1/0
   base points in football and 5/3/1/0 in rugby (`server/utils/scoring/{tiers,config}.ts`),
   plus crowd-rarity and optional odds bonuses.
+- **Feed token** - the signed, stateless credential inside a user's calendar
+  feed URL (user + locale + `feedTokenVersion`); regenerating bumps the version
+  and revokes every older link. See [features/ical-feed.md](features/ical-feed.md).
 - **Tournament Wrapped** - the post-final recap deck (a user's tournament as a
   slide show) plus a shareable summary card. Gated on a SCORED final, read-side
   only, every slide derived from persisted data. See
