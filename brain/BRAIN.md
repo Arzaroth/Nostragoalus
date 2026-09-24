@@ -4,9 +4,10 @@ The map of the codebase, written so a developer or AI can understand the app
 **without reading the source**. Start here, follow the links, stop when you have
 the answer. Every leaf doc cites the real source files if you need to go deeper.
 
-> Product: **Nostragoalus** (repo dir `nostragoalus`) - a football score-prediction game.
-> Friends predict match scores, earn points by closeness, ranked per competition.
-> Stack snapshot in [stack.md](stack.md); current version is **2.16.2**.
+> Product: **Nostragoalus** (repo dir `nostragoalus`) - a score-prediction game for
+> football and rugby union. Friends predict match scores, earn points by closeness,
+> ranked per competition. Stack snapshot in [stack.md](stack.md); the current
+> version is `version` in `apps/web-nuxt/package.json`.
 
 ## How to use this
 
@@ -48,6 +49,9 @@ use the indexes.
 | [i18n.md](architecture/i18n.md) | Five locales (en/fr/th/tlh/ar), the all-locales rule. |
 | [rtl.md](architecture/rtl.md) | Right-to-left: dynamic `<html dir>`, logical CSS, the mirrored bracket, icon flipping (Arabic). |
 | [runtime.md](architecture/runtime.md) | The deployed containers, the Bun target, the memory cap and why it exists, heap diagnosis. |
+| [build-integrity.md](architecture/build-integrity.md) | Client-JS bundle fingerprint on `/about`, to detect a silent swap of the E2EE crypto code. |
+| [cross-stack-contract.md](architecture/cross-stack-contract.md) | zod-derived OpenAPI snapshot + frozen golden vectors that keep the Dart client consistent with the TS server. |
+| [e2ee-trust-model.md](architecture/e2ee-trust-model.md) | What E2EE chat/DMs protect against (passive vs active server), key transparency, rekey on removal. |
 
 ## Features (the what) - [features/index.md](features/index.md)
 
@@ -114,6 +118,8 @@ use the indexes.
 | How would we know a provider feed silently changed shape? | [architecture/provider-canary.md](architecture/provider-canary.md) |
 | How does a brand-new player learn the app (the spotlight tour)? | [features/onboarding-tour.md](features/onboarding-tour.md) |
 | What's the konami easter egg? | [features/easter-eggs.md](features/easter-eggs.md) |
+| What does E2EE chat actually protect against if the server turns hostile? | [architecture/e2ee-trust-model.md](architecture/e2ee-trust-model.md) |
+| How does the Flutter client stay in step with the server's API and scoring? | [architecture/cross-stack-contract.md](architecture/cross-stack-contract.md) |
 | How do I run or gate the Flutter mobile app? | [features/mobile-app.md](features/mobile-app.md) |
 | How do people get the Android app, and how do I publish a new APK? | [features/app-downloads.md](features/app-downloads.md) |
 
@@ -123,5 +129,5 @@ This brain is **load-bearing documentation**: it must stay true to the code.
 When a change makes a brain doc wrong, fix the doc in the same change. When you
 discover the brain disagrees with reality, the code wins - correct the brain and
 note it. The enforceable version of this rule lives in the repo's `CLAUDE.md`
-("Keep the brain current"). New feature -> new `features/<name>.md` + a row in
+(the brain hard rule and "The brain (knowledge base)"). New feature -> new `features/<name>.md` + a row in
 [features/index.md](features/index.md) + a row here.

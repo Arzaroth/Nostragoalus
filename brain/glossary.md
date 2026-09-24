@@ -1,18 +1,22 @@
 # Glossary
 
 One-stop definitions for the domain and technical terms used across the brain and
-the code. Alphabetical.
+the code. Grouped by area.
 
 ## Domain
 
 - **Nostragoalus** - the product brand (a pun on "Nostradamus"). The repo
-  directory is `mpp`; never call the product "MPP" in UI. App name is
+  directory is `nostragoalus`. App name is
   config-driven (`runtimeConfig.public.appName`).
 - **Competition** - one tournament (e.g. FIFA World Cup 2026). A row in the
   `competition` table; the app is multi-competition by design. The active one is
   a URL path prefix. See [features/competitions.md](features/competitions.md).
+- **Sport** - `competition.sport` (`FOOTBALL` | `RUGBY_UNION`); drives the
+  provider, scoring preset, ranking table and header mark. See
+  [features/rugby.md](features/rugby.md).
 - **Round** - a stage slice of a competition: a group matchday or a knockout
-  round (`round_kind` = GROUP_MATCHDAY | KNOCKOUT).
+  round (`round_kind` = GROUP_MATCHDAY | KNOCKOUT). A single-table competition's
+  matchdays are GROUP_MATCHDAY rounds derived from its fixtures.
 - **Stage** - GROUP, R32, R16, QF, SF, THIRD_PLACE, FINAL.
 - **Match** - one fixture; has a `match_status` lifecycle
   (SCHEDULED -> LIVE/PAUSED -> FINISHED, plus
@@ -28,10 +32,11 @@ the code. Alphabetical.
   canary exists to find.
 - **Joker** - a single ×2 multiplier a user spends on one prediction per round.
 - **Trophy** - a rare, competition-end award (OVERALL, GROUP_PHASE,
-  KNOCKOUT_PHASE, MADAME_IRMA, TEAM_SPECIALIST), derived at finalize and stored in
-  `competition_award`. See [features/achievements.md](features/achievements.md).
+  KNOCKOUT_PHASE, MADAME_IRMA), derived at finalize and stored in
+  `competition_award`. TEAM_SPECIALIST is a legacy value kept for historical rows
+  only; it is no longer minted. See [features/achievements.md](features/achievements.md).
 - **Achievement (badge)** - a milestone unlocked during play from a code-defined
-  catalog, graded bronze/silver/gold (`user_achievement`).
+  catalog, graded bronze/silver/gold/diamond (`achievement_tier`, `user_achievement`).
 - **Trophy cabinet** - a user's full gallery of trophies + achievements on their
   profile (earned lit, locked greyed).
 - **Showcase** - the curated set of earned achievements a user pins to show off,
@@ -72,12 +77,25 @@ the code. Alphabetical.
 - **Finalize** - the idempotent "derive-don't-mutate" step that scores a finished
   match and awards tournament bonuses. See
   [features/predictions-and-scoring.md](features/predictions-and-scoring.md).
-- **Scoring tiers** - EXACT (3) / DIFF (2) / OUTCOME (1) / MISS (0) base points,
+- **Scoring tiers** - EXACT / DIFF / OUTCOME / MISS (`base_tier`), worth 3/2/1/0
+  base points in football and 5/3/1/0 in rugby (`server/utils/scoring/{tiers,config}.ts`),
   plus crowd-rarity and optional odds bonuses.
 - **Tournament Wrapped** - the post-final recap deck (a user's tournament as a
   slide show) plus a shareable summary card. Gated on a SCORED final, read-side
   only, every slide derived from persisted data. See
   [features/wrapped.md](features/wrapped.md).
+- **Margin band** - the winning margins the `DIFF` scoring tier treats as one
+  and the same. `scoringConfig.marginBands` holds the upper bounds; null means
+  football, where every margin is its own band and `DIFF` is the exact goal
+  difference. Rugby uses `[7, 14]`. See [features/rugby.md](features/rugby.md).
+- **Sub-feed** (`competition.providerSport`) - which catalog within a provider a
+  competition is bound to, for a provider that serves several. World Rugby
+  splits men's, women's, age-grade and sevens; football providers have one feed
+  and leave it null. Distinct from `competition.sport`, the sport itself.
+- **Try board / points board** - rugby's two scorer rankings. The try board
+  counts scoring plays worth at least a try; the points board sums
+  `goal_event.points`. The leaders are usually different people, and only one of
+  them is a kicker.
 
 ## Tamper-evidence
 
@@ -146,11 +164,13 @@ the code. Alphabetical.
 - **Read marker** - the per-room "last read" timestamp (`chat_room_read`) that
   makes chat unread persistent and cross-league; there is no per-message read
   receipt. See [features/chat.md](features/chat.md).
-- **Provider** - an external data source (FIFA match data, Sofascore odds, FIFA
-  ranking), accessed provider-agnostically. See
+- **Provider** - an external data source (FIFA / UEFA / ESPN / World Rugby match
+  data, Sofascore odds + line-ups, FIFA and World Rugby rankings), accessed
+  provider-agnostically. See
   [architecture/providers.md](architecture/providers.md).
 - **cycletls / JA3** - a uTLS HTTP engine that mimics a browser's TLS fingerprint
-  so Cloudflare-class WAFs don't 403 the request (odds + link unfurl).
+  so Cloudflare-class WAFs don't 403 the request (Sofascore odds + line-ups, FIFA
+  gameday stats, chat link unfurl).
 - **Gameday stories** - FIFA's in-tournament stats feed (`gameday-prod.fifa.mangodev.co.uk`)
   behind an anonymous ~24h Bearer token; the source of the live edition's top
   scorers + assists when the official aggregate is still empty. See
@@ -186,15 +206,3 @@ the code. Alphabetical.
   that provisions/deprovisions users over `/api/auth/scim/v2/*`.
 - **Deprovision** - SCIM `active:false`: ban the user (block login + revoke
   sessions) while keeping their data; `active:true` reactivates.
-- **Margin band** - the winning margins the `DIFF` scoring tier treats as one
-  and the same. `scoringConfig.marginBands` holds the upper bounds; null means
-  football, where every margin is its own band and `DIFF` is the exact goal
-  difference. Rugby uses `[7, 14]`. See [features/rugby.md](features/rugby.md).
-- **Sub-feed** (`competition.providerSport`) - which catalog within a provider a
-  competition is bound to, for a provider that serves several. World Rugby
-  splits men's, women's, age-grade and sevens; football providers have one feed
-  and leave it null. Distinct from `competition.sport`, the sport itself.
-- **Try board / points board** - rugby's two scorer rankings. The try board
-  counts scoring plays worth at least a try; the points board sums
-  `goal_event.points`. The leaders are usually different people, and only one of
-  them is a kicker.

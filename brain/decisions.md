@@ -39,13 +39,15 @@ feature/architecture doc that implements it.
   are unreliable, while the FIFA archive is fully reproducible. See
   [features/champion-pick.md](features/champion-pick.md).
 - **Best-scorer winner comes from stored goal events, not a finalize-time HTTP
-  call.** Own goals excluded, ties all win, awarded inside the finalize
-  transaction. See [features/best-scorer.md](features/best-scorer.md).
+  call.** Own goals excluded, ties all win, awarded by the `matches:finalize`
+  task after its match-detail sync, once the FINAL is decided. See [features/best-scorer.md](features/best-scorer.md).
 - **The outlandish-score confirm uses a flat absolute cap, not a sigma/z-score
-  model.** A score is flagged when `home > 7 || away > 7 || home + away > 11`.
+  model.** A football score is flagged when `home > 7 || away > 7 || home + away > 11`.
   Goal counts are low-count and Poisson-ish, so a variance-based bound
   miscalibrates; a fixed ceiling stays predictable and identical for every
-  fixture. It's a confirm, not a block. See [features/pick-guard.md](features/pick-guard.md).
+  fixture. The cap is per sport (`CAPS` in `apps/web-nuxt/app/utils/prediction-sanity.ts`,
+  rugby 100/140), because football's ceiling flagged every ordinary rugby
+  scoreline. It's a confirm, not a block. See [features/pick-guard.md](features/pick-guard.md).
 
 ## Bots (personas)
 
@@ -70,24 +72,25 @@ feature/architecture doc that implements it.
   exact ties); consensus keeps `'__bot__'` for backward-compatible links.
 - **Crowd bots on the leaderboard, the evil twin on profiles.** The per-user evil
   twin belongs to a player, so it lives on their profile page (an "Evil Twin"
-  toggle that swaps their picks, guarded by the same profile visibility), not as
-  a leaderboard toggle - that also decluttered the header. The two crowd bots
-  (consensus, equalizer) collapsed from a row of toggles into a single "Bots"
-  popover (`LEADERBOARD_BOT_PARAMS`). See [features/crowd-bot.md](features/crowd-bot.md).
+  toggle that swaps their picks, guarded by the same profile visibility). The
+  leaderboard only offers the viewer's own twin as a ghost row linking to their
+  profile (`?twin=1`), never anyone else's. The two crowd bots (consensus,
+  equalizer) collapsed from a row of toggles into a single "Bots" popover. See [features/crowd-bot.md](features/crowd-bot.md).
 
 ## External data
 
 - **Sofascore is the primary odds provider** (user's explicit choice over The Odds
   API): free, keyless, and retroactive (so finished tournaments backfill), where
-  The Odds API charges 10x for history. BetExplorer is the backup for bookmaker
-  averages. Odds display is decimal only. See [features/odds.md](features/odds.md).
+  The Odds API charges 10x for history. BetExplorer is selectable but ships no
+  fetcher (its 1X2 renders client-side only). Odds display is decimal only. See [features/odds.md](features/odds.md).
 - **FIFA api.fifa.com/v3 is the default, keyless match-data provider.** Quirks are
   documented in [architecture/providers.md](architecture/providers.md) (penalty
   shootout goals excluded, the goal feed's assist field is the beaten keeper,
   matchday derived by date). football-data.org is a token-gated fallback.
-- **cycletls (browser JA3) for WAF-guarded providers.** Node's default TLS
+- **cycletls (a chosen JA3) for WAF-guarded providers.** Node's default TLS
   fingerprint is 403'd by Cloudflare-class WAFs (Sofascore, some unfurl targets);
-  one shared uTLS engine with a Chrome JA3 gets through. Its Go helper is
+  one shared uTLS engine sending a chosen JA3 gets through (desktop Chrome for
+  FIFA and unfurl, Sofascore's allow-listed curl JA3 with a matching curl UA). Its Go helper is
   glibc-linked AND cycletls spawns it via `/bin/sh -c`, so the Docker images run
   on `node:22-slim` (glibc + a shell), dropping the old Alpine `gcompat` shim.
   Distroless was rejected for prod: glibc but no `/bin/sh`, so the helper spawn
@@ -274,7 +277,7 @@ feature/architecture doc that implements it.
   matches of the same round would each read the other as 0 and both commit,
   overshooting the fixed budget. A transaction-level `pg_advisory_xact_lock` keyed
   on the member+round (base picks and each league override chain get their own
-  bucket) makes the read-then-write atomic (`lockWagerBudget`,
+  bucket) makes the read-then-write atomic (`lockBucket`,
   `apps/web-nuxt/server/utils/predictions/service.ts`).
 - **Every override write is tamper-evident, including joker-seeded ones.**
   `setLeagueJoker` seeds an override copied from the base pick when the league
@@ -353,9 +356,11 @@ feature/architecture doc that implements it.
   keeps `awardedAt` stable and lets only genuinely-new trophies notify. Ties share.
 - **The France prize is generalized to a configurable "featured team".** The
   source contest awarded the best predictor of France's matches; the app is
-  multi-team and multi-locale, so `competition.featuredTeamCode` (default `FRA`)
-  drives one team-specialist trophy that names its team, instead of hard-coding
-  France or minting a trophy per participating team.
+  multi-team and multi-locale, so a configurable featured team drives one
+  team-specialist prize that names its team, instead of hard-coding France or
+  minting one per participating team. It started as `competition.featuredTeamCode`
+  (default `FRA`) and is now per-league `league.featuredTeamCode` (see "The
+  featured team moved" below).
 - **Cabinet + showcase are per-competition**, matching every other page's
   `/[competition]/` scope; global badges like the secret unlock still surface in
   each competition's cabinet. See [features/achievements.md](features/achievements.md).
@@ -538,9 +543,12 @@ feature/architecture doc that implements it.
   behind symmetric NAT, but the app boots and runs STUN-only without it, so coturn
   sits behind the `voice` profile rather than the base stack. Ephemeral
   HMAC credentials (use-auth-secret) keep the shared secret server-side.
-- **A missed call is the only thing persisted.** The live call is entirely
-  in-process; `voice_call` records just a MISSED row (for the notification + future
-  history). Full call logging / a "call ended, 4:12" line is deferred.
+- **The call log is light; the live call stays in-process.** Roster and signaling
+  never touch the DB. `voice_call` first recorded only MISSED rows; it now also logs
+  the lifecycle (ONGOING on open, ENDED when the room empties) for the chat's
+  "call ended" lines, keyed in-process by room (`callLogByRoom` in
+  `apps/web-nuxt/server/utils/live/voice.ts`). See
+  [features/voice-chat.md](features/voice-chat.md).
 - **Known gap - SDP MITM.** The server relays SDP, so a malicious server could swap a
   DTLS fingerprint and actively MITM a call (passive listening is already blocked by
   SRTP). Closing it needs the fingerprint signed with an identity key - deferred
@@ -649,10 +657,12 @@ See [features/mobile-app.md](features/mobile-app.md).
 - **The TURN credential is refreshed mid-call, on both clients.**
   `/api/voice/ice-servers` mints a credential valid for `ttl` seconds (3600), and
   a long call outlives it: the next ICE restart or renegotiation would then have
-  no working relay. Both clients refetch at 90% of the ttl and push the fresh
-  config into the live peer connections instead of only reading it at join. A
-  failed refresh is not fatal - the credential in hand is usually still valid, so
-  the call stays up and the fetch retries.
+  no working relay. Both treat a credential past 90% of its ttl as stale. Mobile
+  refetches on a timer and pushes it into every live peer (`setConfiguration`),
+  retrying after `iceRetry` on failure. Web refreshes lazily, when it next needs
+  one (join, peer reset, ICE restart), and only the ICE restart applies it to the
+  live connection. A failed refresh is not fatal - the credential in hand is
+  usually still valid, so the call stays up.
 - **Parity case inputs are literal, never regenerated.** `cases/e2ee.ts` used to
   mint a fresh keypair on every `parity:bless`, so the whole vector file churned
   and buried any real semantic diff. The ciphertexts, sealed key and recovery
@@ -911,7 +921,7 @@ kept: it cannot be judged old.
 
 ## A single table's rounds come from its fixtures, not its calendar
 
-No feed publishes a matchday, and the pool rule needs a letter a single table
+Only UEFA publishes a matchday (`MD<n>`), and the pool rule needs a letter a single table
 does not have: the Six Nations arrives as "Pool" with an empty subType, and a
 domestic league carries nothing at all. Those fixtures were filed under matchday
 1 by `ensureRounds` and looked up as `IS NULL` by `findRoundId`, so every one of

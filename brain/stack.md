@@ -3,8 +3,9 @@
 The exact technologies and versions Nostragoalus runs on. Bump these when
 `package.json` / Docker images change (the maintenance rule covers it).
 
-Sources of truth: `package.json`, `pnpm-workspace.yaml`, `apps/web-nuxt/nuxt.config.ts`,
-`apps/web-nuxt/Dockerfile`, `apps/web-nuxt/compose.yaml`.
+Sources of truth: `apps/web-nuxt/package.json`, `pnpm-workspace.yaml`,
+`apps/web-nuxt/nuxt.config.ts`, `apps/web-nuxt/Dockerfile`, `apps/web-nuxt/compose*.yaml`,
+`apps/mobile-flutter/app/pubspec.yaml`, `apps/mobile-flutter/.mise.toml`.
 
 ## Runtime / language
 
@@ -43,6 +44,7 @@ Sources of truth: `package.json`, `pnpm-workspace.yaml`, `apps/web-nuxt/nuxt.con
   - `@better-auth/sso` (OIDC + SAML, SAML via `samlify`)
   - `@better-auth/passkey`
   - `@better-auth/api-key`
+  - `@better-auth/scim` (SCIM 2.0 provisioning)
   - built-in `twoFactor` and `admin` plugins.
 - See [architecture/auth.md](architecture/auth.md).
 
@@ -68,21 +70,42 @@ Sources of truth: `package.json`, `pnpm-workspace.yaml`, `apps/web-nuxt/nuxt.con
 - **satori** 0.33.4 (HTML/CSS -> SVG) + **@resvg/resvg-js** 2.6.2 (SVG -> PNG)
   for OG/share cards. See [features/share-images.md](features/share-images.md).
 - **web-push** 3.6.7 - VAPID web push.
-- **cycletls** 2.0.5 - uTLS (browser JA3 fingerprint) HTTP engine for providers
-  whose WAF (Cloudflare) blocks Node's default TLS: odds + link unfurl. See
+- **cycletls** 2.0.5 - uTLS (chosen JA3 fingerprint) HTTP engine for the feeds
+  whose WAF blocks Node's default TLS: Sofascore odds + line-ups, FIFA's gameday
+  stats, and chat link unfurl. See
   [architecture/providers.md](architecture/providers.md).
 - **marked** 18.0.11 (changelog/roadmap markdown), **qrcode** 1.5.4 (2FA).
 
 ## Testing
 
 - **vitest** 4.1.11 + **@vitest/coverage-v8** 4.1.11 + **@nuxt/test-utils** 4.2.0.
-- **@electric-sql/pglite** - in-memory Postgres running the real migrations for
+- **@electric-sql/pglite** 0.5.8 - in-memory Postgres running the real migrations for
   service tests. See [architecture/testing.md](architecture/testing.md).
+- **@playwright/test** 1.62.1 - the out-of-band e2e suite (`tests/e2e/*.e2e.ts`).
+- **zod** 4.5.4 - request/response schemas, and the source of the emitted OpenAPI
+  contract ([architecture/cross-stack-contract.md](architecture/cross-stack-contract.md)).
+- **tsx** 4.23.13 - runs the provider canary (`pnpm canary`,
+  [architecture/provider-canary.md](architecture/provider-canary.md)).
 
 ## Ops
 
 - **Docker Compose** project `nostragoalus`: base `apps/web-nuxt/compose.yaml` + dev overlay
-  `apps/web-nuxt/compose.dev.yaml`. Services: `db`, `rustfs` (+`rustfs-init`, `mc`), `app`,
-  `app-dev`, `maildev`. Volumes `nostragoalus_pgdata`, `nostragoalus_media`.
+  `apps/web-nuxt/compose.dev.yaml` (+ `compose.e2e.yaml` / `compose.e2e-bun.yaml` for
+  the isolated e2e stack). Base services: `db`, `rustfs` (+`rustfs-init`, `mc`),
+  `coturn` (`coturn/coturn:4.6.2-alpine`, profile `voice`), `app`. Dev overlay:
+  `app-dev`, `maildev`, `keycloak` (profile `e2e`, the SSO IdP for e2e). Volumes
+  `nostragoalus_pgdata`, `nostragoalus_media`.
 - **mise** task runner (`.mise.toml` + `mise-tasks/`). See
   [operations.md](operations.md).
+
+## Mobile (Flutter)
+
+- **Flutter** 3.44.6 / **Dart** 3.12.2, pinned in `apps/mobile-flutter/.mise.toml`
+  (pubspec floor: Dart `^3.5.0`, Flutter `>=3.24.0`). The app has its own version
+  line (`version:` in `apps/mobile-flutter/app/pubspec.yaml`), separate from the web app's.
+- Key packages: `flutter_riverpod` 2.6 (state), `dio` 5.7 (HTTP),
+  `web_socket_channel` 3 (the WS hub), `flutter_webrtc` 0.12 (voice),
+  `sodium` / `sodium_libs` 3.4 (E2EE, needs a system libsodium for the interop
+  KATs), `flutter_secure_storage` 9, `flutter_web_auth_2` 5 (SSO), `flutter_map` 8.
+- `nostragoalus_parity` (path `../parity`) is the pure-Dart golden-vector runner.
+  See [features/mobile-app.md](features/mobile-app.md).
