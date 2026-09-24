@@ -61,7 +61,7 @@ dir = "{{ config_root }}/app"
 run = ["flutter test --coverage", "bash tool/coverage_check.sh"]
 
 [tasks.em-dash-check]
-description = "Fail if the em-dash character appears in the locale sources or anywhere under apps/mobile-flutter"
+description = "Fail if the em-dash character appears anywhere in the tracked sources, docs and locales"
 dir = "{{ config_root }}/app"
 run = "bash tool/no_em_dash.sh"
 

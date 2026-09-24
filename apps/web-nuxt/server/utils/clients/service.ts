@@ -22,9 +22,9 @@ import { compareVersions } from '#shared/version'
 /// setting it TO the version being released refuses every install except the one
 /// cut from that release, which is a force-upgrade, not a floor.
 ///
-/// It must never be ahead of the version being released: `apk-publish` stamps an
-/// APK from the same package.json, so a floor above it refuses the build cut
-/// from that very release. `floor.test.ts` fails the gate if that happens.
+/// It must never be ahead of the app version being released: `apk-publish` stamps
+/// an APK from the pubspec, so a floor above it refuses the build cut from that
+/// very release. `floor.test.ts` fails the gate if that happens.
 ///
 /// This is a MOBILE app version (apps/mobile-flutter/app/pubspec.yaml), not a
 /// site version - the two lines were split, and the app restarted at 1.0.0.

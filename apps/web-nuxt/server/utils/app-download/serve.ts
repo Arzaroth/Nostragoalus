@@ -23,8 +23,8 @@ import {
 // percent-decoded before routing, so `%6Eostragoalus-...` is another unlimited
 // supply of distinct keys for the same bytes. Both are answered with a redirect
 // to the canonical URL - a few hundred bytes instead of ~90 MB - rather than
-// enumerated. That is a mitigation, not the fix: the fix is a cache rule that
-// ignores the query string, and the bucket. See TODO.md.
+// enumerated. It is the origin's half: the bucket behind a cache rule that
+// ignores the query string carries the bytes themselves.
 
 export type ApkResponse =
   | { kind: 'serve'; filename: string; immutable: boolean }

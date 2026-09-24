@@ -1,7 +1,7 @@
 // The live match header sits directly above the goal event list, and the two must
 // agree. They draw from FIFA-backed feeds on different clocks: the goal count off
 // the detail/insights feed (~45 s, and the exact source the event list uses) and
-// the WS/stored score patched from the football-data poll (~2 min). The old header
+// the WS/stored score patched from the `scores:poll` cron (30 s). The old header
 // took Math.max of the two, which could never drop when VAR disallowed a goal - the
 // stale-high WS side pinned it. Recency arbitration doesn't fix it either: a stale
 // WS poll delivering the pre-disallow value looks identical to a fresh goal, so it

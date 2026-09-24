@@ -189,8 +189,8 @@ const goals = computed<any[]>(() => (detail.value?.goals ?? insights.value?.goal
 const homeGoalEvents = computed(() => goals.value.filter((g: any) => g.side === 'HOME'))
 const awayGoalEvents = computed(() => goals.value.filter((g: any) => g.side === 'AWAY'))
 // While live, the header must match the goal event list beneath it. The list comes
-// from the FIFA detail feed (~45 s); the WS/stored score trails it via the
-// football-data poll (~2 min). Lead with the feed count once it has landed (see
+// from the FIFA detail feed (~45 s); the WS/stored score comes from the separate
+// `scores:poll` cron (30 s). Lead with the feed count once it has landed (see
 // utils/live-score) so a VAR disallow drops the header and the list together, and a
 // stale WS poll can't re-raise a struck-off goal. The stored result stays
 // authoritative once the match is finished.

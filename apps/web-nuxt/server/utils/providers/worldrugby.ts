@@ -292,8 +292,8 @@ export function mapWorldRugbyTimelineKind(event: WrTimelineEvent): TimelineEvent
 }
 
 export interface WorldRugbyOptions {
-  // The feed's event id: numeric for legacy seasons ("1893"), a uuid for 2025
-  // onwards. Both resolve on the same route, so this stays opaque text.
+  // The feed's event id. The routes only answer to the uuid `altId`; a legacy
+  // numeric binding ("1893") is swapped for its uuid by eventUuid().
   eventId: string
   sport?: WorldRugbySport | null
   baseUrl?: string

@@ -6,10 +6,11 @@ import type { FetchedOdds, ListEventsOptions, OddsEvent, OddsProvider } from '..
 import type { OddsTriple } from '../../../../shared/types/odds'
 
 // Sofascore's unofficial JSON API (the one sofascore.com itself calls).
-// Keyless, but Cloudflare-fronted: it wants a browser User-Agent and spaced
-// calls. providerRef = uniqueTournament id (World Cup 16, Euro 1); odds come
-// from /event/{id}/odds/1/all, market 1 = full-time 1X2, fractional prices,
-// and remain available on finished events (retroactive backfill).
+// Keyless, but Cloudflare-fronted: it wants an allow-listed JA3 (see
+// sofascore-http) and spaced calls. providerRef = uniqueTournament id (World
+// Cup 16, Euro 1); odds come from /event/{id}/odds/1/all, market 1 = full-time
+// 1X2, fractional prices, and remain available on finished events (retroactive
+// backfill).
 
 interface SofaSeason {
   id: number

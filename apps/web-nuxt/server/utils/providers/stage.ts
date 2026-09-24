@@ -33,7 +33,7 @@ export function parseGroupNameStrict(name: string | null | undefined): string | 
   return name?.match(/^group\s+([a-l])$/i)?.[1]?.toUpperCase() ?? null
 }
 
-// No feed we read publishes a matchday, so it is derived. A round is the unit
+// Only UEFA publishes a matchday, so for the other feeds it is derived. A round is the unit
 // predictions are locked and scored against, and a fixture that ends up without
 // one never reaches the match table at all (see isIngestible), so every GROUP
 // fixture has to come out of here with a number.

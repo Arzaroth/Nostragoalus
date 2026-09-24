@@ -6,7 +6,7 @@ import { createHash } from 'node:crypto'
 // honest build, and a divergence in what a browser is actually served becomes
 // detectable. Authored as plain ESM (not .ts) so the build-time mise-task can
 // import it under node with no compile step, while the unit test still exercises
-// it. See mise-tasks/build-integrity and app/pages/about.vue.
+// it. See scripts/build-integrity and app/pages/about.vue.
 
 /**
  * SHA-256 of a buffer/string, lowercase hex.

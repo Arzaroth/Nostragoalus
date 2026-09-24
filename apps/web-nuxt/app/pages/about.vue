@@ -9,7 +9,7 @@ const { isDark } = useTheme()
 const config = useRuntimeConfig()
 
 // Client-code integrity fingerprint. The digest of the served client JS bundle
-// is written to /build-integrity.json at build time (mise-tasks/build-integrity);
+// is written to /build-integrity.json at build time (scripts/build-integrity);
 // showing it here lets a user compare it against the digest an honest,
 // reproducible build publishes. Fetched client-side and tolerant of absence (a
 // dev server has no built bundle), so it never blocks the page.

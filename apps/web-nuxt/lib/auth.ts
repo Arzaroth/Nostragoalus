@@ -322,10 +322,9 @@ export function buildAuthOptions(database: AuthDb) {
         // domain match. Without it, an SSO sign-in matching an existing local
         // account fails with "account not linked". We can't use the IdP's
         // email_verified claim instead - Entra doesn't emit a usable one. So we
-        // enable the domainVerified mechanism and mark admin-registered
-        // providers verified for their configured domains (db column defaults
-        // true): a provider is trusted to own the email domains an admin
-        // assigned it, which is exactly the old trustedProviders intent.
+        // enable the domainVerified mechanism: a provider registers unverified
+        // and is trusted with its domain only once an admin proves it (DNS TXT)
+        // or bypasses the proof, which is the old trustedProviders intent.
         domainVerification: { enabled: true },
         // A successful SSO sign-in makes the IdP authoritative for the account:
         // any local password is removed (the account becomes SSO-managed), so a
