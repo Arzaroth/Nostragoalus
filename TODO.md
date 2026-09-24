@@ -644,9 +644,20 @@ one messaging dock. Still open:
       Date (drizzle `timestamp` mode). A timezone-naive string would be parsed as
       local time by `new Date()` and shift the emitted UTC instant. Narrow to
       `Date`, or normalise on input, if a string source ever appears.
-- [ ] The feed token is stateless, so it can only be revoked by rotating the app
-      secret (which invalidates every user's link at once). If per-user feed
-      revocation is ever wanted, fold a per-user salt/version into the payload.
+- [x] ~~The feed token is stateless, so it can only be revoked by rotating the app
+      secret.~~ Per-user revocation shipped in 2.23.0: the payload carries
+      `user.feed_token_version` and "regenerate" bumps it.
+- [ ] The mobile app mints its feed without a `locale` (`calendar_screen.dart`,
+      `matches_api.dart` call `/api/feed/subscription` and `/regenerate` bare), so
+      the server falls back to `en` whatever the app language. Pass the app locale.
+- [ ] `ical.ts` writes `TRIGGER:-PT3H` literally instead of deriving it from
+      `REMINDER_LEAD_MS`, so changing the in-app reminder lead would leave the feed
+      alarm disagreeing with it silently.
+- [ ] `feedUrlsSchema` lives in `server/schemas/roadmap.ts`; move it next to the
+      feed routes.
+- [ ] No Playwright spec and no component test for the Preferences calendar card
+      (subscribe, copy, regenerate), which the e2e rule expects of every
+      user-facing feature.
 
 ## Prediction-lean map (deferred from the feature-treatment review)
 
@@ -1575,6 +1586,12 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
 - [ ] `visibleMediaForStatus` is yet another bespoke MatchStatus grouping (now
       handles FINISHED+AWARDED) - folds into the existing "centralise status ->
       bucket/severity/isLive in format.ts" item under Roadmap/home CTA above.
+- [ ] Mobile parity gap: `ui/match/tabs/media_tab.dart` lists every link the API
+      returns, without the web's status filter, so it can show Replay/Highlights
+      before full time and a dead LIVE link until finalize removes it. PARITY.md
+      marks media done.
+- [ ] No Playwright spec covers watch links (admin add, then the match page tab
+      and embed).
 
 ## SSO / better-auth 1.6.18 (deferred from the api-keys upgrade)
 
@@ -2153,6 +2170,12 @@ Built on worktree-roadmap-v2 (hybrid moderation: suggestions post public but
       5xx, parse) into `{ lineups: null }` with no log, indistinguishable from "no
       XI yet" and not cached, so the next poll re-hits a throttled upstream. Add a
       log + a short negative cache so a failing upstream isn't hammered every 60s.
+- [ ] Two OpenAPI descriptions contradict the code: `live-detail.get.ts` says
+      "Cached 5 minutes while live" (it is 60 s, `TTL_MS`), and `lineups.get.ts`
+      says finished line-ups are cached "for the process lifetime" (they persist in
+      the `match_lineups` row). The descriptions are in
+      `shared/contracts-openapi/openapi.snapshot.json`, so fixing them re-blesses
+      the snapshot.
 
 ### Precise placement (deferred from the feature-treatment review, 1.31.3)
 
