@@ -12,17 +12,20 @@ in match insights. This is player vs player on their predictions.
 
 ## What it shows
 
-- **Header**: both players (avatar, name) with their total points over the shared
-  matches; the trailing player is dimmed.
+- **Header**: both players (avatar, name, each linking to their profile) with
+  their total points over the shared matches; the trailing player is dimmed.
 - **Summary**: shared-pick count; the match record (wins-losses-ties, decided by
   who scored more points on each shared match); same-score and same-outcome
   agreement counts.
 - **Lead over time**: a two-series sparkline of cumulative points per round (player
   A a solid line, player B a dashed line so the two are told apart by shape as well
   as colour), with a per-round hover band.
-- **Biggest divergences**: up to six shared matches where the two picked different
-  outcomes, largest points gap first (matchId breaks a tie so the set is stable),
-  each showing both predictions, the actual score, and who took the points.
+- **Biggest divergences**: up to six shared matches where the two scored
+  different points, largest points gap first (matchId breaks a tie so the set is
+  stable), each showing both predictions, the actual score, and who took the
+  points. It is ranked on the points gap rather than filtered to different
+  predicted outcomes: two picks on the same winner can be dozens of points apart
+  (exact + rarity + joker), and those swings decide the head-to-head.
 
 ## How it works
 
@@ -34,8 +37,9 @@ in match insights. This is player vs player on their predictions.
   (`aliasedTable`) and inner-joins B's row on the same match, keeping only rows
   where **both** picks are scored and the match has a final score
   (`totalPoints`/`fullTimeHome`/`fullTimeAway` all not null); a scored 0-point pick
-  counts as present. Rows come ordered by `(kickoffTime, match.id)`. Outcome
-  derivation reuses `outcomeOf` from [`scoring/tiers.ts`](../../apps/web-nuxt/server/utils/scoring/tiers.ts).
+  counts as present. Rows come ordered by `kickoffTime` only; nothing depends on
+  the order within a kickoff (the lead chart sums per round, divergences break
+  ties on matchId). Outcome derivation reuses `outcomeOf` from [`scoring/tiers.ts`](../../apps/web-nuxt/server/utils/scoring/tiers.ts).
 - **Privacy**: `getHeadToHead` enforces `canViewProfile`
   ([`leagues/service.ts`](../../apps/web-nuxt/server/utils/leagues/service.ts)) for **both**
   players unconditionally, and an unknown player and a private-unviewable one both
@@ -44,8 +48,10 @@ in match insights. This is player vs player on their predictions.
   ever exposed, so nothing pending leaks.
 - Route [`apps/web-nuxt/server/api/head-to-head.get.ts`](../../apps/web-nuxt/server/api/head-to-head.get.ts) -
   a GET taking `a`, `b` (either may be `'me'`, resolved to the signed-in viewer)
-  and optional `competition`. Missing or identical ids are a 400; the
-  `getHeadToHead` call is wrapped in `toHttpError` so `NotFoundError` maps to 404.
+  and optional `competition`, via `defineReadHandler` (no auth required; the
+  viewer and admin flag come from the session). Missing or identical ids are a
+  400, an unknown competition a 404, and the read handler maps `NotFoundError` to
+  404.
 - DTO in [`#shared/types/h2h`](../../apps/web-nuxt/shared/types/h2h.ts).
 - Client: [`apps/web-nuxt/app/composables/useHeadToHead.ts`](../../apps/web-nuxt/app/composables/useHeadToHead.ts)
   (vue-query, key `['head-to-head', slug, a, b]`, disabled until both ids differ)

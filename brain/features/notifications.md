@@ -53,8 +53,8 @@ directly). Strings are i18n'd in all five locales.
 
 ## Triggers
 
-- `PICK_REMINDER` is the only TIME-based one. The `notifications:send-reminders`
-  task (registry cron `*/15`) reminds active predictors (users with at least one
+- `PICK_REMINDER` is the only TIME-based one. The `notifications:pick-reminders`
+  task (registry cron `*/15 * * * *`, `apps/web-nuxt/server/tasks/notifications/pick-reminders.ts`) reminds active predictors (users with at least one
   prediction in the competition) of a match locking within `REMINDER_LEAD_MS`
   (3h) that they have not picked. Dedupe key `pick-reminder:{matchId}`. The
   reminder is pruned once the match kicks off (the window closed) and cleared
@@ -91,13 +91,20 @@ directly). Strings are i18n'd in all five locales.
   it spans several - via the `useDmDockOpen` store (opens the already-mounted dock
   in place), not a route, so it never lands on the home page. Web push still deep-
   links via `dmPath` (`/?dm=<threadId>`) for a fresh app open.
+- `VOICE_MISSED` - an unanswered [voice call](voice-chat.md) ring, recorded by
+  `recordMissedCall` in `apps/web-nuxt/server/utils/voice/service.ts` (called from
+  the WS voice handler, `server/utils/live/voice.ts`) along with a `voice_call`
+  history row. Carries caller + thread (DM) or league/match (league room). Dedupe
+  `call:{threadId}:{callerId}` or `call:{leagueId}:{matchId|global}:{callerId}`,
+  deliberately WITHOUT `refresh`, so rapid re-dials collapse onto one row and never
+  re-push.
 
 ## Announce once, not every tick
 
 `dedupeKey` only holds while the row exists, and dismissing is a hard delete - so
 a producer that re-runs against an unchanged world re-mints what the user threw
 away. `matches:finalize` is exactly that: it re-awards both meta-pick bonuses
-every 5 minutes forever, which is deliberate (it is what heals a `winner` the
+every minute forever, which is deliberate (it is what heals a `winner` the
 provider fills in late, since the re-score gate hashes only the scoreline and
 never sees `winner` move).
 
@@ -113,14 +120,18 @@ bell's delete button is a hard delete, and a dedupeKey alone will not survive it
 
 ## Retention
 
-A daily `notifications:prune` task drops READ notifications older than 7 days and
-caps each user to the newest 200.
+A daily `notifications:prune` task (cron `23 4 * * *`) drops READ notifications
+older than 7 days and caps each user to the newest 200 (`pruneNotifications`,
+`READ_RETENTION_MS` / `PER_USER_CAP`). Unread rows never age out; `PICK_REMINDER`
+has its own lifecycle.
 
 ## Sources
 
 - `apps/web-nuxt/db/app-schema.ts` (`user_notification`, `notification_type`)
 - `apps/web-nuxt/shared/types/notifications.ts` (`NotificationType` / `NotificationData`, `cabinetPath`)
 - `apps/web-nuxt/server/utils/notifications/service.ts`, `events.ts`, `reminders.ts`
+- `apps/web-nuxt/server/tasks/notifications/{pick-reminders,prune}.ts`, `apps/web-nuxt/server/utils/tasks/registry.ts`
+- `apps/web-nuxt/server/utils/chat/mentions.ts`, `apps/web-nuxt/server/utils/dm/notify.ts`, `apps/web-nuxt/server/utils/voice/service.ts` (`recordMissedCall`)
 - `apps/web-nuxt/server/utils/champion/service.ts`, `apps/web-nuxt/server/utils/bestscorer/service.ts`
   (`awardChampionBonuses` / `awardBestScorerBonuses`, the announce-once gate)
 - `apps/web-nuxt/server/utils/live/hub.ts` (`publishUserNotification`)

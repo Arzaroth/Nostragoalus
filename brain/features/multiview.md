@@ -3,7 +3,7 @@
 Watch several matches at once in a configurable grid, like a multi-stream
 dashboard. Built on the existing match live data + [WebSocket
 hub](../architecture/realtime.md), the [chat dock](chat.md) and the curated
-[match media](../features/index.md) embeds. Back to the catalog:
+match media embeds (`apps/web-nuxt/shared/match-media.ts`). Back to the catalog:
 [index.md](index.md).
 
 ## What the user sees
@@ -50,8 +50,9 @@ survives a reload.
   var fallbacks keep the calc valid before the header/footer `ResizeObserver`s set
   them) and each cell carries `min-h-0`, so a cell's play-by-play scrolls inside it
   (`max-h-full`) instead of stretching the cell and pushing the page.
-- **Streams.** `MultiviewCellStream` reuses `MatchMediaEmbed` with the first
-  embeddable item from `visibleMediaForStatus(useMatchMedia(id), status)`. The
+- **Streams.** `MultiviewCell` picks the first embeddable item from
+  `visibleMediaForStatus(useMatchMedia(id), status)` and `MultiviewCellStream`
+  renders it through `MatchMediaEmbed`. The
   Stream toggle is disabled when a match has no embeddable media or when the
   one-stream-at-a-time cap (`MAX_STREAM_CELLS`) is reached; a cell auto-reverts to
   the tile if its embed disappears.
@@ -92,5 +93,6 @@ threads. Instead there is one dock that follows the focused cell. See
   `useMatchTimeline.ts`
 - `apps/web-nuxt/app/components/ChatDock.vue` (focus-driven match thread + inbox `tryFocus`)
 - `apps/web-nuxt/app/components/match/PlayByPlay.vue`, `apps/web-nuxt/app/utils/match-view.ts`
-- `apps/web-nuxt/app/layouts/default.vue` (nav entry, full-width branch), `CompetitionPill.vue`
-  (section allow-list)
+- `apps/web-nuxt/app/layouts/default.vue` (nav entry, full-width branch, `--ng-header-h`),
+  `apps/web-nuxt/app/components/SiteFooter.vue` (`--ng-footer-h`), `CompetitionPill.vue`
+  (a competition switch keeps the top-level section, multiview included, and the query)

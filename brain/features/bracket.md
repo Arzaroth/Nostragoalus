@@ -15,16 +15,28 @@ Related: [competitions.md](competitions.md) ·
 map each `providerMatchId` to an internal match id so a card can link to its
 match page. A card whose tie has no internal match renders as a plain `div`.
 
-The pipeline, per request (memoised by `server/utils/bracket/cache.ts`):
+The pipeline:
 
 1. `provider.getBracket()` - the raw tree (`NormalizedBracket` in
    `shared/types/match.ts`: `rounds[]`, each with `name`, `sequence`, `matches[]`).
+   FIFA serves a bracket feed; UEFA, ESPN and World Rugby publish none, so they
+   derive one from their knockout fixtures with the shared
+   `bracketFromKnockoutMatches` (`server/utils/providers/bracket-order.ts`),
+   which leaves the third-place tie out of the rounds (it feeds nothing, and a
+   round of its own would crown its winner beside the champion).
 2. `orderBracketFeeders` - sorts each round's matches under the parent tie they
    feed, resolving `W{n}` feeder refs by `matchNumber`. The third-place tie is
    excluded from the feeding chain.
-3. `projectBracket` - fills undecided sides with the team currently projected to
-   qualify from live group standings. Projected sides are display-only and are
-   marked as such (dashed underline + a "projected" chip).
+3. Link each `providerMatchId` to its internal match id. Steps 1-3 are the
+   **base** tree, cached per competition for 10 minutes by
+   `server/utils/bracket/cache.ts` (a cached `null` means "no knockout
+   structure", distinct from a miss). `server/tasks/scores/poll.ts` invalidates it
+   when a knockout match finishes, so an advancement is not hidden by the TTL.
+4. `projectBracket` - recomputed on every request, never cached: fills undecided
+   sides with the team currently projected to qualify from live group standings,
+   using the competition's tiebreakers (`tiebreakersForCompetition`). Projected
+   sides are display-only and are marked as such (dashed underline + a
+   "projected" chip).
 
 Failures fall back to "no bracket" rather than erroring the page.
 
@@ -107,7 +119,7 @@ tie still missing a side traces nothing.
 - A team eliminated in its first bracket appearance has one card and so no hop:
   it gets the red name tint but no line. See [../../TODO.md](../../TODO.md).
 
-## Files
+## Sources
 
 | Path | Role |
 |---|---|
@@ -117,6 +129,8 @@ tie still missing a side traces nothing.
 | `app/utils/bracketPath.ts` | Journey polyline routing |
 | `server/api/competitions/bracket.get.ts` | Build + project the tree |
 | `server/utils/providers/fixture.ts` | Canned offline tree for e2e |
-| `server/utils/bracket/{projection,cache}.ts` | Projected qualifiers, per-request memo |
-| `server/utils/providers/bracket-order.ts` | Feeder ordering |
+| `server/utils/bracket/projection.ts` | Projected qualifiers |
+| `server/utils/bracket/cache.ts` | 10-minute per-competition base-tree cache |
+| `server/utils/providers/bracket-order.ts` | Feeder ordering, bracket from knockout fixtures |
+| `server/tasks/scores/poll.ts` | Invalidates the cache when a knockout match finishes |
 | `tests/e2e/bracket-journey.e2e.ts` | Hover tracing over the real UI |

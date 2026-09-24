@@ -16,13 +16,20 @@ build.
 - `mise -C apps/mobile-flutter run apk-publish` (in
   [apps/mobile-flutter/.mise.toml](../../apps/mobile-flutter/.mise.toml)) builds
   the release APK, uploads it to the bucket (below), and writes a
-  `nostragoalus.apk.json` sidecar. The version stamped in is the web app's
-  `package.json` version, so the APK on `/about` reads as the same release as the
-  site serving it.
+  `nostragoalus.apk.json` sidecar. The version stamped in is the app's own
+  `apps/mobile-flutter/app/pubspec.yaml` `name+code`, not the website's: the APK
+  ships on its own version line (see [mobile-app](mobile-app.md#versions-and-the-floor-under-them)).
+  Before building, the task probes the live server with
+  `x-ng-client: android/<version>` and refuses to publish on a 426, since an APK
+  the server refuses is a brick; the server ships first, then the APK. It also
+  refuses a non-https or non-routable `API_BASE`/`WEB_BASE`/`NG_R2_BASE` and a
+  missing release keystore.
 - The deploy copies **only that sidecar** to `apps/web-nuxt/downloads/`.
   `compose.yaml` bind-mounts that directory read-only at `/data/downloads`, which
-  is the production default. A bare local run reads `./.data/downloads`.
-  `NUXT_APP_DOWNLOAD_DIR` overrides both.
+  is the production default. A non-production run reads `./downloads`, the same
+  directory the publish task writes. `NUXT_APP_DOWNLOAD_DIR` overrides both; the
+  e2e stacks point it at `.data/downloads` so the fixture cannot clobber a real
+  published build.
 - Publishing is therefore an upload plus a few hundred bytes copied: no image
   rebuild, no redeploy, no restart.
 
@@ -81,10 +88,15 @@ its own cacheability rather than depending on a rule.
 
 The sidecar therefore carries the facts the file used to supply - `sizeBytes`,
 `sha256`, `url` - and a sidecar missing any of them describes no build. Its `url`
-must be `https:`: it is operator-written but becomes a redirect a browser follows.
+must be `https:` on the pinned host `ANDROID_BUCKET_HOST` (`r2.goal.arzaroth.com`):
+it is operator-written but becomes a redirect a browser follows, and the digest the
+page asks users to check comes from the same file.
 
-A file actually present on disk still wins, which is the dev path and the fallback
-if a bucket publish is ever undone.
+A complete bucket sidecar wins over any APK on disk: a stale host file used to
+pair its own bytes with the new sidecar's version and serve them under that
+version's immutable URL. A file on disk is served only when the sidecar names no
+bucket object, which is the dev path and the fallback if a bucket publish is ever
+undone. The publish deletes the host's leftover `nostragoalus.apk` anyway.
 
 **The origin route stays.** Every install up to 4.9.0 joins the endpoint's
 `downloadUrl` to its own `webBase`, so it follows a PATH, not an absolute URL -
@@ -109,11 +121,12 @@ alias cannot simply always redirect: it would redirect to itself.
 A cache in front is not by itself a shield, which is the part worth remembering.
 Cloudflare's cache key includes the query string, so `?x=1`, `?x=2`, ... are all
 misses and each miss drags the full file off the origin, with no rate limit behind
-it. A query string has no legitimate use on this URL, so it is answered with a
-redirect to the canonical one: such a request costs a few hundred bytes instead of
-~90 MB. That is a mitigation and not the fix - the fix is a cache rule that ignores
-the query string, or moving the object off the origin entirely, both of which are
-open in [TODO.md](../../TODO.md).
+it. For an on-disk build, only a request whose raw target is character-for-character
+the canonical URL streams anything; a query string, a percent-encoded spelling or
+a bare `?` is redirected to the canonical URL, costing a few hundred bytes instead
+of ~90 MB. That was the mitigation. The fix is now in place: the bytes live in the
+bucket, and a Cloudflare cache rule on `r2.goal.arzaroth.com` ignores the query
+string (verified behaviourally, see [TODO.md](../../TODO.md)).
 
 `If-None-Match` is honoured, so a client revalidating the alias (which is
 `no-cache`, meaning revalidate, not do-not-store) gets a 304 rather than the file
@@ -133,3 +146,5 @@ The publish date renders as its ISO day so the server and the browser agree.
 - [apps/web-nuxt/server/routes/download/[apk].get.ts](../../apps/web-nuxt/server/routes/download/%5Bapk%5D.get.ts)
 - [apps/web-nuxt/app/components/AndroidAppCard.vue](../../apps/web-nuxt/app/components/AndroidAppCard.vue)
 - [apps/web-nuxt/tests/e2e/android-download.e2e.ts](../../apps/web-nuxt/tests/e2e/android-download.e2e.ts)
+- [apps/mobile-flutter/.mise.toml](../../apps/mobile-flutter/.mise.toml) (`apk-publish`)
+- [apps/web-nuxt/compose.yaml](../../apps/web-nuxt/compose.yaml) (the `/data/downloads` bind mount)

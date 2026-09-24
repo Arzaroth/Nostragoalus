@@ -8,8 +8,9 @@ best-scorer picks are deferred to a later phase.
 [League modes](league-modes.md) add a **separate, parallel chain** for per-league
 override picks (`league_prediction_commitment`, head id `league`): same mechanics
 below, domain-separated and binding the leagueId
-(`appendLeaguePredictionCommitment` / `verifyLeagueChainServer`). The public
-`/verify` page still covers only the base chain for now.
+(`appendLeaguePredictionCommitment` / `verifyLeagueChainServer`). The league chain
+has no public endpoint yet (its read/verify helpers are unrouted), so the public
+`/verify` page and `/api/commitments` cover only the base chain.
 
 ## How it works
 
@@ -45,8 +46,9 @@ Privacy is built in:
   wired into `upsertPrediction` (which now runs in a transaction).
 - `GET /api/commitments` and `GET /api/commitments/head` - public,
   unauthenticated.
-- The `/verify` page pulls the ledger and recomputes the chain client-side
-  (linked from the footer). Strings are i18n'd under `verify.*`.
+- The `/verify` page (`app/pages/verify.vue`, via `useLedgerVerification` in
+  `useCommitments.ts`) pages through the ledger and recomputes the chain
+  client-side (linked from the footer). Strings are i18n'd under `verify.*`.
 
 ## Distributed witnessing
 
@@ -71,5 +73,7 @@ the live prediction row).
 
 - `apps/web-nuxt/db/app-schema.ts` (`prediction_commitment`, `commitment_chain_head`)
 - `apps/web-nuxt/shared/commitment.ts`, `apps/web-nuxt/server/utils/commitment/service.ts`
-- `apps/web-nuxt/server/api/commitments/*`, `apps/web-nuxt/server/routes/verify/*`,
+- `apps/web-nuxt/db/app-schema.ts` (`league_prediction_commitment`)
+- `apps/web-nuxt/server/api/commitments/*`, `apps/web-nuxt/app/pages/verify.vue`,
+  `apps/web-nuxt/app/composables/useCommitments.ts`,
   `apps/web-nuxt/app/plugins/tamper-watch.client.ts`, `apps/web-nuxt/app/composables/useTamperWatch.ts`

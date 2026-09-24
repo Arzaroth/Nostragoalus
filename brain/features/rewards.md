@@ -6,7 +6,8 @@ adds a prize for any criterion, and the league's winner of that criterion (best
 **among the members**) earns it - except Team Specialist, where every member who
 calls an exact scoreline on the league's featured team wins (many holders).
 Distinct from the global [trophies](achievements.md), which are computed across the
-whole competition over a fixed five and settled at finalize.
+whole competition over a fixed set (`competition_award_type`: four still minted,
+plus the legacy TEAM_SPECIALIST) and settled at finalize.
 
 ## The criteria
 

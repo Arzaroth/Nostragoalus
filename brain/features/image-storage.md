@@ -1,15 +1,19 @@
 # Image storage
 
-Image blobs (avatars and encrypted chat attachments) live in a pluggable object
-store, not in Postgres. This page is the feature / ops view; the driver internals
-are in [../architecture/storage.md](../architecture/storage.md).
+Image blobs (avatars, league [prize](rewards.md) and league-description images,
+and encrypted chat / DM attachments) live in a pluggable object store, not in
+Postgres. This page is the feature / ops view; the driver internals are in
+[../architecture/storage.md](../architecture/storage.md).
 
 ## What it is
 
 A `StorageDriver` abstraction with two backends - `fs` (node:fs) and `s3` - so
 the same code path serves a single-host filesystem deploy or an S3-compatible
-object store. Avatars are content-addressed; chat ciphertext stays server-opaque.
-Both move out of the database into the store.
+object store. Avatars (`avatar/<sha256>.<ext>`) and reward / description images
+(`reward/<sha256>.<ext>`, written by `storeRewardFromDataUrl`) are
+content-addressed; chat ciphertext (`chat/{messageId}/{idx}`) stays
+server-opaque. Key builders live in `apps/web-nuxt/server/utils/storage/keys.ts`. Every new write goes to the store;
+only legacy rows still hold an in-DB blob until they are migrated.
 
 Shipped in **v2.0.0**, a MAJOR release because it changed the deploy contract:
 
@@ -20,8 +24,10 @@ Shipped in **v2.0.0**, a MAJOR release because it changed the deploy contract:
 ## Production deploy
 
 The docker deploy defaults to the `s3` driver with **rustfs** in compose (the app
-points at `rustfs:9000`). Bucket init is one-shot via `quay.io/minio/mc`. Configuration is
-`NUXT_STORAGE_DRIVER` / `_FS_ROOT` / `_S3_*`.
+points at `rustfs:9000`); the app's own runtime default, outside compose, is `fs`.
+Bucket init is one-shot via `quay.io/minio/mc` (the `rustfs-init` service; Docker
+Hub's `minio/mc` repository is gone). Configuration is `NUXT_STORAGE_DRIVER` /
+`_FS_ROOT` / `_S3_*`.
 
 ## Migration
 
@@ -51,7 +57,9 @@ tracked in TODO.
 
 ## Sources
 
-- `apps/web-nuxt/server/utils/storage/*` (driver, drivers/fs, drivers/s3, factory, service)
+- `apps/web-nuxt/server/utils/storage/*` (driver, drivers/fs, drivers/s3, factory, keys, service, index)
+- Writers: `apps/web-nuxt/server/utils/auth/avatar.ts`, `apps/web-nuxt/server/utils/rewards/image.ts`,
+  `apps/web-nuxt/server/utils/chat/service.ts`, `apps/web-nuxt/server/utils/dm/service.ts`
 - `apps/web-nuxt/server/tasks/media/migrate-blobs.ts`, `apps/web-nuxt/server/utils/storage/migrate.ts`
 - `mise-tasks/db-backup`, `mise-tasks/db-restore`, `apps/web-nuxt/compose.yaml`
 - Driver internals: [../architecture/storage.md](../architecture/storage.md)

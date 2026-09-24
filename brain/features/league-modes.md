@@ -14,7 +14,7 @@ a moded league is re-scored from picks at read time and can hold its own picks.
 | Mode | Pick needed | Scoring | Board |
 |---|---|---|---|
 | `NORMAL` | exact score | the canonical engine (tiers + crowd/odds bonus + champion + best-scorer + live) | standard leaderboard |
-| `EASY` | outcome (W/D/L) | correct outcome pays a flat base + the odds tier of that result (longshots pay more); wrong pays 0 | points board |
+| `EASY` | outcome (W/D/L) | correct outcome pays a flat base + the competition's configured per-pick bonus (crowd rarity or odds, so a rare/longshot call pays more); joker doubles; wrong pays 0 | points board |
 | `HARD` | score + a confidence stake | correct outcome pays your stake, the exact score pays it twice; wrong pays 0; no odds/joker layer | points board |
 | `HARDCORE` | outcome | last-man-standing: a wrong/missing outcome burns a life, zero lives = eliminated; survivors are co-winners | survival board |
 
@@ -24,11 +24,16 @@ the per-mode pure scorers (`easyPoints`, `hardPoints`, `normalPoints`,
 fixed `hardRoundBudget` all live in `apps/web-nuxt/server/utils/leagues/modes.ts`.
 
 - **EASY** reads only the outcome of a pick, so an exact 2-1 and a W/D/L "home"
-  score it identically. Points use the competition's configured `oddsTiers`
-  (`apps/web-nuxt/server/utils/scoring/bonus.ts:oddsBonus`) on top of `EASY_CORRECT_BASE`.
+  score it identically. Points are `EASY_CORRECT_BASE` (1) plus whatever the
+  competition's `bonusSource` pays for that pick (the engine's `computeBonus`,
+  crowd rarity or odds tiers), times the joker multiplier on a jokered pick.
+  A W/D/L quick-pick is stored as the canonical scoreline `CANONICAL_SCORELINE`
+  (1-0 / 1-1 / 0-1) with `is_outcome_only` set.
 - **HARD** layers a per-round confidence budget (`hardRoundBudget` = matches in
-  round x `HARD_BUDGET_PER_MATCH`). The stake rides the base pick (shared across
-  a member's HARD leagues), enforced in `upsertPrediction`.
+  round x `HARD_BUDGET_PER_MATCH` (3)); the exact score pays the stake x
+  `HARD_EXACT_MULTIPLIER` (2). The stake rides the base pick (shared across a
+  member's HARD leagues), enforced in `upsertPrediction`; an override carries its
+  own stake, budgeted per league.
 - **HARDCORE** carries no points. The board walks scored matches in kickoff order
   (`apps/web-nuxt/server/utils/leaderboard/modes.ts:buildSurvivalBoard`), burning a life per
   wrong/missing outcome; `league.lives` (owner-set, 1-99) is the buffer.
@@ -81,16 +86,18 @@ leagues too (the mode-board rank, or survival rank for hardcore), so they get
 movement arrows - the mode-board route appends `movement` via `rankMovement`.
 NORMAL leagues keep the standard `getLeaderboard` path.
 
-- Endpoint: `GET /api/leagues/[id]/mode-board` (member/admin gated, 400 for
-  NORMAL). Client: `useLeagueModeBoard`, rendered by `LeagueModePointsBoard.vue`
+- Endpoint: `GET /api/leagues/[id]/mode-board` (signed-in; same `canViewLeague`
+  gate as the league itself, so members, admins, or anyone on a public league;
+  400 for NORMAL). Client: `useLeagueModeBoard`, rendered by `LeagueModePointsBoard.vue`
   / `LeagueSurvivalBoard.vue` on `pages/leagues/[id].vue`.
 
 ## Create / swap / guard
 
 - `createLeague` + `setLeagueMode` carry `mode` + `lives`; `normalizeLives`
   validates HARDCORE (1-99, null elsewhere).
-- `assertCompetitionNotRunning` (earliest `match.kickoff_time < now`) blocks a
+- `assertCompetitionNotRunning` (any `match.kickoff_time <= now`) blocks a
   moded create and any mode swap once the competition is running -> HTTP 409.
+  Admins bypass it (`skipRunningGuard`, via `PUT /api/admin/leagues/[id]`).
 - Routes: `POST /api/leagues`, `PUT /api/leagues/[id]` (owner-only mode swap),
   detail GET returns `mode`/`lives`. Client: `LeagueCreateDialog.vue` mode
   selector + lives input, `LeagueModeBadge.vue`.
@@ -128,7 +135,8 @@ still computes and returns `missing`; the filtering is client-side in
 `[competition]/matches/index.vue` (`incompleteLeagues`, `issuesByMatch`). Composables: `useLeaguePicks.ts` (`useLeagueOverrides`,
 `useLeagueCompleteness`, `useLeaguePickMutations`). Endpoints: `PUT
 /api/leagues/[id]/predictions/[matchId]`, `POST /api/leagues/[id]/picks-sync`,
-`GET /api/leagues/[id]/overrides`, `GET /api/leagues/completeness`.
+`PUT /api/leagues/[id]/joker`, `GET /api/leagues/[id]/overrides`,
+`GET /api/leagues/completeness`.
 
 ## Deferred (see `TODO.md`)
 
@@ -137,3 +145,17 @@ Intentional v1 tradeoffs, not missing wiring: NORMAL-league override scoring
 provisional live elimination for HARDCORE, and the public `/verify`-page UI for
 the league override chain (the chain + server self-audit exist; only the
 public-facing page tab is deferred).
+
+## Sources
+
+- `apps/web-nuxt/server/utils/leagues/modes.ts`, `apps/web-nuxt/server/utils/leagues/completeness.ts`
+- `apps/web-nuxt/server/utils/leagues/service.ts` (`createLeague`, `setLeagueMode`, `normalizeLives`)
+- `apps/web-nuxt/server/utils/leaderboard/modes.ts` (`getLeagueModeBoard`, `buildSurvivalBoard`),
+  `apps/web-nuxt/server/utils/leaderboard/snapshots.ts` (`updateLeagueRankSnapshots`, `rankMovement`)
+- `apps/web-nuxt/server/utils/predictions/service.ts` (`upsertPrediction`, `upsertLeaguePrediction`,
+  `setLeaguePicksSynced`, `setLeagueJoker`, `getLeagueOverrides`, `getLeagueCompleteness`)
+- `apps/web-nuxt/server/api/leagues/[id]/{mode-board.get,predictions/[matchId].put,picks-sync.post,joker.put,overrides.get}.ts`,
+  `apps/web-nuxt/server/api/leagues/completeness.get.ts`
+- `apps/web-nuxt/app/composables/useLeaguePicks.ts`, `apps/web-nuxt/app/composables/useLeagues.ts` (`useLeagueModeBoard`)
+- `apps/web-nuxt/app/components/MatchPickControls.vue`, `LeagueModePointsBoard.vue`, `LeagueSurvivalBoard.vue`,
+  `LeagueCreateDialog.vue`, `LeagueModeBadge.vue`

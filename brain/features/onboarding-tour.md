@@ -91,3 +91,13 @@ Same one-time-flag pattern as the league prompt (see [leagues.md](leagues.md)):
 
 - The Klingon (`tlh`) and Arabic (`ar`) step copy is best-effort and, like the
   rest of those locales, wants a native-speaker pass.
+
+## Sources
+
+- `apps/web-nuxt/app/components/OnboardingTour.vue`
+- `apps/web-nuxt/app/composables/useOnboardingTour.ts` (`TOUR_STEPS`, `markLeaguePromptResolved`)
+- `apps/web-nuxt/server/utils/onboarding/service.ts`, `apps/web-nuxt/server/api/me/onboarding-tour.post.ts`
+- `apps/web-nuxt/server/utils/user-flags/service.ts` (`stampUserFlagOnce`)
+- `apps/web-nuxt/db/auth-schema.ts` (`onboardingTourDismissedAt`), `apps/web-nuxt/lib/auth.ts` (`additionalFields`)
+- `apps/web-nuxt/app/layouts/default.vue` (leaderboard anchor, "Take the tour" launcher)
+- `apps/web-nuxt/tests/e2e/onboarding.e2e.ts`

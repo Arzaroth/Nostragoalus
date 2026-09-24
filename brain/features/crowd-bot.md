@@ -17,6 +17,10 @@ Each persona is a picking strategy scored by the real engine. See
 | `EVIL_TWIN` | 😈 | **per-user**: the signed-in player's own picks with each score **swapped** (winner flipped, margin kept; a draw is its own twin) | the same match the **player** jokered | the **player's own** champion (kept, not inverted) |
 | `EQUALIZER` | ⚖️ | always a **1-1 draw** (`DRAW_SCORELINE`), ignoring the crowd scoreline and the MODE gate | the **most drawish** match (smallest crowd margin) | none (a draw-caller has no champion) |
 
+The joker column covers multi-match knockout rounds only (never group rounds;
+the single-match `FINAL`/`THIRD_PLACE` take none, and the final doubles for every
+persona via `forceJoker`, like for real users).
+
 The icon is swapped for a MLP-villain avatar while a cosmetic skin is active (an
 easter egg): see [Villain bot avatars](easter-eggs.md#villain-bot-avatars).
 
@@ -51,7 +55,14 @@ the method toggle - `personaUsesMethod`):
 
 MODE is greyed out below 5 distinct predictors (`MIN_CONSENSUS_USERS`, "biased
 data" tooltip), and the server forces MEAN below that gate regardless of the
-client, so a thin sample cannot produce a misleadingly confident mode.
+client, so a thin sample cannot produce a misleadingly confident mode. The same
+gate applies per match: in MODE, a match with fewer than 5 scoped picks gets no
+bot pick. MODE ties break toward the lower-scoring line, then the home side.
+
+With a `?league=` scope the pick, joker and champion are computed from that
+league's members and the ghost ranks on the league board; the bonus histogram
+stays competition-wide (below). `getBotOverviewCached` memoizes the overview for
+30 s per (competition, persona, user, league, method, visibility).
 
 ## How a bot is scored
 
@@ -65,17 +76,23 @@ Scored by the real engine, so each row is directly comparable to human players:
 
 ## Display rules
 
-- **Leaderboard = crowd bots only** (`LEADERBOARD_BOT_PARAMS`: consensus,
-  equalizer). A single "Bots" popover (checkboxes + the consensus MODE/MEAN
-  choice) enables them; each enabled one is a display-only ghost row at its
-  would-be rank (`insertGhostRows`, real users win exact ties). The ghosts hide
-  in the global view (jokers, finals and champion picks are competition-scoped)
-  and deep-link to `/{competition}/bot?persona=...`.
+- **Leaderboard = all three, per viewer.** A single "Bots" popover (checkboxes
+  + the consensus MODE/MEAN choice, persisted by `useBotPersonas`/`useBotMethod`)
+  enables them; each enabled one is a display-only ghost row at its would-be rank
+  (`/api/bot/leaderboard-row`, `insertGhostRows`, real users win exact ties),
+  shown as soon as anyone has predicted, even at 0 points. The ghosts hide in the
+  global view (jokers, finals and champion picks are competition-scoped) and
+  follow a league scope. The crowd ghosts deep-link to
+  `/{competition}/bot?persona=...`; the evil-twin ghost needs a signed-in viewer
+  (it is **your own** picks swapped) and links to your profile with `?twin=1`.
+- **The `/bot` page hosts the crowd bots only** (`LEADERBOARD_BOT_PARAMS`:
+  consensus, equalizer - despite the name, it is the /bot switcher's list).
 - **Evil twin = profile pages.** A player's `/{competition}/users/{id}` page has
-  an "Evil Twin" toggle that swaps that player's own picks and shows how they'd
-  have scored + a would-be rank. It reuses `/api/bot/predictions?persona=evil-twin&user={id}`,
+  an "Evil Twin" toggle (opened directly by `?twin=1`) that swaps that player's
+  own picks and shows how they'd have scored + a would-be rank next to their
+  real one (`subject`). It reuses `/api/bot/predictions?persona=evil-twin&user={id}`,
   guarded by the same profile visibility (`canViewProfile`) as their picks, and
-  is competition-scope only (no global identity). Not on the leaderboard.
+  is competition-scope only (no global identity).
 - Users see picks only for matches that have kicked off. Admins also see
   upcoming ones (server-enforced, so the pre-kickoff crowd is not leaked).
 

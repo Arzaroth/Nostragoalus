@@ -58,7 +58,7 @@ Shipped. It scrolls horizontally on narrow screens.
 - **Suggest**: `POST /api/roadmap/suggestions` (`createSuggestion`) - signed-in
   users only. Lands in `SUGGESTED` + `PENDING` (hybrid: publicly visible and
   upvotable at once but "under review" until an admin approves it). Spam gate is
-  auth plus a per-user rate limit (see
+  auth plus a per-user rate limit, 5 per hour (see
   [../architecture/server.md](../architecture/server.md) `createRateLimiter`);
   admins hide spam to `REJECTED` after the fact.
 - **Vote**: `POST /api/roadmap/:id/vote` (`toggleVote`) - toggles the caller's
@@ -81,6 +81,9 @@ Shipped. It scrolls horizontally on narrow screens.
 Roadmap item title/description are raw DB strings, English-only (the page chrome
 is i18n'd across the five locales, the body is not). Localizing DB content is a
 separate ROADMAP backlog item.
+
+The [mobile app](mobile-app.md) reads the same `GET /api/roadmap` and can vote
+(`ui/roadmap_screen.dart`).
 
 ## Sources
 

@@ -2,8 +2,10 @@
 
 Nostragoalus is multi-competition by design. A tournament is a row in the
 `competition` table, so supporting a new event (for example UEFA Euro) is a data
-change, not a rebuild. The first and current competition is the FIFA World Cup
-2026. Ranking is always per competition (there is one global ranking per
+change, not a rebuild. The first competition is the FIFA World Cup 2026;
+`ensureDefaultCompetition()` (`server/utils/competitions/store.ts`, run by the
+fixtures import/refresh tasks) seeds it plus World Cup 2022 and Euro 2024,
+insert-only per slug. Ranking is always per competition (there is one global ranking per
 competition, plus optional [leagues](leagues.md)).
 
 ## The competition row
@@ -15,12 +17,19 @@ Each `competition` row carries:
 - `provider` + `externalCompetitionId`/`externalSeasonId` - which match-data
   provider to use and the ids that resolve fixtures, bracket and stats
   (see [../architecture/providers.md](../architecture/providers.md)).
+- `sport` (`FOOTBALL` | `RUGBY_UNION`, see [rugby.md](rugby.md)) and
+  `providerSport` - the provider's sub-feed when it has several (World Rugby's
+  men's/women's/sevens catalogs).
 - `seasonHint` - helps the provider resolve the right season.
+- `oddsProvider` + `oddsProviderRef` - where bookmaker odds come from, null to
+  disable them (see [odds.md](odds.md)).
 - `isActive` - whether it shows in the switcher.
 
-Rounds (`round`) and matches (`match`) hang off the competition. A round is
-either a `GROUP_MATCHDAY` or a `KNOCKOUT` stage (`GROUP`, `R32`, `R16`, `QF`,
-`SF`, `THIRD_PLACE`, `FINAL`).
+Rounds (`round`) and matches (`match`) hang off the competition. A round's
+`kind` is `GROUP_MATCHDAY` or `KNOCKOUT` and its `stage` one of `GROUP`, `R32`,
+`R16`, `QF`, `SF`, `THIRD_PLACE`, `FINAL`. A group round's `sort_order` is its
+matchday; the knockout ladder sits at 1000 and up (migration
+`0066_knockout_sort_band`) so a 38-matchday table cannot collide with it.
 
 ## Routing: the URL is the source of truth
 
@@ -28,7 +37,7 @@ The active competition is a path prefix, not a stored selection:
 
 - Competition-scoped pages live under `apps/web-nuxt/app/pages/[competition]/`:
   `matches` (list + detail), `bracket`, `map`, `leaderboard`, `bot`,
-  `multiview`, `wrapped`, `teams/[code]`, `users/[id]`.
+  `multiview`, `wrapped`, `analytics`, `compare`, `teams/[code]`, `users/[id]`.
 - Global pages stay un-prefixed: `/`, `/login`, `/signup`, `/account`,
   `/preferences`, `/admin`, `/about`, `/roadmap`, `/leagues`.
 
@@ -129,9 +138,12 @@ The probe blocks on four things:
   only: probing season-less would summarize one day of fixtures and report the
   competition as empty when it is the season lookup that failed.
 
-Measured against the live ESPN API: World Cup 2026 104/104 ingestible and Euro
-2024 51/51 (both supported); the Premier League 0/374 and the 2026 Champions
-League 29/189 with two legs at R16, QF and SF (both rejected).
+Measured against the live ESPN API before single-table numbering: World Cup
+2026 104/104 ingestible and Euro 2024 51/51 (both supported); the Premier League
+0/374 and the 2026 Champions League 29/189 with two legs at R16, QF and SF (both
+rejected). Single-table numbering since makes a table's fixtures ingestible (the
+2025 and 2026 Six Nations land 15/15), so the Champions League is now refused on
+its two-legged knockouts rather than on its league phase.
 
 `isIngestible()` in `server/utils/sync/rounds.ts` derives the rule from
 `roundDefForMatch()` and `findRoundId()` rather than restating it, so the probe
@@ -166,8 +178,9 @@ inserts happened to land in time.
 prediction, trophy, league and chat room attached to it.
 
 There is deliberately no hard delete. `competition` cascades into `round`,
-`match`, `competition_award`, `user_achievement` and `showcase_pin`, with
-leagues and chat hanging off it, so deleting a row takes a tournament's whole
+`match`, `goal_event`, `champion_pick`, `best_scorer_pick`, `scoring_config`,
+`leaderboard_rank`, `competition_award`, `user_achievement`, `showcase_pin` and
+`league` (with chat hanging off leagues), so deleting a row takes a tournament's whole
 history with it. Archiving the current default is allowed by the API (the
 resolver falls back to the newest active season) but blocked in the UI, which
 asks the admin to choose a new default first so the move is never a surprise.
@@ -199,6 +212,7 @@ competition id in the service layer.
 - `apps/web-nuxt/app/components/CompetitionPill.vue`
 - `apps/web-nuxt/server/api/competitions/index.get.ts`
 - `apps/web-nuxt/server/api/admin/competitions/default.put.ts`
+- `apps/web-nuxt/server/utils/competitions/store.ts` (`listActiveCompetitions`, `getDefaultCompetitionSlug`, `ensureDefaultCompetition`)
 - `apps/web-nuxt/server/utils/competitions/probe.ts`
 - `apps/web-nuxt/server/utils/competitions/service.ts` (`addCompetition`: probe, then create)
 - `apps/web-nuxt/server/utils/competitions/discovery.ts`

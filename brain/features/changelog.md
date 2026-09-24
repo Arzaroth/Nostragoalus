@@ -29,8 +29,10 @@ since headers match). The all-five-locales rule and the
 
 ## "Since last seen"
 
-Signed-in users carry a `lastSeenChangelogVersion` (a better-auth additional
-field on the session). `isUnseen` (strict newer-than compare) drives both the
+Signed-in users carry a `lastSeenChangelogVersion` (a client-settable
+better-auth additional field on the `user` table, read off the session user).
+`isUnseen` (strict newer-than compare, numeric per segment via `compareVersions`
+in `apps/web-nuxt/shared/version.ts`, so 4.10.0 sorts after 4.9.0) drives both the
 header dot and a per-card highlight on the about page. On first load a user with
 no marker is baselined to the latest version (`ensureBaseline`), so the badge
 fires on the next release, not the whole back catalogue; opening the changelog
@@ -41,6 +43,7 @@ marker and nothing to badge.
 ## Sources
 
 - `CHANGELOG.md`, `i18n/changelogs/{fr,th,tlh,ar}.md`
-- `apps/web-nuxt/app/composables/useChangelog.ts`, `apps/web-nuxt/app/utils/changelog.ts`
+- `apps/web-nuxt/app/composables/useChangelog.ts`, `apps/web-nuxt/app/utils/changelog.ts`, `apps/web-nuxt/shared/version.ts`
+- `apps/web-nuxt/lib/auth.ts`, `apps/web-nuxt/db/auth-schema.ts` (`user.lastSeenChangelogVersion`)
 - `apps/web-nuxt/app/pages/about.vue` (`#changelog`), `apps/web-nuxt/app/layouts/default.vue` (badge + menu)
 - `mise-tasks/changelog` (`read` / `promote` / `check`), `mise-tasks/release`

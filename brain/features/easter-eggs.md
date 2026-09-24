@@ -24,8 +24,9 @@ preferences. The name is a My Little Pony pun on "Mon Petit Prono".
   (`useKonamiUnlock()`); unlocking fires a one-shot `SkinUnlockCelebration.vue`
   confetti.
 - With a skin on, hovering the wordmark reveals "My Little Prono" with a rainbow
-  shimmer (session-only). The header logo becomes crystal-ball SVG variants; the
-  banner art becomes pony-head photos in `apps/web-nuxt/public/skins/<id>.png`.
+  shimmer (session-only). The header logo becomes crystal-ball SVG variants
+  (`LogoMark.vue` picks the skin first, before the competition's sport, so a
+  skin also wins over the [rugby](rugby.md) mark); the banner art becomes pony-head photos in `apps/web-nuxt/public/skins/<id>.png`.
 - The `ng-skin` cookie is allowlist-validated via `resolveSkin` / `isSkinId`
   before any SSR DOM use, and a better-auth `update.before` hook coerces a
   non-allowlisted `skin` to null. So there is no injection surface.
@@ -72,7 +73,10 @@ pony reactions - nothing about bot scoring changes.
 
 A seventh face, Cozy Glow (`/bots/cozyglow.png`), is the smug empty-state avatar
 shown above `match.noPicks` on a match's league ranking tab while a skin is
-active. Assets live in `apps/web-nuxt/public/bots/*.png`.
+active. Assets live in `apps/web-nuxt/public/bots/*.png`, which also holds two
+spares cut from the same grid, Nightmare Moon (`nightmaremoon.png`) and Sunset
+Shimmer (`sunsetshimmer.png`), staged for a future persona or empty state and not
+wired to any render site.
 
 ## Klingon locale
 
@@ -83,10 +87,12 @@ strings are kept terse and in-character. It is a real locale file
 
 ## Sources
 
-- `apps/web-nuxt/app/utils/skins.ts`, `apps/web-nuxt/app/composables/useSkin.ts`, `useKonamiUnlock.ts`
+- `apps/web-nuxt/app/utils/skins.ts`, `apps/web-nuxt/app/composables/useSkin.ts`, `useKonamiUnlock.ts`,
+  `apps/web-nuxt/app/components/SkinUnlockCelebration.vue`, `apps/web-nuxt/app/components/LogoMark.vue` + `logos/`
+- `apps/web-nuxt/server/utils/achievements/catalog.ts` (`PONY_ACHIEVEMENT_KEY`)
 - `apps/web-nuxt/server/middleware/skin.ts`, `apps/web-nuxt/lib/auth.ts` (skin additionalFields + update hook)
 - `apps/web-nuxt/app/components/ReactionGlyph.vue`, `apps/web-nuxt/app/components/MatchReactionsLine.vue`,
   `apps/web-nuxt/public/skins/*`, `shared/i18n-json/tlh.json`
 - `apps/web-nuxt/shared/types/bot.ts` (`villain` map, `botPersonaParamFromUserId`),
   `apps/web-nuxt/public/bots/*`, `apps/web-nuxt/app/components/LeaderboardRowCard.vue`,
-  `apps/web-nuxt/app/pages/[competition]/bot.vue`
+  `apps/web-nuxt/app/pages/[competition]/bot.vue`, `apps/web-nuxt/app/pages/[competition]/matches/[id].vue` (Cozy Glow)

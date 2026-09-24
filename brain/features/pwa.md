@@ -11,7 +11,8 @@ A single component `PwaBanner.vue` renders one of three priority-ordered phases:
 
 1. `ready` (highest) - an update is downloaded and waiting. Shows a reload prompt
    (driven by the outdated-build poll or `$pwa.needRefresh`), with a
-   deterministic `controllerchange` reload.
+   deterministic `controllerchange` reload (3s fallback) and a dismiss that holds
+   until the next deploy or the next waiting worker re-surfaces it.
 2. `downloading` - a new worker is precaching. Shows a spinner, no buttons,
    transient.
 3. `installable` - `$pwa.showInstallPrompt && !isPWAInstalled`. Shows Install
@@ -31,8 +32,11 @@ keeps it decoupled and testable without a real service worker.
 
 `registerType: 'prompt'` means the user controls activation, which avoids an
 asset swap mid-prediction. `periodicSyncForUpdates: 3600` makes long-lived
-tabs / installed instances notice deploys hourly, and
-`apps/web-nuxt/app/plugins/update-check.client.ts` polls the build manifest as a backstop.
+tabs / installed instances notice deploys hourly. As a backstop for plain tabs,
+Nuxt's own build-manifest poll (`experimental.checkOutdatedBuildInterval`, every
+10 min, in `nuxt.config.ts`) fires `app:manifest:update`, which
+`apps/web-nuxt/app/plugins/update-check.client.ts` turns into the
+`outdated-build` state (and clears an earlier dismissal).
 
 ## Layout
 

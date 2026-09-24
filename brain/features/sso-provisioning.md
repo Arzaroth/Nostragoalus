@@ -12,13 +12,19 @@ this doc is the feature-level map.
 
 - `sso_provider.status`: `draft` | `enabled` | `disabled` (the
   `sso_provider_status` pg enum). Only `enabled` is live - it's the gate in the
-  login resolver (`resolveSsoProviderId`), `trustedProviders()`, and the catch-all
-  callback guard. Register lands new providers as `draft`; the column default is
+  login resolver (`resolveSsoProviderId`, which also requires `domainVerified`),
+  `trustedProviders()`, the catch-all callback guard, and the mobile
+  `GET /api/sso/mobile-authorize` route (which calls `auth.api.signInSSO` directly
+  and so walks around the catch-all; see
+  [../architecture/auth.md](../architecture/auth.md)). Register lands new providers as `draft`; the column default is
   `enabled` purely so the migration grandfathers existing rows.
 - **Disabling is non-disruptive**: the gate sits on the sign-in callback paths
   (`apps/web-nuxt/server/utils/auth/sso-guard-paths.ts` `ssoCallbackProviderId`), so new
   sign-ins are rejected (redirect to `/login?error=provider_disabled`) but
-  existing sessions are never touched.
+  existing sessions are never touched. The plugin's bare `/api/auth/sso/callback`
+  resolves its provider from the OAuth state, which the path gate cannot see; it
+  stays inert only because `lib/auth.ts` leaves the `sso` plugin's `redirectURI`
+  unset, and `tests/sso-bare-callback.test.ts` asserts it stays unset.
 - `setProviderStatus` enforces the enable gate: a passing connection test
   (`last_test_result.ok`) AND `domainVerified` (or bypass), else `SsoNotReadyError`
   (409).
@@ -26,8 +32,9 @@ this doc is the feature-level map.
 ## Connection test
 
 - `testConnection` (`apps/web-nuxt/server/utils/sso/service.ts`) runs automated checks and
-  persists `last_tested_at` + `last_test_result`. OIDC: discovery endpoints
-  present + a reachable JWKS that publishes keys. SAML: a parseable X.509 cert + a
+  persists `last_tested_at` + `last_test_result`. OIDC: client id + secret set,
+  authorization and token endpoints present, and a reachable JWKS that publishes
+  keys. SAML: a parseable X.509 cert + a
   reachable entry point. Pure-ish (network mocked in tests).
 
 ## Test sign-in (live claim preview, OIDC)
@@ -64,12 +71,13 @@ this doc is the feature-level map.
 
 ## SCIM provisioning
 
-- `@better-auth/scim` (1.6.23 - 1.6.18 only provisions, `active:false -> ban`
-  lands in 1.6.2x) with `storeSCIMToken: 'hashed'`. `scim_provider` holds one row
+- `@better-auth/scim` (pinned with `better-auth` at 1.6.27; 1.6.18 only
+  provisions, `active:false -> ban` lands in 1.6.2x) with
+  `storeSCIMToken: 'hashed'`. `scim_provider` holds one row
   per provisioned provider (providerId + hashed token; no `userId` -
   `providerOwnership` is off). The bearer is shown once at generation.
 - The SCIM connection id is a derived `{providerId}-scim` (`scimProviderId()` in
-  the service): 1.6.23 makes SSO and SCIM provider ids mutually exclusive.
+  the service): since 1.6.23 SSO and SCIM provider ids are mutually exclusive.
   Provisioned users still link to their SSO login by email, so the distinct id is
   invisible to the end user.
 - `active:false` -> admin ban (block login + revoke sessions), data kept;
@@ -88,7 +96,8 @@ this doc is the feature-level map.
 ## Related
 
 - [../architecture/auth.md](../architecture/auth.md) - the auth engine + SSO core.
-- [leagues.md](leagues.md) - SSO league auto-join (runs in `provisionUser`).
+- [leagues.md](leagues.md) - SSO league auto-join (runs in `provisionUser`; the
+  per-provider league list is set through `admin/sso/[providerId]/leagues.put.ts`).
 
 ## Sources
 
@@ -97,5 +106,7 @@ this doc is the feature-level map.
 - `apps/web-nuxt/server/utils/sso/{service,config,test-signin}.ts`
 - `apps/web-nuxt/server/utils/auth/{sso-domains,sso-guard-paths}.ts`,
   `apps/web-nuxt/server/api/auth/[...all].ts`
-- `apps/web-nuxt/server/api/admin/sso/**`, `apps/web-nuxt/server/api/sso/test-callback.get.ts`
+- `apps/web-nuxt/server/api/admin/sso/**`, `apps/web-nuxt/server/api/sso/test-callback.get.ts`,
+  `apps/web-nuxt/server/api/sso/mobile-authorize.get.ts` (status gate)
+- `apps/web-nuxt/tests/sso-bare-callback.test.ts`
 - `apps/web-nuxt/lib/auth.ts` (the `sso` + `scim` plugin config), `apps/web-nuxt/app/pages/admin/index.vue`

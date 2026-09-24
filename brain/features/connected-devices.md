@@ -25,7 +25,7 @@ don't recognise. It doubles as the diagnostic surface for spurious-logout report
   better-auth calls resolve to `{ data, error }`; the composable rethrows `error`
   so vue-query drives `isPending`/`isError`.
 - The current session is identified by matching each row's `token` against
-  `session.data.session.token` from `authClient.useSession()`. That row is badged
+  `session.data.session.token` from `authClient.useSession()` (via `useAuth`). That row is badged
   "This device", sorted first, and shows **no** revoke button - so a user can never
   sign themselves out from this list. "Sign out all other devices" is disabled when
   no other device exists.
@@ -42,9 +42,13 @@ don't recognise. It doubles as the diagnostic surface for spurious-logout report
   [../architecture/auth.md](../architecture/auth.md)); this is the self-service path.
 - Changing the password still revokes other sessions (`revokeOtherSessions: true`
   on `changePassword`) independently of this section.
+- The [mobile app](mobile-app.md) has the same list + revoke in
+  `apps/mobile-flutter/app/lib/ui/sessions_screen.dart` (from the account screen),
+  over the same `/api/auth/list-sessions` endpoint with its bearer session.
 
 ## Sources
 
 - `apps/web-nuxt/app/pages/account.vue`, `apps/web-nuxt/app/composables/useSessions.ts`, `apps/web-nuxt/app/utils/user-agent.ts`
 - `apps/web-nuxt/tests/e2e/sessions.e2e.ts`, `apps/web-nuxt/app/utils/user-agent.test.ts`
 - `apps/web-nuxt/db/auth-schema.ts` (`session.ipAddress`, `session.userAgent`)
+- `apps/web-nuxt/lib/auth.ts` (session `freshAge` / `expiresIn` / `updateAge`)

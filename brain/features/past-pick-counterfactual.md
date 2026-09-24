@@ -34,7 +34,8 @@ the whole thing on kickoff so nothing leaks early.
    `matchIsInPlay` (provisional), else the final - with the SAME engine the
    per-match standings use: `scorePredictions` over the whole locked field for
    the kept pick, and `scoreSyntheticPrediction` (outside the crowd-rarity
-   denominator, like the [crowd bot](crowd-bot.md)) for each earlier pick. The
+   denominator, like the [crowd bot](crowd-bot.md)) for each earlier pick,
+   carrying the kept pick's joker placement. The
    crowd histogram is always the full field; odds and joker are handled exactly
    as finalize does (`countsDouble` forces the final's ×2).
 5. Suppress if the kept pick is itself `EXACT`, or if no earlier pick strictly
@@ -51,7 +52,7 @@ documented approximation (see [../../TODO.md](../../TODO.md)).
 
 - Endpoint:
   [`apps/web-nuxt/server/api/matches/[id]/my-past-picks.get.ts`](../../apps/web-nuxt/server/api/matches/[id]/my-past-picks.get.ts)
-  - owner-gated (`requireUser`), returns the counterfactual for the session user
+  - owner-gated (`defineReadHandler` with `auth: 'user'`), returns the counterfactual for the session user
   only. **Copy-protection**: never another user's picks.
 - Composable: [`apps/web-nuxt/app/composables/useMyPastPicks.ts`](../../apps/web-nuxt/app/composables/useMyPastPicks.ts)
   - client-only, enabled once the match has started.
@@ -65,8 +66,9 @@ documented approximation (see [../../TODO.md](../../TODO.md)).
 
 Phase 1 = full-time result AND the live tease, both shipped together in v2.5.0.
 The plan
-is to fold this into one "counterfactuals" surface with the future "evil twin"
-and "what-if stats" items - tracked in [../../TODO.md](../../TODO.md).
+is to fold this into one "counterfactuals" surface with the "evil twin" (since
+shipped separately as a bot persona, see [crowd-bot.md](crowd-bot.md)) and the
+future "what-if stats" - tracked in [../../TODO.md](../../TODO.md).
 
 ## Sources
 

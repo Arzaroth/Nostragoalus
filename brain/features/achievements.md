@@ -13,7 +13,7 @@ Each user has a **trophy cabinet** (everything they can earn, lit or locked) and
 off, per competition. Trophies still render in the cabinet but are not pinnable.
 Both live on the profile page `/[competition]/users/[id]`.
 
-## The five trophies
+## The trophies
 
 Computed by `awardCompetitionTrophies` (`apps/web-nuxt/server/utils/awards/service.ts`), gated on
 a decided FINAL (same trigger as the [champion](champion-pick.md) /
@@ -39,7 +39,7 @@ cabinet. It lives on as a per-league prize criterion - see
 
 ## The achievement catalog
 
-Code, not data: `apps/web-nuxt/server/utils/achievements/catalog.ts` lists 27 batch-evaluated
+Code, not data: `apps/web-nuxt/server/utils/achievements/catalog.ts` lists 30 batch-evaluated
 badges (plus two secret badges) with their category, scope, grading thresholds and
 whether they are hidden. `user_achievement` only records what a user unlocked. Categories:
 milestone (first-blood, opening-act, grand-finale, bore-draw, goal-rush, nemesis,
@@ -177,8 +177,8 @@ is not batch-evaluated: it is granted from the better-auth user-update hook
 
 `the-collector` is also hidden and GLOBAL, but evaluated rather than event-granted:
 `evaluateAchievements` grants it (idempotent) once a user holds every *collectable*
-badge (`heldCount === COLLECTABLE_ACHIEVEMENTS.length` - the 20 non-secret,
-non-SHAME badges). The two SHAME badges are deliberately excluded (`isCollectable`):
+badge (`heldCount === COLLECTABLE_ACHIEVEMENTS.length` - the 28 non-secret,
+non-SHAME badges, all within one competition's evaluation). The two SHAME badges are deliberately excluded (`isCollectable`):
 they conflict with the good badges (in a real-sized field, dead last is nowhere near
 top-3), so counting them would make the collector unwinnable in one competition. Both secrets are kept out of the public docs
 like the rest of the [easter eggs](easter-eggs.md); the copy is deliberately cryptic

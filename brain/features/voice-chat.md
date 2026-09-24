@@ -66,9 +66,10 @@ coverage gate), with the send primitives in `apps/web-nuxt/server/utils/live/hub
   participant. Authorized purely by live room membership (both peers must be in the
   same room), so there is no per-signal DB hit and no way to push signaling at a
   user who is not in the call.
-- `voice:invite` - rings members; an offline target is recorded as a missed call
-  immediately. `voice:decline` / `voice:cancel` - clear the other side's UI;
-  cancel of an unanswered ring records the miss.
+- `voice:invite` - rings members (each online target gets a `voice:ring`); an
+  offline target is recorded as a missed call immediately. `voice:decline` /
+  `voice:cancel` - clear the other side's UI (`voice:declined` /
+  `voice:cancelled`); cancel of an unanswered ring records the miss.
 - `voice:roster` (participant ids + display names) and `voice:presence` (a league
   room's count + names to every league member, for the badge) go back out.
 - **DM teardown:** a DM is a two-party call, so one side leaving force-drops the
@@ -78,8 +79,10 @@ coverage gate), with the send primitives in `apps/web-nuxt/server/utils/live/hub
   (opened / ended / missed) so open chats refetch their call lines.
 
 **One endpoint per user per room:** `voice-rooms.ts` keeps a single socket per user
-in a room, so a second tab joining takes the call over (the old tab is evicted) -
-one mic per person, and signaling targets the one participating tab.
+in a room, so a second tab joining takes the call over - one mic per person, and
+signaling targets the one participating tab. The old tab gets `voice:evicted` and
+drops silently; the other participants get `voice:peer-reset` and rebuild their
+link to that user under the usual offerer rule.
 
 ### The mesh (client)
 
@@ -88,6 +91,10 @@ one mic per person, and signaling targets the one participating tab.
 and the peer-connection map. The glare-free offerer rule and roster diff are pure
 and unit-tested in `apps/web-nuxt/app/utils/voice.ts`:
 
+- Ringing is bounded on both sides at 30s (`RING_TIMEOUT_MS`): the caller hangs
+  up an unanswered DM ring, and the callee clears its incoming dialog on its own,
+  since a crashed caller can never send `voice:cancel`. A ring that arrives while
+  already in a call is auto-declined (busy).
 - On a `voice:roster` frame it diffs the peer set (`rosterDelta`) and, for each new
   peer, the lexicographically smaller id offers (`shouldOffer`) while the other
   waits - so exactly one side of each pair offers, and late joiners connect the
@@ -107,10 +114,11 @@ and unit-tested in `apps/web-nuxt/app/utils/voice.ts`:
   `disconnected` past a 3s grace) gets an **ICE restart** - the deterministic
   offerer re-offers with `iceRestart: true` (no glare; the other side waits on a
   5s re-check loop), both sides capped at 3 attempts before the peer is dropped
-  so neither hangs in "Reconnecting" forever. The cached ICE config expires at
-  90% of the TURN credential ttl and a restart applies the refreshed config to
-  the live connection (`pc.setConfiguration`), so it never rides a dead
-  credential.
+  so neither hangs in "Reconnecting" forever. The cached ICE config counts as
+  stale past 90% of the TURN credential ttl; `ensureIce` refetches it lazily,
+  only when a credential is next needed (join, `resetPeer`, ICE restart). The
+  ICE restart is the only web path that pushes the refreshed config into a live
+  connection (`pc.setConfiguration`), so a restart never rides a dead credential.
 - Quality indicator: a 2s `getStats()` poll per link -> `extractQualityInputs`
   (RTT + fractionLost from remote-inbound-rtp, jitter from inbound-rtp) ->
   `qualityOf`/`worstQuality` (pure, tested). The call bar shows an amber/red
@@ -124,9 +132,10 @@ and unit-tested in `apps/web-nuxt/app/utils/voice.ts`:
 The browser fetches `GET /api/voice/ice-servers` for STUN (always) plus TURN when
 [self-hosted coturn](../architecture/webrtc.md) is configured, with an ephemeral
 per-request credential. Without TURN the app is STUN-only and a call behind
-symmetric NAT will fail (the UI surfaces the failure). The credential expires, so
-both clients refetch at 90% of the response's `ttl` and push the new config into
-the live peer connections - see [../architecture/webrtc.md](../architecture/webrtc.md).
+symmetric NAT will fail (the UI surfaces the failure). The credential expires at
+90% of the response's `ttl`: mobile refetches on a timer and pushes it into every
+live peer, web refetches lazily on its next join, peer reset or ICE restart - see
+[../architecture/webrtc.md](../architecture/webrtc.md).
 
 ### Persistence (the call log)
 
@@ -136,8 +145,8 @@ stays the missed-call path); participants accumulate in `participantIds` and the
 row closes ENDED (with `endedAt`) when the room empties. The roomKey->row map is
 in-process (`callLogByRoom` in `live/voice.ts`), same lifetime as the rooms.
 `GET /api/voice/calls` serves a scope's recent rows (authz = `resolveVoiceScope`);
-the chat composables fetch it and `ChatPanel.vue` interleaves the lines into the
-timeline by `startedAt`. The `VOICE_MISSED` notification carries caller + room
+the chat composables fetch the latest 50 (`listCallLog`, calls do not paginate)
+and `ChatPanel.vue` interleaves the lines into the timeline by `startedAt`. The `VOICE_MISSED` notification carries caller + room
 context (no media), deep-linking to the DM thread or league room.
 
 ## Scope / limits
@@ -151,10 +160,11 @@ context (no media), deep-linking to the DM thread or league room.
   the OS kills the microphone anyway. See
   [mobile-app.md](mobile-app.md) and [../decisions.md](../decisions.md).
 - Deferred to TODO: signing the SDP fingerprint to close a server-side SDP MITM
-  (passive listening is already blocked by SRTP), ICE-restart to survive a socket
-  flap mid-call, a presence snapshot on chat open (the badge is live from the
-  next join/leave), video. A server restart mid-call orphans the ONGOING call-log
-  row (accepted: same in-process lifetime as the rooms).
+  (passive listening is already blocked by SRTP), evicting a member whose league
+  membership or chat is revoked mid-call (scope authz is checked at join only), a
+  presence snapshot on chat open (the badge is live from the next join/leave),
+  call-log pagination, video. A server restart mid-call orphans the ONGOING
+  call-log row (accepted: same in-process lifetime as the rooms).
 
 ## Sources
 

@@ -9,11 +9,19 @@ feature wiring.
 ## Flow
 
 1. `POST /api/share/mint` checks ownership of the prediction and returns a
-   stateless HMAC token. The signing secret is domain-separated from the auth
-   secret (`apps/web-nuxt/server/utils/share/token.ts`).
+   stateless HMAC token naming the prediction, card mode and locale. It goes
+   through the shared signed-token codec
+   (`apps/web-nuxt/server/utils/signed-token/codec.ts`, also behind the calendar
+   feeds), whose signing key is domain-separated from the auth secret; the share
+   tag and payload live in `apps/web-nuxt/server/utils/share/token.ts`. Tokens
+   expire after 180 days (`SHARE_TTL_SECONDS`); a token minted before expiry
+   existed carries no expiry and stays valid.
 2. `GET /og/share/[token]` is public: it verifies the signed token and renders
    the card. The mint step is the authorization boundary; the render trusts the
    token. This route is outside the coverage gate (it returns a binary).
+3. The link people share is the `/s/[token]` landing page, which reads the JSON
+   summary `GET /api/share/[token]` for its heading and SEO meta and points
+   `og:image` at the PNG.
 
 ## Card model + states
 
@@ -27,13 +35,16 @@ and card model live in `apps/web-nuxt/server/utils/share/card.ts`; the pure elem
 URL) live in `apps/web-nuxt/shared/share-card.ts`, used by both this server template and the
 client `ShareCardView.vue` so the two renderers can't drift.
 
-Team identity on the card is rendered as CODE pills (for example ENG, SEN), not
-FIFA-CDN flag images, to avoid a render-time network dependency and failure mode.
+Team identity on the card is a CODE pill (for example ENG, SEN) plus the FIFA
+flag. satori cannot fetch remote images, so the OG route fetches each flag once,
+inlines it as a data URI and caches it for the process; a failed fetch resolves to
+null and the card falls back to the code pill alone, so a flaky CDN never breaks
+the render.
 
 ## Caching
 
-The result state is cached around 1 day (immutable once final); live and
-pre-kickoff states use a short cache (around 120s) since they change.
+The result state is cached 1 day (`max-age=86400`, immutable once final); live
+and pre-kickoff states use a short cache (120s) since they change.
 
 ## Sibling cards (wrapped, profile, analytics)
 
@@ -44,9 +55,9 @@ they share one token codec, `createUserCompetitionCardCodec(domainTag)`
 `analytics-token.ts` are thin wrappers over it. A token minted for one family
 never validates as another.
 
-- **Wrapped** (`/og/wrapped/[token]`, minted by `wrapped-mint.post.ts`): the
-  post-final recap card; 404s until the final is decided. Image-only, minted from
-  the wrapped page.
+- **Wrapped** (`/og/wrapped/[token]`, minted by `wrapped-mint.post.ts`,
+  `wrapped-template.ts`): the post-final recap card; 404s until the final is
+  decided, then cached 1 day. Image-only, minted from the wrapped page.
 - **Profile** (`/og/profile/[token]`, `profile-mint.post.ts`,
   `profile-card.ts` + `profile-template.ts`): rank, points, exacts and the
   trophy/badge haul. Works mid-tournament (no gate). Landing page `/p/[token]`.
@@ -67,10 +78,14 @@ per-card JSON summaries (`/api/share/profile/[token]`, `/api/share/analytics/
 
 ## Sources
 
-- `apps/web-nuxt/server/utils/share/{token,card,template,render}.ts`,
+- `apps/web-nuxt/server/utils/share/{token,card,template,render,og-assets,font-fallback,i18n}.ts`,
+  `apps/web-nuxt/server/utils/signed-token/codec.ts`,
   `apps/web-nuxt/server/routes/og/share/[token].get.ts`
-- `apps/web-nuxt/shared/share-card.ts`, `apps/web-nuxt/server/api/share/mint.post.ts`
-- Sibling cards: `apps/web-nuxt/server/utils/share/{card-token,profile-token,profile-card,profile-template,analytics-token,analytics-card,analytics-template}.ts`,
-  `apps/web-nuxt/server/routes/og/{profile,analytics}/[token].get.ts`, `apps/web-nuxt/server/api/share/{profile-mint,analytics-mint}.post.ts`,
+- `apps/web-nuxt/shared/share-card.ts`, `apps/web-nuxt/server/api/share/{mint.post,[token].get}.ts`,
+  `apps/web-nuxt/app/pages/s/[token].vue`
+- Sibling cards: `apps/web-nuxt/server/utils/share/{card-token,wrapped-token,wrapped-template,profile-token,profile-card,profile-template,analytics-token,analytics-card,analytics-template}.ts`,
+  `apps/web-nuxt/server/routes/og/{wrapped,profile,analytics}/[token].get.ts`,
+  `apps/web-nuxt/server/api/share/{wrapped-mint,profile-mint,analytics-mint}.post.ts`,
+  `apps/web-nuxt/server/api/share/{profile,analytics}/[token].get.ts`,
   `apps/web-nuxt/app/pages/{p,a}/[token].vue`
 - Rendering details: [../architecture/rendering.md](../architecture/rendering.md)

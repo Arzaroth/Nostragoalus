@@ -3,7 +3,8 @@
 A **native second client** for the same server, not a webview wrapper. It lives
 at [apps/mobile-flutter/](../../apps/mobile-flutter) and talks to the exact same
 public HTTP API and WebSocket hub that the Nuxt app uses - no mobile-only
-endpoints, no BFF. Roughly 50 screens and ~15k Dart lines.
+endpoints, no BFF. 50 screens and ~17.5k hand-written Dart lines under `app/lib/`
+(~24k with the generated models).
 
 The point is partly the product and partly the proof: an independent client in a
 different language keeps the server contract honest. The two build-time
@@ -37,6 +38,10 @@ Inside `app/lib/`:
 | `i18n/` | Reads `assets/i18n/*.json`, mirrored from `shared/i18n-json/`. Same five locales, same keys, RTL included. |
 | `deeplink/` | Inbound `goal.arzaroth.com/...` App Links. |
 | `auth/` | Identifier-first SSO: the browser round trip and the code exchange ([../architecture/auth.md](../architecture/auth.md)). |
+| `update/` | `app_update.dart`: the 426 `client_too_old` parse and `isNewerVersion` (see below). |
+| `notifications/` | `message.dart`, per-type notification copy mirroring the web bell. |
+| `theme/` | `app_theme.dart`, the "Floodlit" design system (see Look and feel). |
+| `data/` | `country_centroids.dart`, reference data mirrored from the web's `app/utils/country-centroids.ts` for the map. |
 
 ## Versions, and the floor under them
 
@@ -112,12 +117,13 @@ do). `isVersionGatedPath` holds that decision.
 
 The floor only sees clients that identify themselves. Older APKs send no header
 and are indistinguishable from a browser, so there is no way to catch them
-retroactively - which is the reason to start now rather than later. It ships set
-to the release BEFORE the header existed, so it is inert on day one: the
+retroactively - which is the reason to start now rather than later. It is a
+MOBILE version and sits at the app's first one, `1.0.0`, so it is inert: the
 mechanism is proven by tests, not by turning anyone away. And it must never be
-ahead of the version being released, since `apk-publish` stamps an APK from the
-same package.json and a floor above it would refuse the build cut from that very
-release; `clients/floor.test.ts` fails the gate if it ever is.
+ahead of the version being released, since `apk-publish` stamps the APK from
+`pubspec.yaml` and a floor above it would refuse the build cut from that very
+release. `clients/floor.test.ts` reads the pubspec and fails the gate if the
+floor is ever ahead of it, or if the build code is not above the published 41000.
 
 On the app side a 426 carrying the server's own `client_too_old` body - not any
 426, since a captive portal or CDN edge can answer one too - parses into
@@ -348,8 +354,9 @@ let a newly added locale or KAT pass vacuously.
 
 `mise run gate` from `apps/mobile-flutter/`. This repo has no hosted CI, so it is
 run by hand, sequentially, aborting on the first failure: the three stale-checks,
-the em-dash check (`app/tool/no_em_dash.sh` over `shared/i18n-json` and everything
-tracked under `apps/mobile-flutter`), `flutter analyze`, `flutter test --coverage`
+the em-dash check (`app/tool/no_em_dash.sh`, repo-wide: `shared/`,
+`apps/mobile-flutter`, the web app's source and tests, `brain/`, the root docs and
+`i18n/changelogs`, tracked plus untracked-not-ignored), `flutter analyze`, `flutter test --coverage`
 plus the coverage floor (`app/test/` only), `dart test` in `parity/`, then
 `flutter build apk --debug`. The build step is the Android analogue of the web
 gate's SSR build - it is what catches manifest-merger conflicts, minSdk/NDK bumps
@@ -376,7 +383,8 @@ it:
 - it needs a system libsodium (the parity e2ee interop KATs `dlopen` it) and an
   Android SDK, neither of which `mise install` provisions.
 
-The open debt is listed in the root `TODO.md` under "Mobile app".
+The open debt is listed in the root `TODO.md` under the "Mobile app" and
+"Mobile polish batch" sections.
 
 ## Platform notes
 
@@ -402,8 +410,11 @@ The open debt is listed in the root `TODO.md` under "Mobile app".
   https on a routable host, a release keystore is configured, and the version
   parses as x.y.z. v4.7.0 shipped without the define:
   every install could reach nothing, and the sign-in screen reported that as a
-  wrong password. `versionName`/`versionCode` come from the release version too,
-  so the APK's own metadata matches what `/api/app/android` advertises.
+  wrong password. `versionName`/`versionCode` come from the pubspec version too,
+  so the APK's own metadata matches what `/api/app/android` advertises. It also
+  probes the live server's client floor before building (see
+  [Versions](#versions-and-the-floor-under-them)) and publishes to R2, not the web
+  host ([app-downloads](app-downloads.md)).
 - **Deep links are verified App Links**, not a custom scheme. The manifest
   autoVerify's `https://goal.arzaroth.com` (all paths, for share/league/match
   links) and `/mobile/sso-callback` on `flutter_web_auth_2`'s CallbackActivity.
@@ -446,3 +457,18 @@ a real background-call feature would cost is in
 
 Why Flutter and not Tauri/Capacitor, and why the app carries its own crypto
 ports: see [../decisions.md](../decisions.md).
+
+## Sources
+
+- [apps/mobile-flutter/app/lib/](../../apps/mobile-flutter/app/lib)
+- [apps/mobile-flutter/app/pubspec.yaml](../../apps/mobile-flutter/app/pubspec.yaml)
+- [apps/mobile-flutter/.mise.toml](../../apps/mobile-flutter/.mise.toml)
+- [apps/mobile-flutter/app/tool/](../../apps/mobile-flutter/app/tool)
+- [apps/mobile-flutter/app/android/app/src/main/AndroidManifest.xml](../../apps/mobile-flutter/app/android/app/src/main/AndroidManifest.xml)
+- [apps/mobile-flutter/app/android/app/build.gradle.kts](../../apps/mobile-flutter/app/android/app/build.gradle.kts)
+- [apps/mobile-flutter/PARITY.md](../../apps/mobile-flutter/PARITY.md)
+- [apps/mobile-flutter/README.md](../../apps/mobile-flutter/README.md)
+- [apps/web-nuxt/server/utils/clients/service.ts](../../apps/web-nuxt/server/utils/clients/service.ts)
+- [apps/web-nuxt/server/utils/clients/floor.test.ts](../../apps/web-nuxt/server/utils/clients/floor.test.ts)
+- [apps/web-nuxt/server/middleware/client-version.ts](../../apps/web-nuxt/server/middleware/client-version.ts)
+- [apps/web-nuxt/shared/version.ts](../../apps/web-nuxt/shared/version.ts)

@@ -29,10 +29,12 @@ exact boundary and the hardening layers.
   prefers its live roster (`memberKeys`) so a rename shows without a refetch; the
   mobile app renders the DTO field directly.
 - `chat_attachment` - composite key `(messageId, idx)`. Either `ciphertext` or
-  `storage_key` is set (a CHECK enforces exactly one), so the encrypted blob can
-  live in Postgres or in the [object store](image-storage.md). Up to 6 images per
-  message; the 5MB original is compressed to webp before encryption (GIFs pass
-  through to preserve animation).
+  `storage_key` is set (a CHECK enforces exactly one). Every new image is written
+  to the [object store](image-storage.md) before its row (`putChatImage`, key
+  `chat/{messageId}/{idx}`); an in-DB `ciphertext` is only a legacy row still
+  waiting for `media:migrate-blobs`, and the read path serves either. Up to 6
+  images per message (`MAX_IMAGES`); the 5MB original is downscaled and
+  compressed to webp before encryption (GIFs pass through to preserve animation).
 
 ## Identity and recovery
 
@@ -128,7 +130,9 @@ known residual is the DNS-rebind TOCTOU window (documented in TODO).
 - `REMOVED` is a tombstone ("message removed") so quote and thread chains stay
   intact; the ciphertext is stripped server-side for hidden messages.
 - `chat_message_report` is the report queue for owners/mods (report / unreport).
-- Mute / unmute hides a user's messages for the muting viewer.
+- Mute / unmute hides a user's messages (main list and threads) for the muting
+  viewer only. It is client-side and per device (`ng-chat-muted` in
+  `useLeagueChat`); the server never learns about it.
 
 ## Surfaces + live
 
@@ -183,9 +187,12 @@ agree, and cross-tab storage events are ignored so pinning here never yanks a
 conversation open in another tab. Nothing server-side trusts the pin: every chat
 route re-derives membership from the session.
 
-Live events on the WebSocket: `chat:new`, `chat:moderation`,
-`chat:roster` (display-name changes), and `chat:state-changed` (chat on/off and
-key rotation). See [../architecture/realtime.md](../architecture/realtime.md).
+Live events on the WebSocket, all member-pinned (`deliverToMembers` in
+`apps/web-nuxt/server/utils/live/hub.ts`): `chat:new`, `chat:edit`,
+`chat:reaction`, `chat:moderation`, `chat:typing` (ephemeral; the web client sends it
+at most every 3s), `chat:roster` (display-name changes), `chat:state-changed`
+(chat on/off and key rotation), and the key handshake pair `chat:rekey-request` /
+`chat:keys-added`. See [../architecture/realtime.md](../architecture/realtime.md).
 
 ## Unread inbox (cross-league)
 
@@ -245,12 +252,14 @@ the pony-head glyph swap from the match reaction stack.
 ## Sources
 
 - `apps/web-nuxt/db/app-schema.ts` (`chat_message`, `chat_attachment`, `chat_identity`,
-  `league_chat_key`, `chat_message_report`, `chat_moderation_state`,
-  `chat_room_read`)
-- `apps/web-nuxt/server/utils/chat/*` (service, unfurl, `mentions`, `unread`),
-  `apps/web-nuxt/server/api/chat/{unread.get,read.post}.ts`, `apps/web-nuxt/shared/types/chat.ts`,
-  `apps/web-nuxt/shared/reactions.ts`
-- `apps/web-nuxt/app/utils/chat-content.ts`, `apps/web-nuxt/app/components/Chat*.vue`,
-  `apps/web-nuxt/app/composables/useLeagueChat.ts`, `useChatActivity.ts`, `useChatDockOpen.ts`,
-  `useChatImage.ts` (5MB cap, webp compression, GIF passthrough),
+  `league_chat_key`, `chat_message_report`, `chat_message_reaction`,
+  `chat_moderation_state`, `chat_room_read`)
+- `apps/web-nuxt/server/utils/chat/*` (service, access, attachments, moderation,
+  reactions, unfurl, `mentions`, `unread`), `apps/web-nuxt/server/api/chat/*`
+  (identity, recovery, unfurl, unread, read), `apps/web-nuxt/server/api/leagues/[id]/chat/*`
+  (the league-room routes), `apps/web-nuxt/server/utils/live/{hub,league-chat}.ts`,
+  `apps/web-nuxt/shared/types/chat.ts`, `apps/web-nuxt/shared/reactions.ts`
+- `apps/web-nuxt/app/utils/{chat-content,chat-outbox,chat-pin}.ts`, `apps/web-nuxt/app/components/Chat*.vue`,
+  `apps/web-nuxt/app/composables/useLeagueChat.ts`, `useChatIdentity.ts`, `useChatActivity.ts`,
+  `useChatDockOpen.ts`, `useChatImage.ts` (5MB cap, webp compression, GIF passthrough),
   `apps/web-nuxt/app/plugins/chat-deeplink.client.ts`

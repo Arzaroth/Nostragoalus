@@ -6,11 +6,13 @@ hub](../architecture/realtime.md). Back to the catalog: [index.md](index.md).
 
 ## What the user sees
 
-Under the scoreline, only while the match is in play (`LIVE`/`PAUSED`) and the
-count is above zero: a pulsing dot and "N watching now" (pluralized,
+Under the scoreline, only while the match is in play (`matchIsInPlay`: `LIVE`,
+`PAUSED`, `SUSPENDED` or `INTERRUPTED`) and the count is above zero: a pulsing dot
+and "N watching now" (pluralized,
 [all five locales](../architecture/i18n.md)). Rendered by
 `apps/web-nuxt/app/components/MatchViewers.vue` (presentational - the page owns the
-live/count gate).
+live/count gate). The focused [multiview](multiview.md) cell shows the same line
+(`apps/web-nuxt/app/components/multiview/CellViewers.vue`, gated on count only).
 
 ## How it works
 
@@ -26,8 +28,10 @@ live/count gate).
   This is deliberately separate from the `subscribe` score frame that
   `useLiveMatch` / `useLiveMatches` send: the fixtures list subscribes to *every*
   visible match for score patches, so counting `subscribe` would make every list
-  browser a "viewer" of every match. Only the detail page sends `viewing`, so the
-  count means "people actually on this match".
+  browser a "viewer" of every match. Only the detail page and the focused
+  multiview cell send `viewing`, so the count means "people actually on this
+  match". The composable rides its own reconnecting socket, re-sends `viewing` on
+  every reconnect, and re-points the room when the page's match id changes.
 - **De-dupe by viewer.** Room membership is per-socket (each socket needs the
   fan-out), but the *count* de-dupes on viewer identity: `setViewing` is passed
   the socket's `userId`, so a logged-in user's multiple tabs on one match count
@@ -54,5 +58,6 @@ pub/sub for the rooms - tracked in [../../TODO.md](../../TODO.md). Not solved no
 
 - `apps/web-nuxt/server/utils/live/viewers.ts` (+ `viewers.test.ts`), `apps/web-nuxt/server/utils/live/hub.ts`
 - `apps/web-nuxt/server/routes/_ws.ts` (the `viewing` frame + disconnect drop)
-- `apps/web-nuxt/app/composables/useMatchPresence.ts`, `apps/web-nuxt/app/components/MatchViewers.vue`
+- `apps/web-nuxt/app/composables/useMatchPresence.ts`, `apps/web-nuxt/app/components/MatchViewers.vue`,
+  `apps/web-nuxt/app/components/multiview/CellViewers.vue`
 - `apps/web-nuxt/app/pages/[competition]/matches/[id].vue` (the gated display)

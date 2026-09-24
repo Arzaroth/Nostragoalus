@@ -50,11 +50,12 @@ works **mid-tournament**: it reads whatever scored picks exist so far.
   matches that have an added-time [`goal_event`](../../apps/web-nuxt/db/app-schema.ts): the goal
   timeline (ordered by id for a stable sequence), and the whole **locked** field
   per match (the exact set finalize scored, so `scorePredictions` reproduces the
-  real total at any hypothetical scoreline). `parseMinute` reads the free-text
-  `minute` (`"90'+5'"` -> base 90 / added 5): a goal is Fergie added-time when it
-  carries a `+` **and** its base minute is 90 or later (second-half stoppage on;
-  a first-half `"45'+2'"` does not count), and the base+added drives the
-  chronological sort. `computeFergie` replays each match from 0-0 and returns
+  real total at any hypothetical scoreline). `minuteValue`
+  (`server/utils/stats/insights.ts`) reads the free-text `minute` as
+  `base * 100 + added` (`"90'+5'"` -> 9005), and `isAddedTime` treats a goal as
+  Fergie added-time when it carries a `+` **and** its base minute is 90 or later
+  (second-half stoppage on; a first-half `"45'+2'"` does not count); the same
+  value drives the chronological sort. `computeFergie` replays each match from 0-0 and returns
   nothing for a match it cannot trust - **any unparseable/absent minute** (order
   unknown) or a goal set that **does not reconcile with the full-time score** - so
   a gap in the feed never invents a swing. `forceJoker` mirrors
@@ -65,8 +66,8 @@ works **mid-tournament**: it reads whatever scored picks exist so far.
   result. A goal from a decisive score still counts, including an equalizer
   (1-0 -> 1-1) that takes a real lead away.
 - Route `apps/web-nuxt/server/api/me/analytics.get.ts` - a thin `me`-scoped GET mirroring
-  `me/wrapped.get.ts` (auth via `requireUser`, `resolveCompetition`, `toHttpError`),
-  but with **no final gate**: `{ hasData: false }` until the user has a scored pick.
+  `me/wrapped.get.ts` (`defineReadHandler` with `auth: 'user'`, `resolveCompetition`,
+  404 on an unknown competition), but with **no final gate**: `{ hasData: false }` until the user has a scored pick.
 - DTO in [`#shared/types/analytics`](../../apps/web-nuxt/shared/types/analytics.ts).
 - Client: `apps/web-nuxt/app/composables/useAnalytics.ts` (vue-query, key `['analytics', slug]`)
   -> `apps/web-nuxt/app/pages/[competition]/analytics.vue` (signed-in gate + empty state) ->
@@ -85,3 +86,16 @@ works **mid-tournament**: it reads whatever scored picks exist so far.
   `analytics.streak*` there.
 - Related but distinct: [head-to-head](head-to-head.md) compares two players'
   picks, where analytics reports on one.
+- Fergie time is inert for rugby: the World Rugby clock never produces a `+`
+  minute (see [rugby.md](rugby.md)).
+
+## Sources
+
+- `apps/web-nuxt/server/utils/analytics/service.ts` (`getAnalytics`, `computeAnalytics`)
+- `apps/web-nuxt/server/utils/analytics/fergie.ts` (`computeFergie`, `isAddedTime`)
+- `apps/web-nuxt/server/utils/stats/insights.ts` (`minuteValue`)
+- `apps/web-nuxt/server/api/me/analytics.get.ts`
+- `apps/web-nuxt/shared/types/analytics.ts`
+- `apps/web-nuxt/app/composables/useAnalytics.ts`, `apps/web-nuxt/app/pages/[competition]/analytics.vue`, `apps/web-nuxt/app/components/AnalyticsReport.vue`
+- `apps/web-nuxt/app/utils/sparkline.ts`
+- `apps/web-nuxt/app/layouts/default.vue` (`navLinks`)

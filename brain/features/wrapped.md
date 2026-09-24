@@ -56,9 +56,11 @@ predictions, zeroed bonuses and an empty haul.
 Reuses the satori + resvg stack ([share-images.md](share-images.md),
 [../architecture/rendering.md](../architecture/rendering.md)):
 
-- `apps/web-nuxt/server/utils/share/wrapped-token.ts`: a second stateless HMAC token family
-  (user + competition + locale), domain-separated from the prediction token so
-  the two can never be swapped.
+- `apps/web-nuxt/server/utils/share/wrapped-token.ts`: a stateless, time-bounded HMAC
+  token (user + competition + locale) built with the shared
+  `createUserCompetitionCardCodec` (`card-token.ts`) under its own domain tag
+  (`nostragoalus/wrapped-card/v1`), so it can never be swapped with the
+  prediction token or the profile/analytics card tokens that share its shape.
 - `POST /api/share/wrapped-mint` (auth, 404 until the final is decided via the
   looser `hasDecidedFinal`; the `[token]` PNG route re-runs `getWrapped` and
   serves the not-ready fallback until the final is `SCORED`) ->
@@ -75,3 +77,14 @@ Reuses the satori + resvg stack ([share-images.md](share-images.md),
 Service + template + token under the coverage gate; `WrappedDeck` component
 test; `apps/web-nuxt/tests/e2e/wrapped.e2e.ts` drives seed -> deck -> summary -> mint -> PNG
 and the leaderboard banner.
+
+## Sources
+
+- `apps/web-nuxt/server/utils/wrapped/service.ts` (`getWrapped`), `apps/web-nuxt/shared/types/wrapped.ts`
+- `apps/web-nuxt/server/utils/awards/service.ts` (`hasScoredFinal`, `hasDecidedFinal`)
+- `apps/web-nuxt/server/api/me/wrapped.get.ts`, `apps/web-nuxt/server/api/share/wrapped-mint.post.ts`
+- `apps/web-nuxt/server/routes/og/wrapped/[token].get.ts`
+- `apps/web-nuxt/server/utils/share/wrapped-token.ts`, `card-token.ts`, `wrapped-template.ts`, `og-assets.ts`
+- `apps/web-nuxt/app/pages/[competition]/wrapped.vue`, `apps/web-nuxt/app/components/WrappedDeck.vue`, `apps/web-nuxt/app/utils/wrapped-slides.ts`
+- `apps/web-nuxt/app/composables/useWrapped.ts`, `apps/web-nuxt/app/pages/[competition]/leaderboard.vue` (banner)
+- `apps/web-nuxt/tests/e2e/wrapped.e2e.ts`

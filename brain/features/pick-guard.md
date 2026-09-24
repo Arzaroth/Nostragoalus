@@ -40,8 +40,12 @@ still auto-save untouched, and the keyboard-advance UX is preserved - focus does
 not hop to the next match while the confirm is up.
 
 - Predicate: [apps/web-nuxt/app/utils/prediction-sanity.ts](../../apps/web-nuxt/app/utils/prediction-sanity.ts)
-  `isOutlandishScore(home, away)` - an absolute cap: `home > 7 || away > 7 ||
-  home + away > 11`.
+  `isOutlandishScore(home, away, sport)` - an absolute cap per sport, keyed by
+  the `Sport` union so a new sport does not compile without one: football
+  trips on a side above 7 or a total above 11, rugby union on a side above 100
+  or a total above 140 (a converted try is 7, so the football cap flagged every
+  ordinary rugby result). ScoreInput passes `useSelectedSport()`; an unknown
+  sport falls back to the football cap.
 
 The threshold is a flat ceiling on purpose, not a sigma / z-score model: goal
 counts are low-count and Poisson-ish, so a variance-based bound miscalibrates.
@@ -51,3 +55,9 @@ See [decisions.md](../decisions.md).
 
 `matches.outstanding.{label,jump}` (label is pluralized) and
 `predictions.outlandish.{title,body,confirm}` in all five locales.
+
+## Sources
+
+- `apps/web-nuxt/app/utils/outstanding-picks.ts`, `apps/web-nuxt/app/utils/prediction-sanity.ts`
+- `apps/web-nuxt/app/components/ScoreInput.vue`, `apps/web-nuxt/app/components/AppConfirmDialog.vue`
+- `apps/web-nuxt/app/pages/[competition]/matches/index.vue` (`jumpToFirstUnpicked`, `scrollToMatch`)

@@ -21,15 +21,21 @@ then flipped mid-tournament. See [rugby.md](rugby.md).
   `{playerName, teamName, teamCode, goals, assists, penalties, points}`),
   10-minute cached per competition. `points` is present only for a sport that
   records them.
-- The endpoint prefers official player stats (FIFA `getPlayerStats`: the live
+- The endpoint prefers official player stats (`getPlayerStats`: FIFA's live
   edition's gameday stories, else the finished-edition aggregate - see
   [../architecture/providers.md](../architecture/providers.md); UEFA's full
-  `player-ranking`), then the local `goal_event` aggregation, then a provider's
-  own list - then splits whichever source it used into the two boards with
+  `player-ranking`; ESPN's core-API leaders board), then the local `goal_event`
+  aggregation, then a provider's own `getTopScorers` list (football-data, ESPN,
+  UEFA) - then splits whichever source it used into the two boards with
   `rankPlayers` (`apps/web-nuxt/server/utils/stats/scorers.ts`). Each
   board is sorted and sliced on its **own** metric (goals desc / assists desc,
   the other metric then name as tie-break), so a high-assist/low-goal player
-  isn't capped out by the goals ranking. The local path uses
+  isn't capped out by the goals ranking. The official path needs any team id
+  already seen in `goal_event` for the competition, and an empty official answer
+  (an in-progress FIFA edition) falls through rather than blanking the boards.
+  The local path counts as an answer when any of its boards, `points` included,
+  is non-empty: a rugby match settled entirely by kicks leaves every player on
+  zero tries. The local path uses
   `getCompetitionPlayerRankings`; `getCompetitionTopScorers` still returns the
   goal-ranked list (own goals excluded, pure assisters kept) for per-team
   callers. See [best-scorer.md](best-scorer.md) and
@@ -47,17 +53,18 @@ then flipped mid-tournament. See [rugby.md](rugby.md).
 
 - `useScorers(enabled)` (`apps/web-nuxt/app/composables/useScorers.ts`) mirrors `useStandings`:
   a `['scorers', slug]` query, lazily enabled so the fetch only fires once the
-  Stats tab is open. Its data is the whole `{scorers, assists}` object.
+  Stats tab is open. Its data is the whole `{scorers, assists, points?}` object.
 - `PlayerRankingTable.vue` renders one board. It takes a `TopScorer[]` (already
-  ranked for its `metric` of `'goals' | 'assists'`), drops zero rows, and slices
+  ranked for its `metric` of `'goals' | 'assists' | 'points'`), drops zero rows, and slices
   to `limit` (default 15). The displayed `#` is standard competition ranking
   ("1224"): players level on the metric share a rank and the next distinct value
   skips, so four players on 4 goals all read joint-2nd and the next is 6th. Team
   flags via `flagUrl`, names via `formatPlayerName`.
 - The tab lives in `apps/web-nuxt/app/pages/[competition]/matches/index.vue`: `viewMode` gained
   a `'stats'` value, mirrored to `?view=stats`. The view toggle only renders when
-  the competition has group standings, so a knockout-only competition currently
-  offers no Stats tab (see `TODO.md`).
+  some match carries a group letter (`hasGroups`), so a knockout-only competition
+  or a single table with no letters (the Six Nations) currently offers no Stats
+  tab, and a switch into one drops back to fixtures (see `TODO.md`).
 
 ## Sources
 

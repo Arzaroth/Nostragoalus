@@ -30,15 +30,19 @@ cookie ref is exposed as a per-Nuxt-app singleton (`useLeagueSelections`) becaus
 - Ownership: the first joiner of an **empty** ownerless league becomes `OWNER`
   (including via SSO auto-join). An ownerless league is legal (admins can create
   one). The last member leaving keeps the league alive (code stays valid, next
-  joiner owns it); an admin "Prune empty leagues" action deletes memberless
-  leagues. A league that still has members but lost its owner - only account
+  joiner owns it); an admin "Prune empty leagues" action (`pruneEmptyLeagues`)
+  deletes memberless leagues, except SSO-linked ones, which are created empty by
+  design. A league that still has members but lost its owner - only account
   deletion does that - does **not** pass ownership to the next joiner, who joins
   as a `MEMBER`: ownership carries the members' email addresses through the
   [winners export](rewards.md), so a stranger cannot claim an orphaned league and
   harvest them. It stays ownerless until an admin grants the role to a member
   (`PUT /api/admin/leagues/[id]/members/[userId]`).
   An owner cannot leave while other members remain (transfer or delete first); a
-  sole owner leaving deletes the league.
+  sole owner leaving just empties the league (it is not deleted).
+- Roles (`permissions.ts`): OWNER and MODERATOR manage the league (rename,
+  regenerate the code, kick) and are the only ones who see the join code; an
+  owner kicks moderators and members, a moderator kicks members only.
 
 ## Visibility
 
@@ -53,7 +57,16 @@ ambiguity-free alphabet (`JOIN_CODE_ALPHABET`, no I/L/O/U/0/1 so a code reads
 aloud and types cleanly), unique (collision-retried). The join endpoint
 normalizes submitted codes case/dash/space-insensitively and accepts 4 - 16
 characters of raw input (`z.string().trim().min(4).max(16)`); it is rate-limited
-by an in-process sliding window (`apps/web-nuxt/server/utils/rate-limit.ts`).
+by an in-process sliding window (10 per minute per user,
+`apps/web-nuxt/server/utils/rate-limit.ts`).
+
+Invite links (`league_invite`, `apps/web-nuxt/server/utils/leagues/invites.ts`) are
+the other way in: a 96-bit URL-safe `token` that is itself the credential,
+optionally capped by `expiresAt` and `maxUses` (`inviteStatus`: `VALID` /
+`EXPIRED` / `EXHAUSTED`). `GET /api/leagues/invite/[token]` previews and
+`POST .../accept` joins (same rate limit); a token that is not an invite row is
+tried as a join code. Managers create, list and revoke them under
+`/api/leagues/[id]/invites`; spent invites are pruned when listed.
 
 ## Access guards
 
@@ -80,7 +93,10 @@ The league board uses the same ranking ladder as the global board, inner-joined
 on members. Movement arrows come from `league_leaderboard_rank` snapshots written
 by the finalize task. Private profiles are included only when the viewer is a
 member or admin (`includePrivate` option); an outsider viewing a public league
-gets null ranks for hidden players so their board does not leak private rank.
+gets a board without them (plus a `hiddenCount` "+N hidden",
+`countLeagueMembersHiddenFromBoard`) and no movement arrows, since snapshot ranks
+would not line up with the reduced board. The viewer's own row is always kept
+(`alwaysIncludeUserId`).
 
 Both the NORMAL league board (`apps/web-nuxt/app/pages/leagues/[id].vue`) and the competition
 board (`apps/web-nuxt/app/pages/[competition]/leaderboard.vue`) render each row through the
@@ -121,7 +137,7 @@ rejects a code not in the competition's teams). The prizes themselves live in
 ## Chat
 
 Each league hosts an end-to-end-encrypted chat. The league row carries
-`chat_enabled_by` and `chat_key_epoch`. The full design is in [chat.md](chat.md).
+`chat_enabled`, `chat_enabled_by` and `chat_key_epoch`. The full design is in [chat.md](chat.md).
 
 ## Related
 
@@ -133,10 +149,14 @@ Each league hosts an end-to-end-encrypted chat. The league row carries
 - `apps/web-nuxt/db/app-schema.ts` (`league` incl. `description` + `featured_team_code`,
   `league_member`, `league_opt_out`, `league_invite`, `league_leaderboard_rank`,
   `league_visibility`/`league_role` enums)
-- `apps/web-nuxt/server/utils/leagues/service.ts` (`setLeagueDescription`, `setLeagueFeaturedTeam`),
-  `apps/web-nuxt/server/utils/leagues/code.ts` (join-code alphabet/normalize)
+- `apps/web-nuxt/server/utils/leagues/service.ts` (`claimMembership`, `leaveLeague`, `pruneEmptyLeagues`,
+  `resolveLeagueView`, `resolveLeagueManage`, `canViewProfile`, `setLeagueDescription`, `setLeagueFeaturedTeam`),
+  `apps/web-nuxt/server/utils/leagues/code.ts` (join-code alphabet/normalize),
+  `apps/web-nuxt/server/utils/leagues/permissions.ts`, `apps/web-nuxt/server/utils/leagues/invites.ts`
+- `apps/web-nuxt/server/api/leaderboard/index.get.ts` (league board, `hiddenCount`),
+  `apps/web-nuxt/server/utils/leaderboard/service.ts`
 - `apps/web-nuxt/server/api/leagues/**` (`join.post.ts`, `leave.post.ts`, `[id]/index.put.ts`,
   `[id]/description-image.post.ts`, `[id]/**`)
-- `apps/web-nuxt/app/utils/{league-cookie,markdown}.ts`, `apps/web-nuxt/app/composables/useLeagues.ts` (`useLeagueSelections`),
+- `apps/web-nuxt/app/utils/{league-cookie,markdown}.ts`, `apps/web-nuxt/app/composables/useSelectedLeague.ts` (`useLeagueSelections`),
   `apps/web-nuxt/app/components/LeagueDescription.vue`
 - `apps/web-nuxt/server/utils/rate-limit.ts`
