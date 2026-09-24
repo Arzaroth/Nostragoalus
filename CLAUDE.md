@@ -11,7 +11,7 @@ pnpm workspace. The paths below are relative to the repo root unless noted.
   (`Dockerfile`, `Dockerfile.dockerignore`, `compose*.yaml`, `.env*`). Run the
   gate and dev scripts here: `pnpm -C apps/web-nuxt <script>` from the root, or
   `cd apps/web-nuxt` first.
-- `apps/mobile-flutter/` - the native Flutter mobile client (`app/`, ~15k Dart
+- `apps/mobile-flutter/` - the native Flutter mobile client (`app/`, ~17.5k Dart
   lines, ~50 screens: picks, leagues, E2EE chat/DMs, WebRTC voice, achievements)
   plus `parity/`, the pure-Dart runner replaying `shared/parity-json/` to prove
   the Dart ports match the TS server. Its own gate: `mise run gate` from
@@ -24,8 +24,9 @@ pnpm workspace. The paths below are relative to the repo root unless noted.
   `apps/web-nuxt/i18n/locales` symlink). Do NOT confuse this with the TS
   `apps/web-nuxt/shared/`.
 - Root: `brain/`, `mise-tasks/` (release/changelog/roadmap), `.mise.toml` (stack
-  orchestration), `pnpm-workspace.yaml`, `CHANGELOG.md`, `README.md`, `ROADMAP.md`,
-  `TODO.md`, `LICENSE*`, `.config/wt.toml`, `.worktreeinclude`.
+  orchestration), `pnpm-workspace.yaml`, `CHANGELOG.md` (+ its translations in
+  `i18n/changelogs/`), `README.md`, `ROADMAP.md`, `TODO.md`, `LICENSE*`,
+  `.config/wt.toml`, `.worktreeinclude`.
 
 ## Hard rules
 
