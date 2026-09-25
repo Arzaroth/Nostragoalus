@@ -247,3 +247,24 @@ echo "== sidecar -> $out/nostragoalus.apk.json"
 cat "$out/nostragoalus.apk.json"
 echo "== copy ONLY that sidecar to the host; the APK belongs in the bucket now."
 """
+
+# macOS + Xcode only, signed in to the Apple team the Runner project names.
+# Upload the result with Transporter (drag the .ipa in) or from Xcode's Organizer
+# (open build/ios/archive/Runner.xcarchive -> Distribute App). App Store Connect
+# refuses a build number it has already seen for the same version, so every
+# upload needs the pubspec `+code` bumped - the same rule Android lives by.
+[tasks.ipa]
+description = "Build the signed iOS release archive + .ipa for TestFlight / the App Store (macOS + Xcode)"
+dir = "{{ config_root }}/app"
+run = """
+set -eu
+[ "$(uname)" = Darwin ] || { echo "ipa: iOS builds need macOS + Xcode" >&2; exit 1; }
+api_base="${NG_APP_API_BASE:-https://goal.arzaroth.com}"
+web_base="${NG_APP_WEB_BASE:-$api_base}"
+bash tool/check_release_bases.sh ipa "$api_base" "$web_base"
+vc=$(bash tool/pubspec_version.sh ipa "{{ config_root }}/app/pubspec.yaml")
+version="${vc% *}"; code="${vc#* }"
+echo "ipa: app $version (build $code)"
+flutter build ipa --release --dart-define=API_BASE="$api_base" --dart-define=WEB_BASE="$web_base" --dart-define=APP_VERSION="$version" --build-name="$version" --build-number="$code"
+ls build/ios/ipa/*.ipa
+"""
