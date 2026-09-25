@@ -14,7 +14,8 @@ import 'section_card.dart';
 /// Nothing here runs on its own - no launch check, no timer, no background
 /// poll. The app cannot install its own update (it was sideloaded, so the new
 /// one arrives the same way this one did), so an unrequested check could only
-/// produce a nag. The answer is dropped when the screen closes.
+/// produce a nag. The answer is dropped when the screen closes. On iOS the
+/// store installs updates itself, so there the card only names the build.
 class UpdateCheckCard extends ConsumerStatefulWidget {
   const UpdateCheckCard({super.key});
 
@@ -44,41 +45,48 @@ class _UpdateCheckCardState extends ConsumerState<UpdateCheckCard> {
             style: t.score(16, color: theme.colorScheme.onSurface),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(context.tr('appUpdate.explainer'),
-                  style: theme.textTheme.bodySmall?.copyWith(color: t.muted)),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.refresh),
-                label: Text(check != null && check.isLoading
-                    ? context.tr('appUpdate.checking')
-                    : context.tr('appUpdate.check')),
-                onPressed: check != null && check.isLoading
-                    ? null
-                    : () {
-                        // A second press must re-ask, not re-read the cached
-                        // answer - "is there a newer one" is the one question
-                        // whose stale answer is useless.
-                        ref.invalidate(appReleaseProvider);
-                        setState(() => _asked = true);
-                      },
-              ),
-              if (check != null) ...[
+        if (AppConfig.storeManagedUpdates)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+            child: Text(context.tr('appUpdate.storeManaged'),
+                style: theme.textTheme.bodySmall?.copyWith(color: t.muted)),
+          )
+        else
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(context.tr('appUpdate.explainer'),
+                    style: theme.textTheme.bodySmall?.copyWith(color: t.muted)),
                 const SizedBox(height: 12),
-                check.when(
-                  loading: () => const SizedBox.shrink(),
-                  error: (_, __) => Text(context.tr('appUpdate.failed'),
-                      style: theme.textTheme.bodySmall?.copyWith(color: t.muted)),
-                  data: (r) => _Result(result: r),
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.refresh),
+                  label: Text(check != null && check.isLoading
+                      ? context.tr('appUpdate.checking')
+                      : context.tr('appUpdate.check')),
+                  onPressed: check != null && check.isLoading
+                      ? null
+                      : () {
+                          // A second press must re-ask, not re-read the cached
+                          // answer - "is there a newer one" is the one question
+                          // whose stale answer is useless.
+                          ref.invalidate(appReleaseProvider);
+                          setState(() => _asked = true);
+                        },
                 ),
+                if (check != null) ...[
+                  const SizedBox(height: 12),
+                  check.when(
+                    loading: () => const SizedBox.shrink(),
+                    error: (_, __) => Text(context.tr('appUpdate.failed'),
+                        style: theme.textTheme.bodySmall?.copyWith(color: t.muted)),
+                    data: (r) => _Result(result: r),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
-        ),
       ],
     );
   }
