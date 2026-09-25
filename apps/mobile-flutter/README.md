@@ -47,6 +47,17 @@ same `API_BASE`/`WEB_BASE` and pubspec-version guards as `apk-publish` and build
 TestFlight. The first build writes an `ios/Podfile` + `Podfile.lock` for the
 plugins that are not Swift-Package-Manager ready: commit them.
 
+- **Release signs manually**, with an Apple Distribution certificate and an App
+  Store profile named exactly `Nostragoalus App Store`. Automatic signing would
+  first need a development profile, which Apple only issues to a team with a
+  registered device, and there is none. One-time setup at
+  developer.apple.com (Certificates, Identifiers & Profiles): an App ID for
+  `com.arzaroth.nostragoalus` with Associated Domains enabled; an Apple
+  Distribution certificate (easiest from Xcode: Settings > Accounts > Manage
+  Certificates > + > Apple Distribution); a Profile of type App Store Connect
+  for that App ID and certificate, named `Nostragoalus App Store`, then Xcode >
+  Settings > Accounts > Download Manual Profiles. Debug stays automatic, for
+  the Simulator.
 - **One build number per upload.** App Store Connect refuses a `+code` it has
   already seen for the same version, so bump it in `pubspec.yaml` every upload.
 - **The server has to name the app** before SSO or Universal Links work:
