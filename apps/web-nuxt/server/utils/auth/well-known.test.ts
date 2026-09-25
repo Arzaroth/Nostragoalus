@@ -36,4 +36,11 @@ describe('appleAppSiteAssociation', () => {
     expect(body.applinks.details[0]!.appIDs).toEqual(['ABCDE12345.com.arzaroth.nostragoalus'])
     expect(body.applinks.details[0]!.components).toEqual([{ '/': '*' }])
   })
+
+  it('lists the same app IDs under webcredentials for the SSO https callback', () => {
+    const body = appleAppSiteAssociation('ABCDE12345.com.arzaroth.nostragoalus, bad') as {
+      webcredentials: { apps: string[] }
+    }
+    expect(body.webcredentials.apps).toEqual(['ABCDE12345.com.arzaroth.nostragoalus'])
+  })
 })

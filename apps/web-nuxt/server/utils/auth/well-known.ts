@@ -38,9 +38,14 @@ export function assetLinks(fingerprints: string | undefined): unknown[] | null {
 
 // The apple-app-site-association body, or null when no app ID is configured.
 // Every path is claimed: the app routes share cards, leagues and matches as well
-// as the SSO callback.
+// as the SSO callback. webcredentials is not optional: ASWebAuthenticationSession
+// refuses to intercept an https callback for a domain that does not list the app
+// there, so without it iOS SSO never returns to the app.
 export function appleAppSiteAssociation(appIds: string | undefined): unknown | null {
   const list = splitList(appIds).filter((id) => APPLE_APP_ID.test(id))
   if (!list.length) return null
-  return { applinks: { details: [{ appIDs: list, components: [{ '/': '*' }] }] } }
+  return {
+    applinks: { details: [{ appIDs: list, components: [{ '/': '*' }] }] },
+    webcredentials: { apps: list },
+  }
 }
