@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 /// Runtime config. Override the API base at launch:
 ///   flutter run --dart-define=API_BASE=https://goal.arzaroth.com
 /// Android emulator reaches the host machine at 10.0.2.2 (not localhost); a real
@@ -26,6 +28,11 @@ class AppConfig {
   static const appVersion = String.fromEnvironment('APP_VERSION', defaultValue: 'dev');
 
   /// What the app tells the server it is. Read by the server's client-version
-  /// middleware; see `server/utils/clients/service.ts`.
-  static String get clientId => 'android/$appVersion';
+  /// middleware; see `server/utils/clients/service.ts`. Only `android` is held
+  /// to a version floor there: an iOS build is updated by the store.
+  static String get clientId => '${storeManagedUpdates ? 'ios' : 'android'}/$appVersion';
+
+  /// True where the App Store / TestFlight delivers and installs updates, so
+  /// the sideloaded-APK update check has nothing to offer.
+  static bool get storeManagedUpdates => defaultTargetPlatform == TargetPlatform.iOS;
 }
