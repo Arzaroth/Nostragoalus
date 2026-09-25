@@ -3695,3 +3695,31 @@ what it has already found.
       of the repo. It is the one workflow that both fetches attacker-influenced
       bytes and runs install lifecycle scripts, so it is the best candidate for
       SHA pinning if we ever do that repo-wide.
+
+## iOS build - open (feat/ios-build)
+
+- [ ] First TestFlight build on the Mac: `mise -C apps/mobile-flutter run ipa`,
+      commit the `ios/Podfile` + `Podfile.lock` it writes. Nothing iOS has been
+      compiled yet: the plugins (sodium_libs, flutter_webrtc, flutter_web_auth_2)
+      may ask for more than the 17.4 target or a Podfile tweak.
+- [ ] Set `NUXT_IOS_APP_IDS=HNLB5566BK.com.arzaroth.nostragoalus` in prod and
+      deploy BEFORE testing SSO or links on the device: the association file
+      404s until then, and Apple caches it (via its CDN) for a while after.
+- [ ] Verify on a device: SSO round trip returns to the app, a
+      goal.arzaroth.com link opens the app, voice call audio, image picker +
+      camera prompts, E2EE chat unlock (libsodium on iOS for the first time).
+- [ ] Encryption export compliance: answer App Store Connect's questionnaire for
+      the E2EE chat on the first upload, then set `ITSAppUsesNonExemptEncryption`
+      (and the compliance code, if one is issued) in `Info.plist` to match, so
+      later uploads stop asking. Not guessed in code: it is a legal declaration.
+- [ ] App Store submission needs a privacy policy URL, the App Privacy
+      "nutrition label", screenshots (6.9" iPhone), and a demo account for
+      review (sign-in is required to use the app).
+- [ ] `mise run models-check` fails in any checkout that has run
+      `flutter pub get`: `dart format` picks the formatter style from the
+      package's language version (sdk ^3.5.0 = pre-3.7 short style) once
+      `.dart_tool` resolves it, while the committed models.gen.dart is in the
+      3.7+ tall style. Pin a formatter style (raise the sdk floor, or
+      `formatter:` in analysis_options.yaml) so the check stops depending on
+      whether packages were fetched.
+

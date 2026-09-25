@@ -1022,9 +1022,12 @@ effort buckets; order within a bucket is not priority.
     (unread-badged) and every league room, and an app-bar league switcher scopes
     the ranking and the crowd consensus, remembered per competition.
   - [ ] Remaining: mobile push (needs new server FCM endpoints - the server
-    speaks only web-push/VAPID), a Play account, and anything
-    iOS/CallKit/passkeys (no Apple hardware, no maintained plugin). The release
-    keystore now exists and the mobile gate measures coverage.
+    speaks only web-push/VAPID), a Play account, and CallKit/APNs/passkeys (no
+    maintained plugin). The release keystore now exists and the mobile gate
+    measures coverage.
+  - [ ] iOS via TestFlight, then the App Store (IN PROGRESS, feat/ios-build):
+    signed for team HNLB5566BK, iOS 17.4+ (the SSO https callback's floor),
+    iPhone only, store-managed updates, `mise run ipa` on a Mac.
   - [ ] Desktop: still unstarted, still not obviously worth it over the PWA.
 - [ ] **Tamper-evident / E2EE scores**:
   - Phase 1 **commit-reveal** (shipped in 1.33.0). Locked
