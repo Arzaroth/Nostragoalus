@@ -432,7 +432,9 @@ The open debt is listed in the root `TODO.md` under the "Mobile app" and
 - The Flutter template declares `INTERNET` only in `src/debug` and `src/profile`,
   so the main manifest declares it explicitly or a release APK cannot reach the
   server at all.
-- iOS is signed for team `HNLB5566BK`, iPhone only, iOS 17.4+, with its own
+- iOS is signed for team `HNLB5566BK` (Release manually, with the App Store
+  profile `Nostragoalus App Store`: automatic signing needs a registered
+  device for its development profile, and the team has none), iPhone only, iOS 17.4+, with its own
   opaque icon (`assets/store/ios-icon.png`, outside the bundled asset dirs) and
   built on a Mac by `mise run ipa` for TestFlight. Updates arrive through the
   store, so the settings update card only names the build there. It has no
