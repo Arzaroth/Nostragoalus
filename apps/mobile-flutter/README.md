@@ -24,8 +24,9 @@ that is the honest progress board, read it before assuming something works.
   (`libsodium` / `libsodium23` / `libsodium-dev`); `mise` does not provide it.
 - **An Android SDK** (`ANDROID_HOME`, platform-tools, a build-tools version) for
   the gate's APK step. `flutter doctor` tells you what is missing.
-- iOS builds need macOS + Xcode, which nobody on this project has. The iOS
-  target is configured but unbuilt and unverified.
+- **iOS builds need a Mac**: Xcode signed in to the Apple team the Runner
+  project names (`HNLB5566BK`), plus CocoaPods (`brew install cocoapods`). See
+  [iOS](#ios) below.
 
 ## Running it
 
@@ -36,6 +37,31 @@ cd app && flutter run
 Point it at a server with `--dart-define=API_BASE=...` / `--dart-define=WEB_BASE=...`
 (see `app/lib/config.dart` for the defaults). `mise run dev` at the repo root
 brings up the local web stack if you want to run against that instead of prod.
+
+## iOS
+
+On the Mac, from this directory: `mise install`, then `mise run ipa`. It runs the
+same `API_BASE`/`WEB_BASE` and pubspec-version guards as `apk-publish` and builds
+`app/build/ios/ipa/*.ipa`; upload it with Transporter, or open
+`app/build/ios/archive/Runner.xcarchive` in Xcode's Organizer and Distribute it to
+TestFlight. The first build writes an `ios/Podfile` + `Podfile.lock` for the
+plugins that are not Swift-Package-Manager ready: commit them.
+
+- **One build number per upload.** App Store Connect refuses a `+code` it has
+  already seen for the same version, so bump it in `pubspec.yaml` every upload.
+- **The server has to name the app** before SSO or Universal Links work:
+  `NUXT_IOS_APP_IDS=HNLB5566BK.com.arzaroth.nostragoalus` in prod's env, so
+  `/.well-known/apple-app-site-association` lists it under `applinks` AND
+  `webcredentials` (the SSO https callback needs the latter).
+- **iOS 17.4 minimum**, iPhone only. 17.4 is where ASWebAuthenticationSession can
+  intercept an https callback; below it SSO never returns to the app.
+- **Encryption export compliance** is asked on the first upload. The chat is
+  E2EE (libsodium), so answer App Store Connect's questionnaire deliberately;
+  `ITSAppUsesNonExemptEncryption` is left out of `Info.plist` until that answer
+  exists, rather than guessed.
+- Updates come from TestFlight / the App Store, so the settings update card only
+  names the build there, and the client sends `ios/<version>`, which the server
+  holds to no floor.
 
 ## The gate
 
@@ -79,7 +105,7 @@ without editing anything.
 
 - `lib/ui/**` in the coverage floor (widget tests run, they just do not gate).
 - `app/integration_test/` (see below) - device- and server-bound by definition.
-- iOS, in any form.
+- iOS. The gate builds only the APK; `mise run ipa` on a Mac is the iOS build.
 
 ## On-device tests
 
@@ -213,4 +239,5 @@ links and SSO will not come back to the app.
   that does not exist. Re-add it when the feature is actually built.
 - Mobile push (FCM/APNs) needs new server endpoints; the server speaks only
   web-push/VAPID today.
-- Passkeys, and everything iOS. See [PARITY.md](PARITY.md) for the full list.
+- Passkeys, CallKit and APNs. See [PARITY.md](PARITY.md) for the full list.
+- iOS builds from this tree but has not yet been run on a device.

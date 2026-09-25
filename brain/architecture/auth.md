@@ -313,7 +313,8 @@ Deep-link verification is served from
 `apps/web-nuxt/server/routes/.well-known/` (`assetlinks.json.get.ts`,
 `apple-app-site-association.get.ts`), built by
 `apps/web-nuxt/server/utils/auth/well-known.ts` from `NUXT_ANDROID_CERT_FINGERPRINTS`
-/ `NUXT_IOS_APP_IDS`. Both **404 when unset**, which is deliberate: the Android
+/ `NUXT_IOS_APP_IDS` (the iOS file lists the app under both `applinks` and
+`webcredentials`, which the SSO https callback needs). Both **404 when unset**, which is deliberate: the Android
 debug keystore is a shared secret every SDK ships, so a committed debug
 fingerprint would let any debug-signed app claim `goal.arzaroth.com`'s links -
 strictly worse than serving nothing. See

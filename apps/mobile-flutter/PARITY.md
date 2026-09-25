@@ -22,8 +22,9 @@ with the data caveat noted per area.
   Link (no custom scheme, no trusted-origin config: the callbackURL is relative).
   **Verified end to end on a real device against a real IdP (4.7.4)**: signed in,
   session minted, app returned to. Needed NUXT_ANDROID_CERT_FINGERPRINTS on the
-  server so /.well-known/assetlinks.json verifies the App Link. iOS still needs a
-  Team ID
+  server so /.well-known/assetlinks.json verifies the App Link. iOS: the Runner
+  project is signed for team HNLB5566BK and targets 17.4 (the https callback's
+  floor); needs NUXT_IOS_APP_IDS on the server, unverified until a TestFlight build
 - [x] Sign up (native form)
 - [x] Forgot / reset password (request-reset form)
 - [x] Two-factor (2FA enrol: password -> secret + backup codes -> verify; disable
@@ -252,4 +253,5 @@ with the data caveat noted per area.
 - Push (mobile FCM) = server FCM work + Firebase project
 
 - Live chat/DM/voice round-trips = provisioned data / a 2nd participant
-- Anything iOS / CallKit / APNs = no Apple hardware
+- CallKit / APNs = unbuilt; iOS itself builds on a Mac (`mise run ipa`) but is
+  not yet verified on a device
