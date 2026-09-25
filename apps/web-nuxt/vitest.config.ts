@@ -51,6 +51,9 @@ export default defineConfig(async () => ({
           // Drains PrimeVue's deferred tooltip removal before teardown - see
           // tests/setup-nuxt.ts for why that is a release-blocking flake.
           setupFiles: ['./tests/setup-nuxt.ts'],
+          // Every worker boots a Nuxt runtime in its first beforeAll; on the
+          // slow-core CI runner that alone overran the 10s default.
+          hookTimeout: 30000,
         },
       }),
     ],
