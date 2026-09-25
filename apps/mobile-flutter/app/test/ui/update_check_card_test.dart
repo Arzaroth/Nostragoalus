@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -21,6 +22,7 @@ const _strings = {
     'unversioned': 'Nothing to compare against.',
     'failed': 'Could not tell.',
     'download': 'Get the new version',
+    'storeManaged': 'The store installs updates.',
   },
 };
 
@@ -120,5 +122,22 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('unreleased'), findsOneWidget);
+  });
+
+  testWidgets('on iOS, points at the store instead of offering the APK check', (tester) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    var calls = 0;
+    await tester.pumpWidget(_host([
+      appReleaseProvider.overrideWith((ref) async {
+        calls++;
+        return const UpdateCheck(UpdateState.newer, version: '9.9.9');
+      }),
+    ]));
+    await tester.pumpAndSettle();
+
+    expect(find.text('The store installs updates.'), findsOneWidget);
+    expect(find.text('Check for a newer version'), findsNothing);
+    expect(calls, 0);
+    debugDefaultTargetPlatformOverride = null;
   });
 }
