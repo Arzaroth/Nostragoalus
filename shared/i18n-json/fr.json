@@ -2098,6 +2098,7 @@
     "current": "{version} est la version actuelle. Rien a faire.",
     "newer": "{version} est disponible, {size}.",
     "sideloadNote": "L'application ne peut pas l'installer a votre place : elle a ete installee manuellement, donc la nouvelle vient du site comme celle-ci. La page de telechargement affiche une empreinte a verifier.",
+    "storeManaged": "Sur iPhone, les mises à jour arrivent par l'App Store, ou par TestFlight pendant la bêta, et s'installent toutes seules.",
     "unpublished": "Le site ne publie aucune version Android pour le moment.",
     "failed": "Impossible de savoir. Cette version n'a rien d'anormal, la reponse n'est simplement pas arrivee.",
     "download": "Telecharger la nouvelle version",
