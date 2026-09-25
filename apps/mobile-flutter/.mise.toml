@@ -141,23 +141,7 @@ case "$R2_BASE" in
 esac
 R2_BASE="${R2_BASE%/}"
 command -v rclone >/dev/null || { echo "apk-publish: no rclone. It publishes the APK." >&2; exit 1; }
-# Both bases ride in the APK, so both get checked. A published build has to be
-# reachable from a stranger's phone: https, and a routable host - not a loopback
-# and not a private LAN address, which is the shape a dev override leaves behind.
-for pair in "API_BASE=$api_base" "WEB_BASE=$web_base"; do
-  name="${pair%%=*}"; value="${pair#*=}"
-  case "$value" in
-    https://*) ;;
-    *) echo "apk-publish: $name must be an https origin, got '$value'" >&2; exit 1 ;;
-  esac
-  host="${value#https://}"; host="${host%%/*}"; host="${host%%:*}"
-  case "$host" in
-    localhost|*.localhost|*.local|127.*|10.*|0.0.0.0|169.254.*|192.168.*|host.docker.internal)
-      echo "apk-publish: $name host '$host' is not routable from a phone" >&2; exit 1 ;;
-    172.1[6-9].*|172.2[0-9].*|172.3[01].*)
-      echo "apk-publish: $name host '$host' is not routable from a phone" >&2; exit 1 ;;
-  esac
-done
+bash tool/check_release_bases.sh apk-publish "$api_base" "$web_base"
 # A release keystore has to be configured, because build.gradle.kts falls back to
 # the DEBUG key when it is not - and that key ships with every Android SDK, so a
 # debug-signed publish both fails App Links verification (assetlinks.json carries
@@ -169,20 +153,10 @@ if [ ! -f android/key.properties ] && [ -z "${NG_ANDROID_KEYSTORE:-}" ]; then
 fi
 out="{{ config_root }}/../web-nuxt/downloads"
 mkdir -p "$out"
-# The app's own version, from its own pubspec - NOT the website's. The two ship
-# on separate lines: a site-only release should not mint an APK, and an app-only
-# release should not need one. `name+code`, the Flutter convention.
-pubspec="{{ config_root }}/app/pubspec.yaml"
-version=$(sed -n 's/^version: *\\([0-9.]*\\)+.*/\\1/p' "$pubspec" | head -1)
-code=$(sed -n 's/^version: *[0-9.]*+\\([0-9]*\\).*/\\1/p' "$pubspec" | head -1)
-# sed exits 0 on no match, so an unparsed line would otherwise ship as an empty
-# name and versionCode 0 - which no already-installed build can upgrade from.
-case "$version" in
-  ''|*[!0-9.]*|*..*|.*|*.) echo "apk-publish: pubspec version '$version' is not a plain x.y.z" >&2; exit 1 ;;
-esac
-case "$code" in
-  ''|*[!0-9]*) echo "apk-publish: pubspec build number '$code' is not an integer" >&2; exit 1 ;;
-esac
+# The app's own version, from its own pubspec - NOT the website's. A site-only
+# release should not mint an APK, and an app-only release should not need one.
+vc=$(bash tool/pubspec_version.sh apk-publish "{{ config_root }}/app/pubspec.yaml")
+version="${vc% *}"; code="${vc#* }"
 echo "apk-publish: app $version (versionCode $code)"
 # The floor the LIVE server holds, asked with the header this build will send.
 # A published APK the server refuses is a brick rather than a degradation - the
