@@ -3715,6 +3715,11 @@ what it has already found.
 - [ ] App Store submission needs a privacy policy URL, the App Privacy
       "nutrition label", screenshots (6.9" iPhone), and a demo account for
       review (sign-in is required to use the app).
+- [ ] Migrate off `sodium_libs` (discontinued, folded into `sodium` 4.x). Its
+      prebuilt libsodium.xcframework ships an arm64e slice from the iOS 18.5 SDK
+      that App Store Connect rejects (ITMS 91011); the Podfile's post_integrate
+      "Strip arm64e" build phase works around it. `sodium` 4 is a major bump of
+      the E2EE primitives: re-run the parity/e2ee KATs on both platforms.
 - [ ] `mise run models-check` fails in any checkout that has run
       `flutter pub get`: `dart format` picks the formatter style from the
       package's language version (sdk ^3.5.0 = pre-3.7 short style) once
