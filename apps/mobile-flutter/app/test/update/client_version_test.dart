@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -28,6 +29,16 @@ void main() {
     // so it is treated as unidentified rather than refused. The server side
     // pins the same string (`server/utils/clients/service.test.ts`).
     expect(AppConfig.clientId, 'android/dev');
+  });
+
+  test('an iOS build says ios, which the server holds to no floor', () {
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    try {
+      expect(AppConfig.clientId, 'ios/dev');
+      expect(AppConfig.storeManagedUpdates, isTrue);
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
   });
 
   group('a 426 from the server', () {
