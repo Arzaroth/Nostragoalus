@@ -1030,3 +1030,17 @@ link would silently empty every subscribed calendar). Revocation is the counter:
 token minted under an older one. Tokens from before versioning carry no version
 and read as 0, so shipping revocation did not break the calendars already
 subscribed. See [features/ical-feed.md](features/ical-feed.md).
+
+## iOS: 17.4 minimum, iPhone only, updates left to the store
+
+The SSO callback is an https Universal Link, not a custom scheme (a private scheme
+is claimable by any installed app). `flutter_web_auth_2` can only intercept an
+https callback through `ASWebAuthenticationSession.Callback.https`, which is iOS
+17.4+; below it the sheet never returns. So the deployment target is 17.4 rather
+than keeping older devices with a broken sign-in, and the association file lists
+the app under `webcredentials` as well as `applinks`, which that callback
+requires. iPhone only, because no layout was designed for iPad and iPad adds its
+own screenshots and review surface. An iOS build sends `ios/<version>` and the
+server's version floor ignores it: TestFlight and the App Store update installs
+themselves, which is the problem the floor exists for on a sideloaded APK. See
+[features/mobile-app.md](features/mobile-app.md).

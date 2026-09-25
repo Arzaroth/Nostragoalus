@@ -83,7 +83,8 @@ any past release can still be talking to today's server. Two things address that
 and neither is a compatibility matrix - there is one server, and the APK is
 downloaded from it, so a matrix would have one meaningful row and would rot.
 
-**The app says which build it is.** `AppConfig.clientId` is `android/<version>`,
+**The app says which build it is.** `AppConfig.clientId` is `android/<version>`
+(`ios/<version>` on iOS, which the floor below ignores: the store updates it),
 set once on the shared dio's default headers in `api/api_client.dart` and sent
 as `x-ng-client` on every request. A build made outside `apk-publish` carries
 `dev`, which the server's version pattern rejects - so a dev build is
@@ -423,16 +424,21 @@ The open debt is listed in the root `TODO.md` under the "Mobile app" and
   the link chooser). The old `nostragoalus://` scheme is gone: a private scheme
   is claimable by any installed app, which an auth callback must not be.
 - iOS claims the same domain through `ios/Runner/Runner.entitlements`
-  (`applinks:goal.arzaroth.com`, wired into all three Runner build configs) plus
-  `/.well-known/apple-app-site-association` from `NUXT_IOS_APP_IDS`. Both are
-  written blind: there is no Team ID to put in the association file and no way to
-  verify either one (next bullet).
+  (`applinks:` + `webcredentials:goal.arzaroth.com`, wired into all three Runner
+  build configs) plus `/.well-known/apple-app-site-association` from
+  `NUXT_IOS_APP_IDS` (`HNLB5566BK.com.arzaroth.nostragoalus`). `webcredentials`
+  is not optional: `ASWebAuthenticationSession` only intercepts an https callback
+  (iOS 17.4+, hence the deployment target) for a domain listing the app there.
 - The Flutter template declares `INTERNET` only in `src/debug` and `src/profile`,
   so the main manifest declares it explicitly or a release APK cannot reach the
   server at all.
-- iOS is configured (usage-description strings, associated domains) but unbuilt
-  and unverified: nobody on the project has Apple hardware. That is also why
-  CallKit, APNs and passkeys are unstarted rather than deferred.
+- iOS is signed for team `HNLB5566BK`, iPhone only, iOS 17.4+, with its own
+  opaque icon (`assets/store/ios-icon.png`, outside the bundled asset dirs) and
+  built on a Mac by `mise run ipa` for TestFlight. Updates arrive through the
+  store, so the settings update card only names the build there. It has no
+  `UIBackgroundModes`: a call ends on backgrounding (below), and an unused
+  background mode is an App Review rejection. CallKit, APNs and passkeys remain
+  unstarted.
 - Permissions in the merged release manifest are `INTERNET`, `RECORD_AUDIO`,
   `MODIFY_AUDIO_SETTINGS`, `ACCESS_NETWORK_STATE` (all WebRTC voice) plus
   `BLUETOOTH`, merged transitively by `flutter_webrtc` for headset routing.
