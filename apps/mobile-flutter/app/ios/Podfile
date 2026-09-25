@@ -47,3 +47,45 @@ post_install do |installer|
     end
   end
 end
+
+# sodium_libs vendors a prebuilt libsodium.xcframework whose device slice carries
+# arm64e built with an iOS 18.5 SDK, and App Store Connect now rejects arm64e
+# from any pre-26 SDK (ITMS 91011). Third-party arm64e never runs on device, so
+# it is stripped from every embedded framework and the framework re-signed. The
+# phase is (re)added after CocoaPods integrates, so it stays after
+# "[CP] Embed Pods Frameworks"; editing the vendored xcframework would mean
+# editing the pub cache.
+STRIP_ARM64E_PHASE = 'Strip arm64e from embedded frameworks'
+STRIP_ARM64E_SCRIPT = <<~'SH'
+  set -eu
+  [ "${PLATFORM_NAME}" = iphoneos ] || exit 0
+  dir="${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}"
+  [ -d "$dir" ] || exit 0
+  for fw in "$dir"/*.framework; do
+    [ -d "$fw" ] || continue
+    exe="$fw/$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$fw/Info.plist")"
+    archs=$(lipo -archs "$exe")
+    case " $archs " in
+      *" arm64e "*) ;;
+      *) continue ;;
+    esac
+    [ "$archs" = arm64e ] && { echo "error: $fw is arm64e only" >&2; exit 1; }
+    echo "Stripping arm64e from $fw ($archs)"
+    lipo -remove arm64e "$exe" -output "$exe"
+    if [ -n "${EXPANDED_CODE_SIGN_IDENTITY:-}" ]; then
+      codesign --force --sign "${EXPANDED_CODE_SIGN_IDENTITY}" --preserve-metadata=identifier,entitlements "$fw"
+    fi
+  done
+SH
+
+post_integrate do |installer|
+  project = Xcodeproj::Project.open(File.join(__dir__, 'Runner.xcodeproj'))
+  runner = project.targets.find { |t| t.name == 'Runner' }
+  phase = runner.shell_script_build_phases.find { |p| p.name == STRIP_ARM64E_PHASE } ||
+          runner.new_shell_script_build_phase(STRIP_ARM64E_PHASE)
+  phase.shell_path = '/bin/sh'
+  phase.shell_script = STRIP_ARM64E_SCRIPT
+  phase.always_out_of_date = '1' if phase.respond_to?(:always_out_of_date=)
+  runner.build_phases.move(phase, runner.build_phases.count - 1)
+  project.save
+end
