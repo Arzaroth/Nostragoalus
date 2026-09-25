@@ -22,4 +22,14 @@ void main() {
     // versionName and what the site advertises cannot disagree.
     expect(publish, contains(r'--build-name="$version"'));
   });
+
+  test('the iOS release build stamps the same APP_VERSION', () {
+    final mise = File('../.mise.toml').readAsStringSync();
+    final ipa = mise.substring(mise.indexOf('[tasks.ipa]'));
+
+    expect(ipa, contains(r'--dart-define=APP_VERSION="$version"'));
+    expect(ipa, contains(r'--build-name="$version"'));
+    expect(ipa, contains(r'--build-number="$code"'));
+    expect(ipa, contains('tool/check_release_bases.sh'));
+  });
 }
