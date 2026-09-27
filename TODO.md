@@ -3698,10 +3698,32 @@ what it has already found.
 
 ## iOS build - open (feat/ios-build)
 
-- [ ] First TestFlight build on the Mac: `mise -C apps/mobile-flutter run ipa`,
-      commit the `ios/Podfile` + `Podfile.lock` it writes. Nothing iOS has been
-      compiled yet: the plugins (sodium_libs, flutter_webrtc, flutter_web_auth_2)
-      may ask for more than the 17.4 target or a Podfile tweak.
+- [x] First archive on the Mac: builds, signs (manual Release signing, no
+      registered device needed) and uploads; the Podfile, Podfile.lock and pod
+      integration are committed.
+- [ ] First ACCEPTED TestFlight build: the first upload was rejected (ITMS
+      91011, sodium_libs' arm64e slice). The Podfile's arm64e strip phase is
+      untested until the next upload; check `lipo -archs` on the archived
+      libsodium.framework prints only `arm64`.
+- [ ] In-app account deletion (App Store guideline 5.1.1(v)): the app offers
+      sign-up but no way to delete the account; the web has it (account.vue).
+      Blocks the App Store submission, not TestFlight. Needs a mobile screen,
+      i18n in all five locales, widget tests and the mobile e2e.
+- [ ] French availability needs the ANSSI declaration of a cryptology means
+      (decret 2007-663, box 2 "declaration", no category 3, per the ANSSI's own
+      reply). Their form is Adobe-XFA only; asked them to accept a plain PDF.
+      Submit to controle@ssi.gouv.fr with the subject
+      `[formalités] Marc-Etienne Barrut – Nostragoalus`.
+- [ ] Android's App Link intent filter claims every path (autoVerify, all of
+      goal.arzaroth.com), so a reset-password or verify-email link opens the app,
+      which has no screen for it. iOS was scoped to the routed paths
+      (`IOS_APP_LINK_PATHS`); Android needs the same, or a browser fallback in
+      deep_links.dart for unrouted paths.
+- [ ] App-level `PrivacyInfo.xcprivacy`: the plugins ship their own; add one for
+      Runner if App Store Connect emails an ITMS-91053 warning.
+- [ ] `AppConfig.clientId` treats every non-iOS platform as android, so a macOS
+      desktop or web build would claim the APK floor. Latent while only Android
+      and iOS ship.
 - [ ] Set `NUXT_IOS_APP_IDS=HNLB5566BK.com.arzaroth.nostragoalus` in prod and
       deploy BEFORE testing SSO or links on the device: the association file
       404s until then, and Apple caches it (via its CDN) for a while after.
