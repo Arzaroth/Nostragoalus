@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -125,7 +124,6 @@ void main() {
   });
 
   testWidgets('on iOS, points at the store instead of offering the APK check', (tester) async {
-    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
     var calls = 0;
     await tester.pumpWidget(_host([
       appReleaseProvider.overrideWith((ref) async {
@@ -138,6 +136,5 @@ void main() {
     expect(find.text('The store installs updates.'), findsOneWidget);
     expect(find.text('Check for a newer version'), findsNothing);
     expect(calls, 0);
-    debugDefaultTargetPlatformOverride = null;
-  });
+  }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
 }

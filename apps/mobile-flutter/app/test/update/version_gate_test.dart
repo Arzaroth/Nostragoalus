@@ -21,7 +21,8 @@ Future<I18n> _i18n() => I18n.load(const Locale('en'),
     readAsset: (_) async => '{"auth":{"signIn":"Sign in"},'
         '"appUpdate":{"requiredTitle":"Time to update","requiredBody":"b",'
         '"requiredBodyMin":"Needs {version}","download":"Get it",'
-        '"buildLine":"Version {version}","devBuild":"unreleased"}}');
+        '"buildLine":"Version {version}","devBuild":"unreleased",'
+        '"storeManaged":"The store installs updates."}}');
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -53,7 +54,21 @@ void main() {
     expect(find.byType(SignInScreen), findsNothing);
     // The server's own number, not a hardcoded one.
     expect(find.text('Needs 9.9.9'), findsOneWidget);
+    expect(find.text('Get it'), findsOneWidget);
   });
+
+  // iOS updates through the store, so the refusal must not point at the APK.
+  testWidgets('on iOS, a refusal points at the store, not the APK', (tester) async {
+    await tester.pumpWidget(ProviderScope(
+      overrides: overrides(const ClientRefusal(minimum: '9.9.9')),
+      child: const NostragoalusApp(),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(UpdateRequiredScreen), findsOneWidget);
+    expect(find.text('The store installs updates.'), findsOneWidget);
+    expect(find.text('Get it'), findsNothing);
+  }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
 
   // The gate wraps the Navigator rather than sitting inside it. As a route it
   // would render UNDER whatever the user had pushed, and they would go on
