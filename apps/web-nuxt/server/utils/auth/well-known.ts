@@ -36,16 +36,21 @@ export function assetLinks(fingerprints: string | undefined): unknown[] | null {
   ]
 }
 
+// Only the paths the app routes (apps/mobile-flutter/app/lib/deeplink/
+// deep_links.dart) plus the SSO callback: a claimed path opens the app instead
+// of Safari, so claiming everything would swallow reset-password and
+// verify-email links into an app with no screen for them.
+export const IOS_APP_LINK_PATHS = ['/a/*', '/p/*', '/s/*', '/leagues/*', '/*/matches/*', '/mobile/sso-callback']
+
 // The apple-app-site-association body, or null when no app ID is configured.
-// Every path is claimed: the app routes share cards, leagues and matches as well
-// as the SSO callback. webcredentials is not optional: ASWebAuthenticationSession
-// refuses to intercept an https callback for a domain that does not list the app
-// there, so without it iOS SSO never returns to the app.
+// webcredentials is not optional: ASWebAuthenticationSession refuses to
+// intercept an https callback for a domain that does not list the app there, so
+// without it iOS SSO never returns to the app.
 export function appleAppSiteAssociation(appIds: string | undefined): unknown | null {
   const list = splitList(appIds).filter((id) => APPLE_APP_ID.test(id))
   if (!list.length) return null
   return {
-    applinks: { details: [{ appIDs: list, components: [{ '/': '*' }] }] },
+    applinks: { details: [{ appIDs: list, components: IOS_APP_LINK_PATHS.map((path) => ({ '/': path })) }] },
     webcredentials: { apps: list },
   }
 }

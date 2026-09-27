@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { ANDROID_PACKAGE, appleAppSiteAssociation, assetLinks } from './well-known'
+import { ANDROID_PACKAGE, appleAppSiteAssociation, assetLinks, IOS_APP_LINK_PATHS } from './well-known'
 
 const FP = 'AB:CD:EF:01:23:45:67:89:AB:CD:EF:01:23:45:67:89:AB:CD:EF:01:23:45:67:89:AB:CD:EF:01:23:45:67:89'
 
@@ -29,12 +29,14 @@ describe('appleAppSiteAssociation', () => {
     expect(appleAppSiteAssociation('com.arzaroth.nostragoalus')).toBeNull()
   })
 
-  it('claims every path for the configured app IDs', () => {
+  it('claims only the paths the app routes for the configured app IDs', () => {
     const body = appleAppSiteAssociation('ABCDE12345.com.arzaroth.nostragoalus') as {
-      applinks: { details: { appIDs: string[]; components: unknown[] }[] }
+      applinks: { details: { appIDs: string[]; components: { '/': string }[] }[] }
     }
-    expect(body.applinks.details[0]!.appIDs).toEqual(['ABCDE12345.com.arzaroth.nostragoalus'])
-    expect(body.applinks.details[0]!.components).toEqual([{ '/': '*' }])
+    const { appIDs, components } = body.applinks.details[0]!
+    expect(appIDs).toEqual(['ABCDE12345.com.arzaroth.nostragoalus'])
+    expect(components.map((c) => c['/'])).toEqual(IOS_APP_LINK_PATHS)
+    expect(components.map((c) => c['/'])).not.toContain('*')
   })
 
   it('lists the same app IDs under webcredentials for the SSO https callback', () => {
