@@ -44,6 +44,14 @@ class _FakeAuthRepo implements AuthRepository {
   Future<void> signUp(String name, String email, String password) async {}
   @override
   Future<void> requestPasswordReset(String email) async {}
+
+  var deleteNow = true;
+  @override
+  Future<DeletionPolicy> deletionPolicy() async =>
+      const DeletionPolicy(mailConfirmed: false, ssoManaged: false);
+  @override
+  Future<bool> deleteAccount(DeletionPolicy policy, {String? password, String? totpCode}) async =>
+      deleteNow;
 }
 
 void main() {

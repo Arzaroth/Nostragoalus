@@ -53,6 +53,20 @@ class AuthUser {
 /// Email/password auth over the bearer contract. Sign-in surfaces the token in
 /// the `set-auth-token` header (captured by [ApiClient]); every later call reads
 /// it from the [TokenStore].
+/// How the server wants an account deletion confirmed (`/api/me/sso-status`).
+class DeletionPolicy {
+  const DeletionPolicy({required this.mailConfirmed, required this.ssoManaged});
+
+  /// The server can send mail, so it mails a link and deletes only once the
+  /// link is opened; no password up front.
+  final bool mailConfirmed;
+
+  /// The IdP owns the password, so without mail the session alone confirms.
+  final bool ssoManaged;
+
+  bool get needsPassword => !mailConfirmed && !ssoManaged;
+}
+
 class AuthRepository {
   AuthRepository(this._api, this._tokens);
 
@@ -110,6 +124,30 @@ class AuthRepository {
     } finally {
       await _clearLocal();
     }
+  }
+
+  Future<DeletionPolicy> deletionPolicy() async {
+    final res = await _api.getJson('/api/me/sso-status');
+    return DeletionPolicy(
+      mailConfirmed: res['mailEnabled'] == true,
+      ssoManaged: res['ssoManaged'] == true,
+    );
+  }
+
+  /// Deletes the account, or under a mail-confirmed [policy] asks the server
+  /// to mail the confirmation link. True when the account is already gone,
+  /// false when it waits on the link. [totpCode] is required by the server for
+  /// a 2FA account unless the deletion goes through the mailed link.
+  Future<bool> deleteAccount(DeletionPolicy policy, {String? password, String? totpCode}) async {
+    if (policy.mailConfirmed) {
+      await _api.postJson('/api/auth/delete-user', body: {'callbackURL': '/login'});
+      return false;
+    }
+    await _api.postJson('/api/auth/delete-user',
+        body: {if (policy.needsPassword) 'password': password ?? ''},
+        headers: totpCode == null ? null : {'x-totp-code': totpCode});
+    await _clearLocal();
+    return true;
   }
 
   Future<void> _clearLocal() async {

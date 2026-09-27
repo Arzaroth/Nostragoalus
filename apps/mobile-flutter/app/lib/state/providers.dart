@@ -265,6 +265,20 @@ class AuthController extends AsyncNotifier<AuthUser?> {
 
   Future<void> signOut() async {
     await ref.read(authRepositoryProvider).signOut();
+    _signedOut();
+  }
+
+  /// See [AuthRepository.deleteAccount]; signs the app out when the account
+  /// is gone now rather than waiting on a mailed link.
+  Future<bool> deleteAccount(DeletionPolicy policy, {String? password, String? totpCode}) async {
+    final deleted = await ref
+        .read(authRepositoryProvider)
+        .deleteAccount(policy, password: password, totpCode: totpCode);
+    if (deleted) _signedOut();
+    return deleted;
+  }
+
+  void _signedOut() {
     state = const AsyncData(null);
     clearLeagueLens(ref);
     _invalidateData();

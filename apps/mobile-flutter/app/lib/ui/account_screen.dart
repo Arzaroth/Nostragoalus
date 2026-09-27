@@ -13,6 +13,7 @@ import 'cabinet_screen.dart';
 import 'calendar_screen.dart';
 import 'champion_screen.dart';
 import 'compare_screen.dart';
+import 'delete_account_screen.dart';
 import 'dm_inbox_screen.dart';
 import 'edit_profile_screen.dart';
 import 'feedback.dart';
@@ -147,6 +148,13 @@ class AccountScreen extends ConsumerWidget {
                 title: Text(context.tr('nav.signOut'), style: TextStyle(color: t.live)),
                 onTap: () => ref.read(authControllerProvider.notifier).signOut(),
               ),
+              if (user != null)
+                PanelRow(
+                  leading: Icon(Icons.delete_forever_outlined, color: t.live),
+                  title: Text(context.tr('account.deleteAccount'), style: TextStyle(color: t.live)),
+                  chevron: true,
+                  onTap: () => _open(context, const DeleteAccountScreen()),
+                ),
             ],
           ),
         ],
