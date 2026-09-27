@@ -278,6 +278,11 @@ class AuthController extends AsyncNotifier<AuthUser?> {
     return deleted;
   }
 
+  Future<void> confirmDeletion(String token) async {
+    await ref.read(authRepositoryProvider).confirmDeletion(token);
+    _signedOut();
+  }
+
   void _signedOut() {
     state = const AsyncData(null);
     clearLeagueLens(ref);

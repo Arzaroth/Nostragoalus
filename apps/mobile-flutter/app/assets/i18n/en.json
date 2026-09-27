@@ -1123,7 +1123,9 @@
     "ssoManagedHint": "This account signs in through your organization's identity provider. Email, password, two-factor and passkeys are managed there.",
     "deleteMailHint": "A confirmation link will be sent to your email address - the account is only deleted once you click it.",
     "deleteSendMail": "Send confirmation mail",
-    "deleteMailSent": "Confirmation mail sent - the account will be deleted when you open the link."
+    "deleteMailSent": "Confirmation mail sent - the account will be deleted when you open the link.",
+    "deletedToast": "Your account has been deleted.",
+    "deleteLinkFailed": "This deletion link could not be confirmed. Sign in to that account in this app, then open the link again."
   },
   "admin": {
     "competitions": {

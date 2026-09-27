@@ -1118,7 +1118,9 @@
     "ssoManagedHint": "ngu'meH Daq lo'taHvIS 'el raQwI'vam. pa' QIn, mu'wIj, cha' 'ol, passkey je SeHlu'.",
     "deleteMailHint": "QInlIjDaq 'olmeH leQ ngeHlu' - leQ Da'uYDI' neH raQwI' Qaw'lu'.",
     "deleteSendMail": "'olmeH QIn yIngeH",
-    "deleteMailSent": "'olmeH QIn ngeHlu'ta' - leQ DapoSmoHDI' raQwI' Qaw'lu'."
+    "deleteMailSent": "'olmeH QIn ngeHlu'ta' - leQ DapoSmoHDI' raQwI' Qaw'lu'.",
+    "deletedToast": "mI'lIj teqlu'pu'.",
+    "deleteLinkFailed": "QIn chovnatlh 'olbe'. De'wI'HomvaD yI'el, QIn yIpoSmoHqa'."
   },
   "admin": {
     "competitions": {

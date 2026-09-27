@@ -150,6 +150,15 @@ class AuthRepository {
     return true;
   }
 
+  /// Completes a mail-confirmed deletion from the mailed link. The server
+  /// deletes only for a session of the same account, so the app answers the
+  /// link with its own bearer session rather than handing it to a browser that
+  /// holds none.
+  Future<void> confirmDeletion(String token) async {
+    await _api.getJson('/api/auth/delete-user/callback', query: {'token': token});
+    await _clearLocal();
+  }
+
   Future<void> _clearLocal() async {
     await _tokens.clear();
     // The chat private key is per-account: leaving it behind lets the next

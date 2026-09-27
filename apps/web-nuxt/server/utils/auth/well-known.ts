@@ -39,8 +39,18 @@ export function assetLinks(fingerprints: string | undefined): unknown[] | null {
 // Only the paths the app routes (apps/mobile-flutter/app/lib/deeplink/
 // deep_links.dart) plus the SSO callback: a claimed path opens the app instead
 // of Safari, so claiming everything would swallow reset-password and
-// verify-email links into an app with no screen for them.
-export const IOS_APP_LINK_PATHS = ['/a/*', '/p/*', '/s/*', '/leagues/*', '/*/matches/*', '/mobile/sso-callback']
+// verify-email links into an app with no screen for them. The account-deletion
+// callback is claimed because it needs a session of the account being deleted,
+// which the app holds and a browser opened from the mail usually does not.
+export const IOS_APP_LINK_PATHS = [
+  '/a/*',
+  '/p/*',
+  '/s/*',
+  '/leagues/*',
+  '/*/matches/*',
+  '/mobile/sso-callback',
+  '/api/auth/delete-user/callback',
+]
 
 // The apple-app-site-association body, or null when no app ID is configured.
 // webcredentials is not optional: ASWebAuthenticationSession refuses to
