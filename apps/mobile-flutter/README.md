@@ -85,8 +85,7 @@ TestFlight.
   the update-required screen point at the store there, never the APK, and the
   client sends `ios/<version>`, which the server holds to no floor.
 - Nothing on an iOS screen names Android or offers the APK (App Review 2.3.10).
-- **Before the App Store (not TestFlight):** in-app account deletion (guideline
-  5.1.1(v)) is still missing; see TODO.md.
+- In-app account deletion (App Review guideline 5.1.1(v)) is on the account tab.
 
 ## The gate
 

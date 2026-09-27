@@ -448,8 +448,15 @@ The open debt is listed in the root `TODO.md` under the "Mobile app" and
   update card and the update-required screen point there, and no iOS screen
   names Android. It has no `UIBackgroundModes`: a call ends on backgrounding
   (below), and an unused background mode is an App Review rejection. CallKit,
-  APNs, passkeys and in-app account deletion (an App Store requirement) remain
-  unstarted.
+  APNs and passkeys remain unstarted.
+- **Account deletion** (App Review 5.1.1(v) requires it once sign-up exists) is
+  `lib/ui/delete_account_screen.dart`, from a danger row under Sign out. It
+  confirms exactly as the web does, read from `/api/me/sso-status`: with SMTP
+  the server mails a link and deletes only when it is opened, so the app keeps
+  its session and says so; without SMTP it sends the password (none for an
+  SSO account) and, under 2FA, the `x-totp-code` header the server's
+  `beforeDelete` demands, then drops the token and the chat key like a sign-out.
+  The guards (last admin, TOTP) are server-side, so the app adds none.
 - Permissions in the merged release manifest are `INTERNET`, `RECORD_AUDIO`,
   `MODIFY_AUDIO_SETTINGS`, `ACCESS_NETWORK_STATE` (all WebRTC voice) plus
   `BLUETOOTH`, merged transitively by `flutter_webrtc` for headset routing.

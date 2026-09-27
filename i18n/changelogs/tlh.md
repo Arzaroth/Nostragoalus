@@ -5,6 +5,10 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### chelpu'
+
+- Android De'wI'Hom: DaH De'wI'Homvo' mI'lIj yIteq. QIn ngeHlu' pagh mu' pegh lo'lu'.
+
 ## [5.1.3] - 2026-10-14
 
 ### tI'pu'

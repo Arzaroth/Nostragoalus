@@ -39,6 +39,10 @@ with the data caveat noted per area.
 - [x] Account home - identity + links + edit profile (display name + avatar upload
   via image_picker -> data URL update-user)
 - [x] Locale switch (5 locales, RTL) - `[ ]` not yet persisted to the server profile
+- [x] Delete account - same confirmation as the web (`/api/me/sso-status`): a
+  mailed link when the server has SMTP, otherwise the password (or the session,
+  for SSO) plus a current code under 2FA; `integration_test/account_deletion_test.dart`
+  covers the mailed path. `[ ]` e2e not yet run on a device
 
 ## Competition
 - [x] Competition browse + switcher (all scoped reads honor it)

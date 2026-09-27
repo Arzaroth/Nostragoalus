@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Added
+
+- Android app: you can now delete your account from the app, on the account tab. It is confirmed the same way as on the website: a confirmation link by email, or your password (plus your two-factor code if you use one) when the site sends no mail.
+
 ## [5.1.3] - 2026-10-14
 
 ### Fixed
