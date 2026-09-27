@@ -5,6 +5,8 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+## [5.1.1] - 2026-09-27
+
 ### chelpu'
 
 - iPhone De'wI'Hom: Nostragoalus iPhone ghoS. TestFlight Daq waHlu'taH. App Store Daq ghoS tugh.

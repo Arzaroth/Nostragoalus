@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [5.1.1] - 2026-09-27
+
 ### Added
 
 - iPhone app: Nostragoalus is coming to the iPhone. The first builds are in testing through TestFlight, with the same predictions, leagues, encrypted chat and calls as the Android app, and it will reach the App Store once that testing is done.

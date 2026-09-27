@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [5.1.1] - 2026-09-27
+
 ### Ajouté
 
 - Application iPhone : Nostragoalus arrive sur iPhone. Les premières versions sont en test via TestFlight, avec les mêmes pronostics, ligues, discussions chiffrées et appels que l'application Android, et elle rejoindra l'App Store une fois ces tests terminés.
