@@ -214,6 +214,23 @@ void main() {
       expect(c.read(authControllerProvider).valueOrNull, isNull);
     });
 
+    test('confirmDeletion completes the mailed deletion and signs out', () async {
+      final repo = _FakeAuthRepo(const AuthUser(id: 'u2', email: 'u2@example.com'));
+      final c = ProviderContainer(overrides: [
+        tokenStoreProvider.overrideWithValue(TokenStore(InMemoryKv())),
+        authRepositoryProvider.overrideWithValue(repo),
+      ]);
+      addTearDown(c.dispose);
+      await c.read(authControllerProvider.future);
+      final auth = c.read(authControllerProvider.notifier);
+      await auth.signIn('u2@example.com', 'pw');
+
+      await auth.confirmDeletion('tok');
+
+      expect(repo.confirmedToken, 'tok');
+      expect(c.read(authControllerProvider).valueOrNull, isNull);
+    });
+
     test('joinLeague refuses to be called with neither a league nor a code', () async {
       final c = ProviderContainer(
           overrides: [tokenStoreProvider.overrideWithValue(TokenStore(InMemoryKv()))]);

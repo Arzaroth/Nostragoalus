@@ -1,23 +1,40 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:nostragoalus/app.dart';
 import 'package:nostragoalus/config.dart';
+import 'package:nostragoalus/deeplink/deep_links.dart';
 import 'package:nostragoalus/ui/account_screen.dart';
 import 'package:nostragoalus/ui/home_shell.dart';
 import 'package:nostragoalus/ui/sign_in_screen.dart';
 
 /// Account deletion through the real UI against the isolated e2e stack, which
 /// sends mail (maildev), so the app takes the mail-confirmed path: request the
-/// link in the app, open it the way the user would, and the account is gone.
+/// link in the app, then hand the mailed link to the app the way an App Link /
+/// Universal Link would (the server completes it only for the account's own
+/// session, which the app holds), and the account is gone.
 /// Seeded by tool/seed_e2e.sh (the throwaway DELETE_EMAIL account).
 ///   flutter test integration_test/account_deletion_test.dart -d emulator-5554 \
 ///     --dart-define=API_BASE=http://10.0.2.2:3100 \
 ///     --dart-define=MAILDEV_BASE=http://10.0.2.2:1081
+/// The OS link source, fed by the test instead of the platform channel.
+class _Links implements AppLinks {
+  final _controller = StreamController<Uri>.broadcast();
+  void emit(Uri uri) => _controller.add(uri);
+  @override
+  Future<Uri?> getInitialLink() async => null;
+  @override
+  Stream<Uri> get uriLinkStream => _controller.stream;
+  @override
+  noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -80,7 +97,11 @@ void main() {
   testWidgets('request deletion -> open the mailed link -> the account is gone', (tester) async {
     await request('DELETE', Uri.parse('$maildev/email/all'));
 
-    await tester.pumpWidget(const ProviderScope(child: NostragoalusApp()));
+    final links = _Links();
+    await tester.pumpWidget(ProviderScope(
+      overrides: [appLinksProvider.overrideWithValue(links)],
+      child: const NostragoalusApp(),
+    ));
     await tester.pumpAndSettle();
 
     // 1. sign in as the throwaway account
@@ -97,6 +118,9 @@ void main() {
     await waitFor(tester, find.byType(AccountScreen), 'the account tab');
     final row = find.byIcon(Icons.delete_forever_outlined);
     await tester.scrollUntilVisible(row, 300, scrollable: find.byType(Scrollable).first);
+    // Just "visible" can still sit under the bottom navigation bar.
+    await Scrollable.ensureVisible(tester.element(row), alignment: 0.5);
+    await tester.pump(const Duration(milliseconds: 500));
     await tester.tap(row);
     await waitFor(tester, find.byKey(const ValueKey('delete-submit')), 'the delete screen');
     await tester.tap(find.byKey(const ValueKey('delete-submit')));
@@ -106,16 +130,19 @@ void main() {
     final signIn = Uri.parse('${AppConfig.apiBase}/api/auth/sign-in/email');
     expect((await request('POST', signIn, body: {'email': email, 'password': password})).$1, 200);
 
-    // 4. open the mailed link: the server deletes and redirects to /login
-    final (status, _) = await request('GET', await deletionLink(email));
-    expect(status, anyOf(200, 302), reason: 'the deletion callback was refused');
+    // 4. a browser opened from the mail holds no session, and the server
+    // refuses it: that is why the link has to come back to the app
+    final link = await deletionLink(email);
+    final (browser, _) = await request('GET', link);
+    expect(browser, 404, reason: 'the callback now works without a session; the in-app path is moot');
 
-    // 5. the account is gone: its credentials no longer sign in, and a fresh
-    // launch of the app lands on sign-in
+    // 5. the link reaches the app, which confirms it with its own session and
+    // signs out
+    links.emit(link);
+    await waitFor(tester, find.byType(SignInScreen), 'the sign-in screen after deletion');
+
+    // 6. the account is gone: its credentials no longer sign in
     expect((await request('POST', signIn, body: {'email': email, 'password': password})).$1,
         isNot(200));
-    await tester.pumpWidget(const SizedBox());
-    await tester.pumpWidget(const ProviderScope(child: NostragoalusApp()));
-    await waitFor(tester, find.byType(SignInScreen), 'the sign-in screen');
   });
 }

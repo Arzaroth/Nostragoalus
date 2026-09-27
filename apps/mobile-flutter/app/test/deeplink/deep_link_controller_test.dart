@@ -35,13 +35,22 @@ class _FakeLinks implements AppLinks {
 }
 
 class _Auth extends AuthController {
-  _Auth(this._user, {this.delay = Duration.zero});
+  _Auth(this._user, {this.delay = Duration.zero, this.refuseDeletion = false});
   final AuthUser? _user;
   final Duration delay;
+  final bool refuseDeletion;
+  String? confirmed;
   @override
   Future<AuthUser?> build() async {
     await Future<void>.delayed(delay);
     return _user;
+  }
+
+  @override
+  Future<void> confirmDeletion(String token) async {
+    if (refuseDeletion) throw StateError('Failed to get user info');
+    confirmed = token;
+    state = const AsyncData(null);
   }
 }
 
@@ -74,7 +83,7 @@ void main() {
         i18n: i18n,
         child: MaterialApp(
           navigatorKey: navigatorKey,
-          home: DeepLinkController(links: links, child: const SizedBox()),
+          home: Scaffold(body: DeepLinkController(links: links, child: const SizedBox())),
         ),
       ),
     ));
@@ -146,6 +155,75 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
+  });
+
+  group('the mailed account-deletion link', () {
+    const link = 'https://goal.arzaroth.com/api/auth/delete-user/callback?token=tok&callbackURL=%2Flogin';
+
+    test('is recognised by its exact path and needs a token', () {
+      expect(deletionToken(Uri.parse(link)), 'tok');
+      expect(deletionToken(Uri.parse('https://goal.arzaroth.com/api/auth/delete-user/callback')), isNull);
+      expect(deletionToken(Uri.parse('https://goal.arzaroth.com/api/auth/delete-user/callback?token=')), isNull);
+      expect(deletionToken(Uri.parse('https://goal.arzaroth.com/api/auth/delete-user?token=tok')), isNull);
+      expect(deletionToken(Uri.parse('https://goal.arzaroth.com/leagues/l1?token=tok')), isNull);
+    });
+
+    testWidgets('is confirmed with this app\'s session and says the account is gone', (tester) async {
+      final links = _FakeLinks();
+      addTearDown(links.close);
+      final auth = _Auth(const AuthUser(id: 'u1', email: 'u1@example.com'));
+      await pumpController(tester, links, auth: () => auth);
+      await tester.pumpAndSettle();
+      navigatorKey.currentState!.push(MaterialPageRoute<void>(
+          builder: (_) => const Scaffold(body: Text('delete screen'))));
+      await tester.pumpAndSettle();
+
+      links.emit(Uri.parse(link));
+      await tester.pumpAndSettle();
+
+      expect(auth.confirmed, 'tok');
+      expect(find.text(i18n.t('account.deletedToast')), findsOneWidget);
+      expect(find.text('delete screen'), findsNothing,
+          reason: "the deleted account's screens must not cover sign-in");
+    });
+
+    testWidgets('a refused link says what to do instead of the server\'s "not found"', (tester) async {
+      final links = _FakeLinks();
+      addTearDown(links.close);
+      await pumpController(tester, links, auth: () => _Auth(null, refuseDeletion: true));
+      await tester.pumpAndSettle();
+
+      links.emit(Uri.parse(link));
+      await tester.pumpAndSettle();
+
+      expect(find.text(i18n.t('account.deleteLinkFailed')), findsOneWidget);
+    });
+
+    testWidgets('links can come from the provider, for on-device tests', (tester) async {
+      final links = _FakeLinks();
+      addTearDown(links.close);
+      final auth = _Auth(const AuthUser(id: 'u1', email: 'u1@example.com'));
+      await tester.pumpWidget(ProviderScope(
+        overrides: [
+          tokenStoreProvider.overrideWithValue(TokenStore(InMemoryKv())),
+          authControllerProvider.overrideWith(() => auth),
+          appLinksProvider.overrideWithValue(links),
+        ],
+        child: I18nScope(
+          i18n: i18n,
+          child: MaterialApp(
+            navigatorKey: navigatorKey,
+            home: const Scaffold(body: DeepLinkController(child: SizedBox())),
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      links.emit(Uri.parse(link));
+      await tester.pumpAndSettle();
+
+      expect(auth.confirmed, 'tok');
+    });
   });
 }
 

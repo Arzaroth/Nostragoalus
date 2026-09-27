@@ -116,6 +116,29 @@ void main() {
       expect(adapter.requests.single.data, isEmpty);
     });
 
+    test('answers the mailed link with its own session, then drops it', () async {
+      final (repo, tokens, adapter) = build([Reply(200, {'success': true, 'message': 'User deleted'})]);
+      await tokens.save('t');
+
+      await repo.confirmDeletion('tok');
+
+      final req = adapter.requests.single;
+      expect(req.method, 'GET');
+      expect(req.path, '/api/auth/delete-user/callback');
+      expect(req.queryParameters, {'token': 'tok'},
+          reason: 'no callbackURL: the server would answer with a redirect, not JSON');
+      expect(req.headers['Authorization'], 'Bearer t');
+      expect(tokens.token, isNull);
+    });
+
+    test('a link the server refuses keeps the session', () async {
+      final (repo, tokens, _) = build([Reply(404, {'message': 'Failed to get user info'})]);
+      await tokens.save('t');
+
+      await expectLater(repo.confirmDeletion('tok'), throwsA(isA<ApiException>()));
+      expect(tokens.token, 't');
+    });
+
     test('a refusal keeps the session and surfaces the reason', () async {
       final (repo, tokens, _) = build([Reply(400, {'message': 'Invalid password'})]);
       await tokens.save('t');
