@@ -68,6 +68,7 @@ const ITEMS = [
   { status: 'IN_PROGRESS', title: 'Build your own league prizes', description: 'League owners and moderators pick from a bigger list of prize criteria - overall winner, wooden spoon, group and knockout specialists, sharpshooter, goal-difference guru and more - and add or remove prizes as they like. Each league sets its own Team Specialist team, and can write an "About this league" page with rules, links and images.' },
   { status: 'SHIPPED', title: 'Pin a chat', description: 'Keep the chat where you left it. Pin the conversation you are reading - a league, or a single match thread - and changing the league filter on the rankings or focusing another game in multi-view no longer drags the chat along with it. The pin follows you around the site and stays until you unpin it.' },
   { status: 'SHIPPED', title: 'Export your league prize winners', description: 'League owners and moderators can download who currently holds each prize, with their email address, as a spreadsheet - so the real prizes can actually be sent out. Only the people running the league can do it.' },
+  { status: 'IN_PROGRESS', title: 'iPhone app', description: 'Nostragoalus on the iPhone, with the same predictions, leagues, encrypted chat and calls as the Android app. The first builds are in testing through TestFlight; it reaches the App Store once testing is done.' },
   { status: 'PLANNED', title: 'Personal & what-if stats', description: 'See where a joker would have helped, how you compare to the crowd, and your prediction biases.' },
 ]
 
