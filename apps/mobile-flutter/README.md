@@ -44,8 +44,16 @@ On the Mac, from this directory: `mise install`, then `mise run ipa`. It runs th
 same `API_BASE`/`WEB_BASE` and pubspec-version guards as `apk-publish` and builds
 `app/build/ios/ipa/*.ipa`; upload it with Transporter, or open
 `app/build/ios/archive/Runner.xcarchive` in Xcode's Organizer and Distribute it to
-TestFlight. The first build writes an `ios/Podfile` + `Podfile.lock` for the
-plugins that are not Swift-Package-Manager ready: commit them.
+TestFlight.
+
+- **The Podfile is hand-maintained, not generated**: do not delete it to let
+  Flutter write a fresh one. It pins every pod to the 17.4 target (plugin pods
+  declare 9.0/13.0, which current Xcode rejects), and its `post_integrate` adds
+  the Runner build phase "Strip arm64e from embedded frameworks", kept after
+  `[CP] Embed Pods Frameworks`. `sodium_libs` vendors a libsodium.xcframework
+  with an arm64e slice from the iOS 18.5 SDK, which App Store Connect rejects
+  (ITMS 91011). Commit `Podfile.lock` and the pbxproj/xcconfig changes
+  `pod install` writes.
 
 - **Release signs manually**, with an Apple Distribution certificate and an App
   Store profile named exactly `Nostragoalus App Store`. Automatic signing would
@@ -56,23 +64,29 @@ plugins that are not Swift-Package-Manager ready: commit them.
   Distribution certificate (easiest from Xcode: Settings > Accounts > Manage
   Certificates > + > Apple Distribution); a Profile of type App Store Connect
   for that App ID and certificate, named `Nostragoalus App Store`, then Xcode >
-  Settings > Accounts > Download Manual Profiles. Debug stays automatic, for
-  the Simulator.
+  Settings > Accounts > Download Manual Profiles. Debug and Profile stay
+  automatic (the Simulator needs no signing).
 - **One build number per upload.** App Store Connect refuses a `+code` it has
   already seen for the same version, so bump it in `pubspec.yaml` every upload.
 - **The server has to name the app** before SSO or Universal Links work:
   `NUXT_IOS_APP_IDS=HNLB5566BK.com.arzaroth.nostragoalus` in prod's env, so
   `/.well-known/apple-app-site-association` lists it under `applinks` AND
-  `webcredentials` (the SSO https callback needs the latter).
+  `webcredentials` (the SSO https callback needs the latter). `applinks` claims
+  only the paths the app routes (`IOS_APP_LINK_PATHS` in
+  `server/utils/auth/well-known.ts`): keep it in step with
+  `lib/deeplink/deep_links.dart`, or a link the app cannot show opens it anyway.
 - **iOS 17.4 minimum**, iPhone only. 17.4 is where ASWebAuthenticationSession can
   intercept an https callback; below it SSO never returns to the app.
 - **Encryption export compliance** is asked on the first upload. The chat is
   E2EE (libsodium), so answer App Store Connect's questionnaire deliberately;
   `ITSAppUsesNonExemptEncryption` is left out of `Info.plist` until that answer
   exists, rather than guessed.
-- Updates come from TestFlight / the App Store, so the settings update card only
-  names the build there, and the client sends `ios/<version>`, which the server
-  holds to no floor.
+- Updates come from TestFlight / the App Store, so the settings update card and
+  the update-required screen point at the store there, never the APK, and the
+  client sends `ios/<version>`, which the server holds to no floor.
+- Nothing on an iOS screen names Android or offers the APK (App Review 2.3.10).
+- **Before the App Store (not TestFlight):** in-app account deletion (guideline
+  5.1.1(v)) is still missing; see TODO.md.
 
 ## The gate
 

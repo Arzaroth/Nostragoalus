@@ -1044,3 +1044,17 @@ own screenshots and review surface. An iOS build sends `ios/<version>` and the
 server's version floor ignores it: TestFlight and the App Store update installs
 themselves, which is the problem the floor exists for on a sideloaded APK. See
 [features/mobile-app.md](features/mobile-app.md).
+
+## iOS strips arm64e from embedded frameworks instead of waiting on sodium_libs
+
+The first App Store Connect upload was rejected (ITMS 91011): `sodium_libs`
+vendors a prebuilt libsodium.xcframework whose device slice carries arm64e built
+with the iOS 18.5 SDK, and arm64e is only accepted from the iOS 26 SDK on.
+Third-party arm64e never runs on device, so the Podfile's `post_integrate` adds a
+last Runner build phase that lipo-removes arm64e from every embedded framework
+and re-signs it. Editing the vendored xcframework was rejected because it lives in
+the pub cache. `sodium_libs` is discontinued in favour of `sodium` 4.x; migrating
+removes the need for the phase but is a major bump of the E2EE primitives, so it
+is tracked in TODO.md rather than done under a build fix. See
+[features/mobile-app.md](features/mobile-app.md).
+

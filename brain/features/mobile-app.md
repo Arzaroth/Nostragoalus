@@ -429,17 +429,26 @@ The open debt is listed in the root `TODO.md` under the "Mobile app" and
   `NUXT_IOS_APP_IDS` (`HNLB5566BK.com.arzaroth.nostragoalus`). `webcredentials`
   is not optional: `ASWebAuthenticationSession` only intercepts an https callback
   (iOS 17.4+, hence the deployment target) for a domain listing the app there.
+  Unlike Android's all-paths intent filter, `applinks` claims only the paths
+  `deepLinkTarget` routes plus the SSO callback (`IOS_APP_LINK_PATHS`), so a
+  reset-password or verify-email link still opens Safari.
 - The Flutter template declares `INTERNET` only in `src/debug` and `src/profile`,
   so the main manifest declares it explicitly or a release APK cannot reach the
   server at all.
 - iOS is signed for team `HNLB5566BK` (Release manually, with the App Store
   profile `Nostragoalus App Store`: automatic signing needs a registered
-  device for its development profile, and the team has none), iPhone only, iOS 17.4+, with its own
-  opaque icon (`assets/store/ios-icon.png`, outside the bundled asset dirs) and
-  built on a Mac by `mise run ipa` for TestFlight. Updates arrive through the
-  store, so the settings update card only names the build there. It has no
-  `UIBackgroundModes`: a call ends on backgrounding (below), and an unused
-  background mode is an App Review rejection. CallKit, APNs and passkeys remain
+  device for its development profile, and the team has none; Debug and Profile
+  stay automatic), iPhone only, iOS 17.4+, with its own opaque icon
+  (`assets/store/ios-icon.png`, outside the bundled asset dirs) and built on a
+  Mac by `mise run ipa` for TestFlight. The `ios/Podfile` is hand-maintained:
+  it pins pods to 17.4 and its `post_integrate` adds a last Runner phase that
+  lipo-strips arm64e from embedded frameworks and re-signs them, because
+  `sodium_libs`' vendored libsodium carries an arm64e slice from a pre-26 SDK
+  that App Store Connect rejects. Updates arrive through the store, so the
+  update card and the update-required screen point there, and no iOS screen
+  names Android. It has no `UIBackgroundModes`: a call ends on backgrounding
+  (below), and an unused background mode is an App Review rejection. CallKit,
+  APNs, passkeys and in-app account deletion (an App Store requirement) remain
   unstarted.
 - Permissions in the merged release manifest are `INTERNET`, `RECORD_AUDIO`,
   `MODIFY_AUDIO_SETTINGS`, `ACCESS_NETWORK_STATE` (all WebRTC voice) plus

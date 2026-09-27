@@ -107,7 +107,7 @@ Scope unchanged. Proceed to Phase 1 on a Flutter machine.
   Builds + signs in on the emulator; audio-through needs two participants.
 - [~] WebRTC voice: DM 1:1 - the mesh service takes a `dm` scope; a DM-room call
   entry + ring/decline UI is the remaining wiring.
-- [ ] CallKit background audio + ring / missed-call push - iOS-only (no Apple);
+- [ ] CallKit background audio + ring / missed-call push - iOS-only (unbuilt);
   Android background-call + ring UI + the push dependency remain.
 - [x] OS share (`share_plus`) - share a match link from the detail screen.
 - [~] Deep links - the app produces `goal.arzaroth.com/matches/{id}` share links;

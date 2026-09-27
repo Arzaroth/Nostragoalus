@@ -148,7 +148,7 @@ with the data caveat noted per area.
   join / decline -> voice:decline) + DM voice bar; missed calls via the existing
   VOICE_MISSED notification. `[!]` round-trip (ring delivery + audio) needs a 2nd
   peer - compile-validated only, like the mesh audio
-- [!] CallKit / background audio / ring push - iOS-only (no Apple). The
+- [!] CallKit / background audio / ring push - iOS-only, unbuilt. The
   `flutter_callkit_incoming` dependency was removed: it was reachable only from
   dead Phase-0 spike code, and its manifest merged `MANAGE_OWN_CALLS` +
   full-screen-intent (Play-Console-flagged) into the shipped release manifest.
@@ -160,7 +160,7 @@ with the data caveat noted per area.
   per-type icons; humanised-enum fallback for unknowns)
 - [!] Push (FCM Android) - the server exposes only web-push/VAPID; mobile FCM needs
   NEW server endpoints (device-token registration + sender) + a Firebase project
-- [!] Push (APNs) - no Apple
+- [!] Push (APNs) - needs server APNs endpoints, like FCM
 
 ## Achievements / stats / rewards
 - [x] Trophy cabinet - trophies + earned achievements (i18n names/desc), tier
