@@ -8,6 +8,9 @@ set -euo pipefail
 APP="${APP:-http://127.0.0.1:3100}"
 EMAIL="${PROBE_EMAIL:-probe@example.com}"
 PASSWORD="${PROBE_PASSWORD:-Probe-Password123!}"
+# A second, throwaway account for the account-deletion spec, which deletes it.
+DELETE_EMAIL="${DELETE_EMAIL:-delete-me@example.com}"
+DELETE_PASSWORD="${DELETE_PASSWORD:-Delete-Password123!}"
 SLUG=e2e-cup
 PROJECT="ng-e2e-$(basename "$PWD" | tr . -)"
 
@@ -48,14 +51,18 @@ SQL
 
 # The account goes through the real sign-up route, so the password hash and
 # session rows are whatever better-auth actually writes.
-code=$(curl -s -o /tmp/ng-signup.out -w '%{http_code}' -X POST "$APP/api/auth/sign-up/email" \
-  -H 'content-type: application/json' \
-  --data "$(printf '{"name":"Probe","email":"%s","password":"%s"}' "$EMAIL" "$PASSWORD")")
-echo "sign-up: HTTP $code"
-[ "$code" = "200" ] || grep -qi 'exist' /tmp/ng-signup.out || { cat /tmp/ng-signup.out; exit 1; }
+signup() {
+  code=$(curl -s -o /tmp/ng-signup.out -w '%{http_code}' -X POST "$APP/api/auth/sign-up/email" \
+    -H 'content-type: application/json' \
+    --data "$(printf '{"name":"%s","email":"%s","password":"%s"}' "$1" "$2" "$3")")
+  echo "sign-up $2: HTTP $code"
+  [ "$code" = "200" ] || grep -qi 'exist' /tmp/ng-signup.out || { cat /tmp/ng-signup.out; exit 1; }
+}
+signup Probe "$EMAIL" "$PASSWORD"
+signup DeleteMe "$DELETE_EMAIL" "$DELETE_PASSWORD"
 
-psql -v email="$EMAIL" -v slug="$SLUG" <<'SQL'
-update "user" set email_verified = true where email = :'email';
+psql -v email="$EMAIL" -v delete_email="$DELETE_EMAIL" -v slug="$SLUG" <<'SQL'
+update "user" set email_verified = true where email in (:'email', :'delete_email');
 
 with u as (select id from "user" where email = :'email' limit 1),
      c as (select id from competition where slug = :'slug'),
@@ -71,8 +78,9 @@ SQL
 
 # Read back what the spec depends on, so a half-seeded stack fails here rather
 # than as a confusing widget-finder timeout on the device.
-psql -v email="$EMAIL" -t -A <<'SQL'
+psql -v email="$EMAIL" -v delete_email="$DELETE_EMAIL" -t -A <<'SQL'
 select 'probe=' || id || ' verified=' || email_verified from "user" where email = :'email';
+select 'delete-me=' || id || ' verified=' || email_verified from "user" where email = :'delete_email';
 select 'competitions=' || count(*) from competition;
 select 'matches=' || count(*) from match;
 select 'league_members=' || count(*) from league_member;

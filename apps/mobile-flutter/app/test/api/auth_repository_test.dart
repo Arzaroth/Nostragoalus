@@ -65,6 +65,67 @@ void main() {
     expect(tokens.token, isNull);
   });
 
+  group('account deletion', () {
+    const byMail = DeletionPolicy(mailConfirmed: true, ssoManaged: false);
+    const byPassword = DeletionPolicy(mailConfirmed: false, ssoManaged: false);
+    const bySession = DeletionPolicy(mailConfirmed: false, ssoManaged: true);
+
+    test('reads the policy from sso-status', () async {
+      final (repo, _, adapter) = build([Reply(200, {'ssoManaged': true, 'mailEnabled': false})]);
+
+      final policy = await repo.deletionPolicy();
+
+      expect(adapter.requests.single.path, '/api/me/sso-status');
+      expect(policy.mailConfirmed, isFalse);
+      expect(policy.ssoManaged, isTrue);
+      expect(policy.needsPassword, isFalse);
+      expect(byPassword.needsPassword, isTrue);
+      expect(byMail.needsPassword, isFalse);
+    });
+
+    test('with mail, asks for the link and keeps the session', () async {
+      final (repo, tokens, adapter) = build([Reply(200, {'success': true})]);
+      await tokens.save('t');
+
+      expect(await repo.deleteAccount(byMail, password: 'ignored', totpCode: '123456'), isFalse);
+
+      final req = adapter.requests.single;
+      expect(req.path, '/api/auth/delete-user');
+      expect(req.data, {'callbackURL': '/login'});
+      expect(req.headers['x-totp-code'], isNull,
+          reason: 'the mailed link is the confirmation; no code rides along');
+      expect(tokens.token, 't', reason: 'nothing is deleted until the link is opened');
+    });
+
+    test('without mail, sends the password and the 2FA code, then drops the session', () async {
+      final (repo, tokens, adapter) = build([Reply(200, {'success': true})]);
+      await tokens.save('t');
+
+      expect(await repo.deleteAccount(byPassword, password: 'pw', totpCode: '123456'), isTrue);
+
+      final req = adapter.requests.single;
+      expect(req.data, {'password': 'pw'});
+      expect(req.headers['x-totp-code'], '123456');
+      expect(tokens.token, isNull);
+    });
+
+    test('an SSO account without mail confirms with the session alone', () async {
+      final (repo, _, adapter) = build([Reply(200, {'success': true})]);
+
+      expect(await repo.deleteAccount(bySession, password: 'ignored'), isTrue);
+      expect(adapter.requests.single.data, isEmpty);
+    });
+
+    test('a refusal keeps the session and surfaces the reason', () async {
+      final (repo, tokens, _) = build([Reply(400, {'message': 'Invalid password'})]);
+      await tokens.save('t');
+
+      await expectLater(repo.deleteAccount(byPassword, password: 'wrong'),
+          throwsA(isA<ApiException>().having((e) => e.status, 'status', 400)));
+      expect(tokens.token, 't');
+    });
+  });
+
   test('signOut posts to the sign-out route and clears the token', () async {
     final (repo, tokens, adapter) = build([Reply(200, {'success': true})]);
     await tokens.save('t');

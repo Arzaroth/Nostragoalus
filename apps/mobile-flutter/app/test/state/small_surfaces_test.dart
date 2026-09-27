@@ -189,6 +189,28 @@ void main() {
       expect(c.read(authControllerProvider).valueOrNull?.id, 'u2');
     });
 
+    test('deleteAccount signs out only once the account is gone', () async {
+      final repo = _FakeAuthRepo(const AuthUser(id: 'u2', email: 'u2@example.com'));
+      final c = ProviderContainer(overrides: [
+        tokenStoreProvider.overrideWithValue(TokenStore(InMemoryKv())),
+        authRepositoryProvider.overrideWithValue(repo),
+      ]);
+      addTearDown(c.dispose);
+      await c.read(authControllerProvider.future);
+      final auth = c.read(authControllerProvider.notifier);
+      const policy = DeletionPolicy(mailConfirmed: false, ssoManaged: false);
+
+      await auth.signIn('u2@example.com', 'pw');
+      repo.deleteNow = false;
+      expect(await auth.deleteAccount(policy, password: 'pw'), isFalse);
+      expect(c.read(authControllerProvider).valueOrNull?.id, 'u2',
+          reason: 'a mailed link has not deleted anything yet');
+
+      repo.deleteNow = true;
+      expect(await auth.deleteAccount(policy, password: 'pw'), isTrue);
+      expect(c.read(authControllerProvider).valueOrNull, isNull);
+    });
+
     test('joinLeague refuses to be called with neither a league nor a code', () async {
       final c = ProviderContainer(
           overrides: [tokenStoreProvider.overrideWithValue(TokenStore(InMemoryKv()))]);

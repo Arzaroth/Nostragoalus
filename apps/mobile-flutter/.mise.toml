@@ -101,17 +101,19 @@ description = "Seed the isolated e2e stack (mise run e2e-up, from the repo root)
 dir = "{{ config_root }}/../.."
 run = "bash apps/mobile-flutter/app/tool/seed_e2e.sh"
 
-# Needs a device/emulator AND a seeded server. The full ritual, from the repo root:
+# Needs a device/emulator AND a seeded server (account_deletion_test deletes the
+# seeded throwaway account, so re-run e2e-seed before each run). From the repo root:
 #   mise run e2e-up                        # isolated stack, app on :3100
 #   mise -C apps/mobile-flutter run e2e-seed
 #   mise -C apps/mobile-flutter run e2e
 # API_BASE points at 10.0.2.2, the emulator's alias for the host loopback.
 [tasks.e2e]
-description = "The main-path UI end-to-end spec on a device/emulator against a live, seeded server (run e2e-up + e2e-seed first)"
+description = "The UI end-to-end specs (main path, account deletion) on a device/emulator against a live, seeded server (run e2e-up + e2e-seed first)"
 dir = "{{ config_root }}/app"
 run = """
-flutter test integration_test/main_path_test.dart \
+flutter test integration_test/main_path_test.dart integration_test/account_deletion_test.dart \
   --dart-define=API_BASE=${NG_E2E_API_BASE:-http://10.0.2.2:3100} \
+  --dart-define=MAILDEV_BASE=${NG_E2E_MAILDEV_BASE:-http://10.0.2.2:1081} \
   --dart-define=PROBE_EMAIL=${PROBE_EMAIL:-probe@example.com} \
   --dart-define=PROBE_PASSWORD=${PROBE_PASSWORD:-Probe-Password123!}
 """
