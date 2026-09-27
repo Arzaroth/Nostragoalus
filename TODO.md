@@ -3707,9 +3707,16 @@ what it has already found.
       libsodium.framework prints only `arm64`.
 - [x] In-app account deletion (App Store guideline 5.1.1(v)): the account
       tab's delete row, confirmed like the web (feat/mobile-account-deletion).
-- [ ] Run `integration_test/account_deletion_test.dart` on an emulator
-      (`mise run e2e` after e2e-up + e2e-seed): written and analyzed, never run
-      on a device.
+- [x] `integration_test/account_deletion_test.dart` run green on the x86_64
+      emulator against the isolated e2e stack; it found that the mailed link
+      needs the app's own session (now handled in-app).
+- [ ] `integration_test/main_path_test.dart` is RED on master (seen
+      2026-09-27, same on the feature branch): after sign-in it never finds an
+      unlocked fixture (`Icons.schedule`) although e2e-seed reports its E2E Cup
+      match 6h out. Likely drift from the multi-sport/competition-admin work
+      since the spec last ran. Note for running either spec here: e2e-up's
+      keycloak wants host :8080 (open-webui holds it) and the db :5433
+      (rackmancy-db); neither mobile spec needs keycloak or a db host port.
 - [ ] French availability needs the ANSSI declaration of a cryptology means
       (decret 2007-663, box 2 "declaration", no category 3, per the ANSSI's own
       reply). Their form is Adobe-XFA only; asked them to accept a plain PDF.
