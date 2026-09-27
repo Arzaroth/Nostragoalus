@@ -3705,10 +3705,11 @@ what it has already found.
       91011, sodium_libs' arm64e slice). The Podfile's arm64e strip phase is
       untested until the next upload; check `lipo -archs` on the archived
       libsodium.framework prints only `arm64`.
-- [ ] In-app account deletion (App Store guideline 5.1.1(v)): the app offers
-      sign-up but no way to delete the account; the web has it (account.vue).
-      Blocks the App Store submission, not TestFlight. Needs a mobile screen,
-      i18n in all five locales, widget tests and the mobile e2e.
+- [x] In-app account deletion (App Store guideline 5.1.1(v)): the account
+      tab's delete row, confirmed like the web (feat/mobile-account-deletion).
+- [ ] Run `integration_test/account_deletion_test.dart` on an emulator
+      (`mise run e2e` after e2e-up + e2e-seed): written and analyzed, never run
+      on a device.
 - [ ] French availability needs the ANSSI declaration of a cryptology means
       (decret 2007-663, box 2 "declaration", no category 3, per the ANSSI's own
       reply). Their form is Adobe-XFA only; asked them to accept a plain PDF.
