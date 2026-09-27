@@ -201,7 +201,8 @@ class _ModApi extends ApiClient {
   final calls = <String>[];
   bool fail = false;
   @override
-  Future<Map<String, dynamic>> postJson(String path, {Object? body}) async {
+  Future<Map<String, dynamic>> postJson(String path,
+      {Object? body, Map<String, String>? headers}) async {
     final b = body! as Map<String, dynamic>;
     calls.add('${b['messageId']}:${b['action']}');
     if (fail) throw ApiException(500, 'nope');
@@ -219,7 +220,8 @@ class _TwoFactorApi extends ApiClient {
   int disableCalls = 0;
 
   @override
-  Future<Map<String, dynamic>> postJson(String path, {Object? body}) async {
+  Future<Map<String, dynamic>> postJson(String path,
+      {Object? body, Map<String, String>? headers}) async {
     switch (path) {
       case '/api/auth/two-factor/enable':
         return enableResponse;

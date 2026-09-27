@@ -119,8 +119,10 @@ class ApiClient {
     return _json(r);
   }
 
-  Future<Map<String, dynamic>> postJson(String path, {Object? body}) async {
-    final r = await _dio.post<dynamic>(path, data: body);
+  Future<Map<String, dynamic>> postJson(String path,
+      {Object? body, Map<String, String>? headers}) async {
+    final r = await _dio.post<dynamic>(path,
+        data: body, options: headers == null ? null : Options(headers: headers));
     return _json(r);
   }
 

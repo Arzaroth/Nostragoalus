@@ -108,12 +108,16 @@ class AuthRepository {
       // The local token goes either way; a failed server-side revoke must not
       // leave the app stuck signed in.
     } finally {
-      await _tokens.clear();
-      // The chat private key is per-account: leaving it behind lets the next
-      // account on this device read it (and, on its own bootstrap, overwrite it).
-      try {
-        await ChatKeyStore().clearCurrent();
-      } catch (_) {/* no platform keystore (headless test / unsupported host) */}
+      await _clearLocal();
     }
+  }
+
+  Future<void> _clearLocal() async {
+    await _tokens.clear();
+    // The chat private key is per-account: leaving it behind lets the next
+    // account on this device read it (and, on its own bootstrap, overwrite it).
+    try {
+      await ChatKeyStore().clearCurrent();
+    } catch (_) {/* no platform keystore (headless test / unsupported host) */}
   }
 }
