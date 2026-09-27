@@ -72,7 +72,8 @@ TestFlight.
   `NUXT_IOS_APP_IDS=HNLB5566BK.com.arzaroth.nostragoalus` in prod's env, so
   `/.well-known/apple-app-site-association` lists it under `applinks` AND
   `webcredentials` (the SSO https callback needs the latter). `applinks` claims
-  only the paths the app routes (`IOS_APP_LINK_PATHS` in
+  only the paths the app routes, plus the account-deletion callback the app
+  completes itself (`IOS_APP_LINK_PATHS` in
   `server/utils/auth/well-known.ts`): keep it in step with
   `lib/deeplink/deep_links.dart`, or a link the app cannot show opens it anyway.
 - **iOS 17.4 minimum**, iPhone only. 17.4 is where ASWebAuthenticationSession can

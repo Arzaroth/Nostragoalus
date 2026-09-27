@@ -1088,3 +1088,14 @@ removes the need for the phase but is a major bump of the E2EE primitives, so it
 is tracked in TODO.md rather than done under a build fix. See
 [features/mobile-app.md](features/mobile-app.md).
 
+## The mailed account-deletion link is answered by the app, not a browser
+
+better-auth's deletion callback requires a session of the account being deleted
+on top of the mailed token, and 404s without one. App users are signed in by
+bearer token, so the browser their mail app opens has no session and the link
+dead-ends. Rather than relax that check server-side (the session binding is a
+second factor next to mailbox access), the link is claimed as an App Link /
+Universal Link and the app calls the callback with its own session. The
+account-deletion e2e found this: it was the first run of the mailed path from
+a device. See [features/mobile-app.md](features/mobile-app.md).
+

@@ -457,6 +457,14 @@ The open debt is listed in the root `TODO.md` under the "Mobile app" and
   SSO account) and, under 2FA, the `x-totp-code` header the server's
   `beforeDelete` demands, then drops the token and the chat key like a sign-out.
   The guards (last admin, TOTP) are server-side, so the app adds none.
+- **The mailed link completes in the app.** better-auth's
+  `/api/auth/delete-user/callback` deletes only for a session of that same
+  account (404 otherwise), and a browser opened from the mail holds none: the
+  app is signed in by bearer token. So the link is an App Link / Universal Link
+  (iOS claims the path in `IOS_APP_LINK_PATHS`; Android claims every path) and
+  `DeepLinkController` answers it with the app's own session, pops the deleted
+  account's screens and toasts the result. Opened on a desktop, it still works
+  only where that browser is signed in to the account, as on the web.
 - Permissions in the merged release manifest are `INTERNET`, `RECORD_AUDIO`,
   `MODIFY_AUDIO_SETTINGS`, `ACCESS_NETWORK_STATE` (all WebRTC voice) plus
   `BLUETOOTH`, merged transitively by `flutter_webrtc` for headset routing.

@@ -41,8 +41,10 @@ with the data caveat noted per area.
 - [x] Locale switch (5 locales, RTL) - `[ ]` not yet persisted to the server profile
 - [x] Delete account - same confirmation as the web (`/api/me/sso-status`): a
   mailed link when the server has SMTP, otherwise the password (or the session,
-  for SSO) plus a current code under 2FA; `integration_test/account_deletion_test.dart`
-  covers the mailed path. `[ ]` e2e not yet run on a device
+  for SSO) plus a current code under 2FA. The mailed link completes in the app
+  (it needs the account's own session, which a browser from the mail lacks).
+  `integration_test/account_deletion_test.dart` RUN AND GREEN on an x86_64
+  emulator against the isolated e2e stack
 
 ## Competition
 - [x] Competition browse + switcher (all scoped reads honor it)
