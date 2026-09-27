@@ -43,16 +43,21 @@ class UpdateRequiredScreen extends ConsumerWidget {
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium?.copyWith(color: t.muted)),
                 const SizedBox(height: 24),
-                FilledButton.icon(
-                  icon: const Icon(Icons.download_outlined),
-                  label: Text(context.tr('appUpdate.download')),
-                  // The server sent its own download route with the refusal,
-                  // so moving that route does not strand installed apps.
-                  onPressed: () => launchUrl(
-                    Uri.parse('${AppConfig.webBase}${refusal?.path ?? fallbackDownloadPath}'),
-                    mode: LaunchMode.externalApplication,
+                if (AppConfig.storeManagedUpdates)
+                  Text(context.tr('appUpdate.storeManaged'),
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium?.copyWith(color: t.muted))
+                else
+                  FilledButton.icon(
+                    icon: const Icon(Icons.download_outlined),
+                    label: Text(context.tr('appUpdate.download')),
+                    // The server sent its own download route with the refusal,
+                    // so moving that route does not strand installed apps.
+                    onPressed: () => launchUrl(
+                      Uri.parse('${AppConfig.webBase}${refusal?.path ?? fallbackDownloadPath}'),
+                      mode: LaunchMode.externalApplication,
+                    ),
                   ),
-                ),
                 const SizedBox(height: 20),
                 Tag(context.tr('appUpdate.buildLine', {
                   'version': isVersionedBuild

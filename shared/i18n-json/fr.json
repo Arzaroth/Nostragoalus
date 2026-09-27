@@ -1512,7 +1512,7 @@
     "integrityVersionLabel": "Version de build",
     "integrityDigestLabel": "Empreinte du bundle ({algo}, {count} fragments)",
     "integrityUnavailable": "Aucune empreinte d'intégrité n'est disponible pour cette build.",
-      "clientFlutter": "Flutter (Android natif)",
+      "clientFlutter": "Flutter (application native)",
       "e2eeTitle": "Chiffrement de bout en bout",
       "e2eeText": "libsodium (X25519 + secretbox), transparence des cles verifiee",
       "website": "Site web"

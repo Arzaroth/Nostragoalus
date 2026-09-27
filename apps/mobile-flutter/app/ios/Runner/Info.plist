@@ -30,6 +30,8 @@
 	<string>Nostragoalus needs your microphone so you can talk in league voice rooms and 1:1 voice calls.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Nostragoalus needs your photo library so you can pick a profile picture or send an image in an encrypted chat.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Nostragoalus looks for a direct route to the other people in a voice call, which can include your local network.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Nostragoalus needs your camera so you can take a profile picture or a photo to send in an encrypted chat.</string>
 	<key>UIApplicationSceneManifest</key>

@@ -36,7 +36,7 @@ class AboutScreen extends StatelessWidget {
           Panel(
             children: [
               PanelRow(
-                leading: const Icon(Icons.phone_android_outlined),
+                leading: const Icon(Icons.smartphone_outlined),
                 title: Text(context.tr('about.client')),
                 subtitle: Text(context.tr('about.clientFlutter')),
               ),

@@ -1704,7 +1704,7 @@
     "integrityVersionLabel": "نسخة البناء",
     "integrityDigestLabel": "بصمة الحزمة ({algo}، {count} أجزاء)",
     "integrityUnavailable": "لا تتوفر بصمة سلامة لهذا البناء.",
-      "clientFlutter": "Flutter (أندرويد أصلي)",
+      "clientFlutter": "Flutter (تطبيق أصلي)",
       "e2eeTitle": "التشفير التام بين الطرفين",
       "e2eeText": "libsodium (X25519 + secretbox)، تم التحقق من شفافية المفاتيح",
       "website": "الموقع الإلكتروني"

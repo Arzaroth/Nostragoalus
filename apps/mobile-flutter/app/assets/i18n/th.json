@@ -1512,7 +1512,7 @@
     "integrityVersionLabel": "เวอร์ชันบิลด์",
     "integrityDigestLabel": "ไดเจสต์บันเดิล ({algo}, {count} ชิ้น)",
     "integrityUnavailable": "ไม่มีลายนิ้วมือความสมบูรณ์สำหรับบิลด์นี้",
-      "clientFlutter": "Flutter (Android เนทีฟ)",
+      "clientFlutter": "Flutter (แอปเนทีฟ)",
       "e2eeTitle": "การเข้ารหัสแบบต้นทางถึงปลายทาง",
       "e2eeText": "libsodium (X25519 + secretbox) ตรวจสอบความโปร่งใสของคีย์แล้ว",
       "website": "เว็บไซต์"

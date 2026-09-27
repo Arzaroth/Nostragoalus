@@ -1517,7 +1517,7 @@
     "integrityVersionLabel": "Build version",
     "integrityDigestLabel": "Bundle digest ({algo}, {count} chunks)",
     "integrityUnavailable": "No integrity fingerprint is available for this build.",
-      "clientFlutter": "Flutter (native Android)",
+      "clientFlutter": "Flutter (native app)",
       "e2eeTitle": "End-to-end encryption",
       "e2eeText": "libsodium (X25519 + secretbox), key-transparency verified",
       "website": "Website"
