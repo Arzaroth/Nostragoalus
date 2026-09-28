@@ -20,10 +20,10 @@ const SPORT = 'mru'
 const ENOUGH_FIXTURES = 20
 const MAX_EVENTS = 3
 // A fixture can carry its points before anyone has keyed in its play-by-play or
-// team sheets - a tier-3 tie often does for days. That is late data, not a
-// changed feed, so the next played fixture gets a turn before the empty one is
-// judged.
-const MAX_TIMELINES = 3
+// team sheets - a tier-3 tie often does for days, and a whole round lags
+// together. That is late data, not a changed feed, so a pool of played fixtures
+// from as many events as it takes gets a turn before an empty one is judged.
+const MAX_SAMPLES = 3
 
 const CATALOG: Table = [
   ['content', REQUIRED, CHECKS.filledList],
@@ -125,6 +125,26 @@ interface WrEventRow {
   label?: string | null
   sport?: string | null
   start?: { label?: string | null } | null
+}
+
+interface WrSummary {
+  teams?: unknown[] | null
+}
+
+interface WrTimeline {
+  timeline?: unknown[] | null
+}
+
+function filled(value: unknown): boolean {
+  return Array.isArray(value) && value.length > 0
+}
+
+function keyedIn(timeline: WrTimeline, summary: WrSummary): boolean {
+  const teams = Array.isArray(summary.teams) ? summary.teams : []
+  return (
+    filled(timeline.timeline) &&
+    teams.some((team) => filled((team as { teamList?: { list?: unknown } | null } | null)?.teamList?.list))
+  )
 }
 
 interface Tally {
@@ -274,7 +294,7 @@ export function worldRugbySource(sport: string = SPORT): CanarySource {
           `schedule    ${event.label ?? ref}: ${tally.matches} fixture(s), ${tally.timed} timed, ${tally.played} played`,
         )
         played.push(...matches.filter((m) => (m.scores ?? []).some((s) => Number(s) > 0)))
-        if (fixtures.length >= ENOUGH_FIXTURES && played.length) break
+        if (fixtures.length >= ENOUGH_FIXTURES && played.length >= MAX_SAMPLES) break
       }
 
       if (!played.length) {
@@ -283,22 +303,19 @@ export function worldRugbySource(sport: string = SPORT): CanarySource {
       }
 
       let sample = played[0]!
-      let timeline: { timeline?: unknown[] | null } = {}
-      for (const match of played.slice(0, MAX_TIMELINES)) {
-        sample = match
-        timeline = await ctx.getJson<{ timeline?: unknown[] | null }>(
-          `${BASE}/match/${encodeURIComponent(sample.matchId)}/timeline?language=en`,
-        )
-        if (Array.isArray(timeline.timeline) && timeline.timeline.length) break
+      let timeline: WrTimeline = {}
+      let summary: WrSummary = {}
+      for (sample of played.slice(0, MAX_SAMPLES)) {
+        const id = encodeURIComponent(sample.matchId)
+        timeline = await ctx.getJson<WrTimeline>(`${BASE}/match/${id}/timeline?language=en`)
+        summary = await ctx.getJson<WrSummary>(`${BASE}/match/${id}/summary`)
+        if (keyedIn(timeline, summary)) break
       }
       ledger.check('timeline', timeline, TIMELINE)
       ledger.checkEach('timeline.timeline[]', timeline.timeline, TIMELINE_EVENT, 'the timeline')
       problems.push(...timelineCrossCheck((timeline.timeline ?? []) as WrTimelineEvent[]))
       ctx.note(`timeline    match ${sample.matchId}, ${(timeline.timeline ?? []).length} event(s)`)
 
-      const summary = await ctx.getJson<{ teams?: unknown[] | null }>(
-        `${BASE}/match/${encodeURIComponent(sample.matchId)}/summary`,
-      )
       ledger.check('summary', summary, SUMMARY)
       let players = 0
       for (const team of summary.teams ?? []) {
@@ -317,4 +334,4 @@ export function worldRugbySource(sport: string = SPORT): CanarySource {
   }
 }
 
-export const wrInternals = { inspectCatalog, inspectSchedule, crossCheck, timelineCrossCheck, pickEvents }
+export const wrInternals = { inspectCatalog, inspectSchedule, crossCheck, timelineCrossCheck, pickEvents, keyedIn }

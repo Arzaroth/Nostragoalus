@@ -28,6 +28,20 @@ export function stubFetch(routes: Route[]): typeof fetch {
   }) as unknown as typeof fetch
 }
 
+/** Wraps routes so every URL a source asks for is kept, in order. */
+export function recording(routes: Route[]) {
+  const asked: string[] = []
+  const wrapped = routes.map((route) => ({
+    ...route,
+    match: (url: string) => {
+      const hit = route.match(url)
+      if (hit) asked.push(url)
+      return hit
+    },
+  }))
+  return { asked, routes: wrapped }
+}
+
 /** Runs a source over canned routes. No pacing: the tests must not sleep. */
 export async function drive(source: CanarySource, routes: Route[]) {
   const result = await visit(source, {

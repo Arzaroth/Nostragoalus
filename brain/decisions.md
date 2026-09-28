@@ -1012,9 +1012,21 @@ in the architecture doc.
 Two findings were worth the review on their own. ESPN's detail scope was gated
 behind `scoringPlay`, the very key it watches, so renaming it would have left
 every detail key `unchecked` and the canary green on its own motivating example.
-And UEFA's season walk-back accepted the first non-empty year, which greenlit a
-two-year-old archive while the live season's endpoint answered with nothing -
-the canary reporting health about a feed the app could no longer read.
+And UEFA's season walk-back accepted the first non-empty year, which would
+greenlight a two-year-old archive while the live season's endpoint answered with
+nothing.
+
+The first scheduled run went red on two false alarms, and both were the canary's
+sampling, not the feeds. It probed UEFA competition `3` believing it was the
+Champions League; `3` is the EURO the app reads, dark three summers in four, and
+UEFA files a season under the year it ends in. The canary now probes the
+Champions League (`1`), live every year with the same match shape, trading exact
+coverage of the app's competition for a population that exists every morning. A
+reader who "aligns" it back to `3` reintroduces the off-cycle red. World Rugby
+judged a tier-3 fixture whose score was in but whose play-by-play and team sheets
+were not keyed in yet: late data, not drift. It now samples a pool of up to three
+played fixtures, across events if one is thin, and reports only when none is
+keyed in.
 
 Sofascore and football-data are deliberately out of scope for now: one goes
 through cycletls (TLS fingerprinting) and the other needs a key, and neither is

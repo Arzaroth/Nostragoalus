@@ -22,8 +22,8 @@ const PAGE = 200
 const SEASONS_BACK = 4
 
 // Two consecutive empty season years on a competition that runs every year is
-// not a quiet August, it is the live season having moved somewhere the app is
-// not looking - which is exactly what `listFixtures` would return nothing for.
+// not a quiet July: UEFA has renumbered its seasons or moved the endpoint, and
+// `listFixtures` would then return nothing for the app's own competition too.
 const STALE_SEASONS = 2
 
 // Events are read from more than one match on purpose: an own goal or a VAR
@@ -276,7 +276,7 @@ export function uefaSource(competitionId: string = COMPETITION_ID): CanarySource
         problems.push(`competition ${competitionId} returned no fixture for any of the seasons ${walk.probed.join(', ')}`)
       } else if (walk.skipped.length >= STALE_SEASONS) {
         problems.push(
-          `the ${walk.skipped.length} newest season years (${walk.skipped.join(', ')}) carry no played match; the shape was verified against ${walk.year} instead, so this competition's live season is not where the app looks for it`,
+          `the ${walk.skipped.length} newest season years (${walk.skipped.join(', ')}) carry no played match; the shape was verified against ${walk.year} instead, so UEFA's live season is no longer where listFixtures looks for it`,
         )
       }
       ctx.note(

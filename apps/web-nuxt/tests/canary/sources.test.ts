@@ -14,7 +14,7 @@ import { espnSource } from '../../scripts/canary/sources/espn'
 import { fifaSource } from '../../scripts/canary/sources/fifa'
 import { uefaSource } from '../../scripts/canary/sources/uefa'
 import { pickEvents, worldRugbySource } from '../../scripts/canary/sources/worldrugby'
-import { drive, NOW, replace, without, type Route } from './helpers'
+import { drive, NOW, recording, replace, without, type Route } from './helpers'
 
 // --------------------------------------------------------------------- espn --
 
@@ -646,18 +646,13 @@ describe('uefa source', () => {
       { match: (u) => u.includes('/v5/matches?'), answer: played },
     ]
     const { problems } = await drive(source, routes)
-    expect(problems.join(' ')).toContain('is not where the app looks for it')
+    expect(problems.join(' ')).toContain('no longer where listFixtures looks for it')
   })
 
   it('probes the Champions League from the year the live season ends in', async () => {
     // March 2026 sits in the 2025-26 season, which UEFA files under 2026.
-    const asked: string[] = []
-    const routes: Route[] = [
-      { match: (u) => u.includes('/v5/matches?') && !!asked.push(u) && false, answer: null },
-      ...uefaRoutes(),
-    ]
-    await drive(source, routes)
-    expect(asked[0]).toContain('competitionId=1&seasonYear=2026')
+    const { notes } = await drive(source, uefaRoutes())
+    expect(notes.join(' ')).toContain('competition 1, season 2026')
   })
 
   it('reports a competition empty in every season probed', async () => {
@@ -788,22 +783,66 @@ describe('worldrugby source', () => {
     expect(problems.join(' ')).toContain('are not numbers')
   })
 
+  const EMPTY_SHEET = { teams: [{ teamList: { captainIds: [], list: [] } }] }
+
   it('reads the next played fixture when the first has no play-by-play keyed in yet', async () => {
     // Verified live: a Rugby Europe Conference tie carried its score with an
     // empty timeline and empty team sheets while its sibling had both.
     const routes: Route[] = [
       { match: (u) => u.includes('/match/x1/timeline'), answer: { timeline: [] } },
-      { match: (u) => u.includes('/match/x1/summary'), answer: { teams: [{ teamList: { captainIds: [], list: [] } }] } },
+      { match: (u) => u.includes('/match/x1/summary'), answer: EMPTY_SHEET },
+      { match: (u) => u.includes('/match/x3/timeline'), answer: { timeline: [] } },
+      { match: (u) => u.includes('/match/x3/summary'), answer: EMPTY_SHEET },
+      ...wrRoutes({ schedule: { matches: [wrMatch('x1'), wrMatch('x2'), wrMatch('x3')] } }),
+    ]
+    const { failures, notes } = await drive(source, routes)
+    expect(failures).toEqual([])
+    expect(notes.join(' ')).toContain('timeline    match x2')
+  })
+
+  it('reads the next played fixture when the first has a timeline but no team sheet', async () => {
+    const routes: Route[] = [
+      { match: (u) => u.includes('/match/x1/summary'), answer: EMPTY_SHEET },
       ...wrRoutes(),
     ]
     const { failures, notes } = await drive(source, routes)
     expect(failures).toEqual([])
-    expect(notes.join(' ')).toContain('match x2')
+    expect(notes.join(' ')).toContain('summary     match x2')
   })
 
-  it('still reports an empty timeline on every played fixture it tried', async () => {
-    const { failures } = await drive(source, wrRoutes({ timeline: { timeline: [] } }))
+  it('still reports an empty timeline once three played fixtures have none', async () => {
+    const schedule = { matches: ['x1', 'x2', 'x3', 'x4'].map((id) => wrMatch(id)) }
+    const { asked, routes } = recording(wrRoutes({ schedule, timeline: { timeline: [] } }))
+    const { failures } = await drive(source, routes)
     expect(failures).toContain('timeline.timeline')
+    expect(asked.filter((u) => u.includes('/timeline'))).toEqual([
+      expect.stringContaining('/match/x1/'),
+      expect.stringContaining('/match/x2/'),
+      expect.stringContaining('/match/x3/'),
+    ])
+  })
+
+  it('reads on into the next event when a large one has too few played fixtures', async () => {
+    // A tier-3 round lags as a whole: its one played tie is no reason to stop
+    // before an event whose fixtures are keyed in.
+    const catalog = {
+      pageInfo: { numPages: 1 },
+      content: [
+        { ...WR_CATALOG.content[0], id: 'e1', altId: 'e1' },
+        { ...WR_CATALOG.content[0], id: 'e2', altId: 'e2' },
+      ],
+    }
+    const quiet = [wrMatch('q1'), ...Array.from({ length: 20 }, (_, i) => wrMatch(`u${i}`, { scores: [0, 0] }))]
+    const routes: Route[] = [
+      { match: (u) => u.includes('/event/e1/schedule'), answer: { matches: quiet } },
+      { match: (u) => u.includes('/event/e2/schedule'), answer: { matches: [wrMatch('x1'), wrMatch('x2')] } },
+      { match: (u) => u.includes('/match/q1/timeline'), answer: { timeline: [] } },
+      { match: (u) => u.includes('/match/q1/summary'), answer: EMPTY_SHEET },
+      ...wrRoutes({ catalog }),
+    ]
+    const { failures, notes } = await drive(source, routes)
+    expect(failures).toEqual([])
+    expect(notes.join(' ')).toContain('timeline    match x1')
   })
 
   it('does not cry wolf when nothing in the event has been played', async () => {
