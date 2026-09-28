@@ -3643,17 +3643,18 @@ Deferred by the review fix pass (each was a deliberate call, not an oversight):
 
 The daily off-CI shape check over the live feeds
 (`apps/web-nuxt/scripts/canary/`, `.github/workflows/canary.yml`, see
-`brain/architecture/provider-canary.md`). It watches 271 keys across ESPN, FIFA,
+`brain/architecture/provider-canary.md`). It watches 270 keys across ESPN, FIFA,
 UEFA and World Rugby; these are what it deliberately does not watch yet, plus
 what it has already found.
 
-- [ ] **The canary is red on UEFA, and it is right.** `competitionId=3` returns
-      no played match for `seasonYear=2026` or `2025`; only 2024 answers, and
-      that season ended in May 2025. Either the Champions League has moved to a
-      different competition id, or UEFA numbers its seasons differently now -
-      and until we know which, `listFixtures` for a current-season UEFA
-      competition returns nothing. This is the first thing the canary caught and
-      it needs a human to decide what the id should be.
+- [x] **The canary was red on UEFA, and it was wrong** (fixed on
+      `fix/canary-false-alarms`). `3` is the EURO, not the Champions League: it
+      has no played match in 2025 or 2026 because the next one is 2028, and the
+      app's `externalCompetitionId: '3'` is correct. The canary now probes the
+      Champions League (`1`), and walks from the season's END year, which is how
+      UEFA files it (2026-27 is `2027`). The same first run's World Rugby red was
+      a tier-3 fixture with no play-by-play keyed in yet; it now pools three
+      played fixtures before judging.
 - [ ] **Sofascore odds and football-data are not watched.** Sofascore goes
       through the cycletls engine (TLS fingerprinting, a spawned Go helper) and
       football-data needs an API key. Neither is known to work from a
