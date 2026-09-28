@@ -788,6 +788,24 @@ describe('worldrugby source', () => {
     expect(problems.join(' ')).toContain('are not numbers')
   })
 
+  it('reads the next played fixture when the first has no play-by-play keyed in yet', async () => {
+    // Verified live: a Rugby Europe Conference tie carried its score with an
+    // empty timeline and empty team sheets while its sibling had both.
+    const routes: Route[] = [
+      { match: (u) => u.includes('/match/x1/timeline'), answer: { timeline: [] } },
+      { match: (u) => u.includes('/match/x1/summary'), answer: { teams: [{ teamList: { captainIds: [], list: [] } }] } },
+      ...wrRoutes(),
+    ]
+    const { failures, notes } = await drive(source, routes)
+    expect(failures).toEqual([])
+    expect(notes.join(' ')).toContain('match x2')
+  })
+
+  it('still reports an empty timeline on every played fixture it tried', async () => {
+    const { failures } = await drive(source, wrRoutes({ timeline: { timeline: [] } }))
+    expect(failures).toContain('timeline.timeline')
+  })
+
   it('does not cry wolf when nothing in the event has been played', async () => {
     const schedule = { matches: [wrMatch('x1', { scores: [0, 0] })] }
     const { failures, ledger } = await drive(source, wrRoutes({ schedule }))

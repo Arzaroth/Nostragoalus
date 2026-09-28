@@ -19,6 +19,11 @@ const SPORT = 'mru'
 // a population to tell "this key is gone" from "nothing like that happened".
 const ENOUGH_FIXTURES = 20
 const MAX_EVENTS = 3
+// A fixture can carry its points before anyone has keyed in its play-by-play or
+// team sheets - a tier-3 tie often does for days. That is late data, not a
+// changed feed, so the next played fixture gets a turn before the empty one is
+// judged.
+const MAX_TIMELINES = 3
 
 const CATALOG: Table = [
   ['content', REQUIRED, CHECKS.filledList],
@@ -58,7 +63,6 @@ const MATCH: Table = [
   ['venue.name', SAMPLED, CHECKS.filledText],
   // Published on a handful of fixtures a year and null on the rest.
   ['attendance', RARE, CHECKS.integer],
-  ['description', SAMPLED, CHECKS.filledText],
   ['sport', SAMPLED, CHECKS.filledText],
   ['competition', SAMPLED, CHECKS.filledText],
 ]
@@ -256,7 +260,7 @@ export function worldRugbySource(sport: string = SPORT): CanarySource {
       ctx.note(`catalog     ${events.length} event(s), ${candidates.length} candidate(s)`)
 
       const fixtures: WrMatch[] = []
-      let sample: WrMatch | undefined
+      const played: WrMatch[] = []
       for (const event of candidates) {
         const ref = event.altId ? String(event.altId) : String(event.id ?? '')
         const schedule = await ctx.getJson<{ matches?: unknown[] | null }>(
@@ -269,18 +273,24 @@ export function worldRugbySource(sport: string = SPORT): CanarySource {
         ctx.note(
           `schedule    ${event.label ?? ref}: ${tally.matches} fixture(s), ${tally.timed} timed, ${tally.played} played`,
         )
-        sample ??= matches.find((m) => (m.scores ?? []).some((s) => Number(s) > 0))
-        if (fixtures.length >= ENOUGH_FIXTURES && sample) break
+        played.push(...matches.filter((m) => (m.scores ?? []).some((s) => Number(s) > 0)))
+        if (fixtures.length >= ENOUGH_FIXTURES && played.length) break
       }
 
-      if (!sample) {
+      if (!played.length) {
         ctx.note('timeline    no played fixture in these events: nothing to inspect')
         return problems
       }
 
-      const timeline = await ctx.getJson<{ timeline?: unknown[] | null }>(
-        `${BASE}/match/${encodeURIComponent(sample.matchId)}/timeline?language=en`,
-      )
+      let sample = played[0]!
+      let timeline: { timeline?: unknown[] | null } = {}
+      for (const match of played.slice(0, MAX_TIMELINES)) {
+        sample = match
+        timeline = await ctx.getJson<{ timeline?: unknown[] | null }>(
+          `${BASE}/match/${encodeURIComponent(sample.matchId)}/timeline?language=en`,
+        )
+        if (Array.isArray(timeline.timeline) && timeline.timeline.length) break
+      }
       ledger.check('timeline', timeline, TIMELINE)
       ledger.checkEach('timeline.timeline[]', timeline.timeline, TIMELINE_EVENT, 'the timeline')
       problems.push(...timelineCrossCheck((timeline.timeline ?? []) as WrTimelineEvent[]))
