@@ -593,7 +593,7 @@ function uefaRoutes(over: Partial<Record<'matches' | 'events' | 'lineups', unkno
 }
 
 describe('uefa source', () => {
-  const source = uefaSource('3')
+  const source = uefaSource()
 
   it('is green on a complete season', async () => {
     const { failures, status } = await drive(source, uefaRoutes())
@@ -641,12 +641,23 @@ describe('uefa source', () => {
     const routes: Route[] = [
       { match: (u) => u.includes('/events?'), answer: UEFA_EVENTS },
       { match: (u) => u.includes('/lineups'), answer: UEFA_LINEUPS },
+      { match: (u) => u.includes('seasonYear=2026'), answer: [] },
       { match: (u) => u.includes('seasonYear=2025'), answer: [] },
-      { match: (u) => u.includes('seasonYear=2024'), answer: [] },
       { match: (u) => u.includes('/v5/matches?'), answer: played },
     ]
     const { problems } = await drive(source, routes)
     expect(problems.join(' ')).toContain('is not where the app looks for it')
+  })
+
+  it('probes the Champions League from the year the live season ends in', async () => {
+    // March 2026 sits in the 2025-26 season, which UEFA files under 2026.
+    const asked: string[] = []
+    const routes: Route[] = [
+      { match: (u) => u.includes('/v5/matches?') && !!asked.push(u) && false, answer: null },
+      ...uefaRoutes(),
+    ]
+    await drive(source, routes)
+    expect(asked[0]).toContain('competitionId=1&seasonYear=2026')
   })
 
   it('reports a competition empty in every season probed', async () => {

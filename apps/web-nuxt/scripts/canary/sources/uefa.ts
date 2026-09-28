@@ -13,9 +13,11 @@ import { describeError, europeanSeasonYear, walkBackSeasons, type CanaryContext,
 
 const BASE = UEFA_BASE_URL
 
-// 3 is the Champions League: the one UEFA competition in play from September to
-// May, so the window in which nothing can be verified is short.
-const COMPETITION_ID = '3'
+// 1 is the Champions League, in play from July qualifying to the May final. The
+// app reads 3, the EURO, but that one only plays every fourth summer, so it
+// cannot be the population this runs on every morning. Both answer the same
+// match shape.
+const COMPETITION_ID = '1'
 const PAGE = 200
 const SEASONS_BACK = 4
 
@@ -255,7 +257,8 @@ export function uefaSource(competitionId: string = COMPETITION_ID): CanarySource
       // first non-empty season is how this greened on a two-year-old archive
       // while the current season's endpoint answered with nothing at all.
       const walk = await walkBackSeasons<UefaMatch[]>({
-        from: europeanSeasonYear(ctx.now),
+        // UEFA names a season by the year it ends in: 2026-27 is seasonYear 2027.
+        from: europeanSeasonYear(ctx.now) + 1,
         back: SEASONS_BACK,
         fetch: async (year) => {
           const answer = await ctx.getJson<UefaMatch[]>(
