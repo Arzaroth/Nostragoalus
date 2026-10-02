@@ -5,6 +5,10 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### tI'pu'
+
+- ghoQ polta'lu'DI', tlhegh Sambe'lu'ghach Daq ratlhbe' Daq. ghoQ lunpu'wI' DaH lo'lu'.
+
 ## [5.1.1] - 2026-09-27
 
 ### chelpu'
