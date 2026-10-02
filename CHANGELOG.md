@@ -5,6 +5,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+## [5.1.2] - 2026-10-03
+
 ### Fixed
 
 - The site no longer gets stuck on a missing page after the competition you were last browsing is archived. Every link that did not name a competition (Matches in the menu, the home page buttons) kept pointing at the archived one, so each led to "Competition not found" until you opened another competition by hand. They now fall back to the default competition.

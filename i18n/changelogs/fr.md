@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [5.1.2] - 2026-10-03
+
 ### Corrigé
 
 - Le site ne reste plus bloqué sur une page introuvable après l'archivage de la compétition que vous consultiez en dernier. Tous les liens qui ne nommaient pas de compétition (Matchs dans le menu, les boutons de la page d'accueil) pointaient encore vers celle archivée, et menaient donc tous à « Compétition introuvable » jusqu'à ce que vous en ouvriez une autre à la main. Ils reviennent désormais à la compétition par défaut.
