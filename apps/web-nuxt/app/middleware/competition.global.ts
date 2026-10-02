@@ -5,6 +5,8 @@ const LEGACY = new Set(['matches', 'bracket', 'map', 'leaderboard', 'teams', 'us
 export default defineNuxtRouteMiddleware(async (to) => {
   const seg = to.path.split('/')[1]
   if (LEGACY.has(seg)) {
+    // the remembered competition is only checked against a resolved meta
+    await ensureCompetitionMeta()
     const last = useLastCompetition()
     return navigateTo(`/${last.value}${to.fullPath}`, { replace: true })
   }
