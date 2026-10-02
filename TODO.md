@@ -3,6 +3,18 @@
 Deferred work, queued behind feature development.
 Feature backlog with design notes lives in [ROADMAP.md](ROADMAP.md).
 
+## Archived remembered competition (deferred from the feature-treatment review)
+
+- [ ] **Mobile app keeps an archived competition selected**: the web now ignores
+      an `ng-competition` slug that left the active list (`useLastCompetition`), but
+      the Flutter app stores its own pick in prefs
+      (`apps/mobile-flutter/app/lib/state/providers.dart`, `appPrefsProvider.competition`)
+      and never checks it against `/api/competitions`. `resolveCompetition`
+      (`apps/web-nuxt/server/utils/competitions/store.ts`) loads a slug without an
+      active check, so an archived one keeps serving its data and a deleted one makes
+      every read fail until the user switches by hand. Fall back to the default slug
+      when the stored one is not in the active list.
+
 ## Bracket journey lines (deferred from the feature-treatment review)
 
 - **A first-round loser gets a red name but no red line.** `bracketJourneyHops`
