@@ -76,10 +76,19 @@ export function useSelectedSport() {
 
 // Remembered across navigations so "/" and legacy links land on a sensible
 // competition. The cookie default is read once, at first access, so it takes
-// whatever the default resolved to by then.
+// whatever the default resolved to by then. A remembered competition that has
+// since been archived is ignored: every slug-less link is built from it, so
+// trusting it would point them all at a 404 for as long as the cookie lives.
 export function useLastCompetition() {
   const fallback = useDefaultCompetition()
-  return useCookie<string>('ng-competition', { default: () => fallback.value, sameSite: 'lax', maxAge: 60 * 60 * 24 * 365 })
+  const meta = useCompetitionMeta()
+  const cookie = useCookie<string>('ng-competition', { default: () => fallback.value, sameSite: 'lax', maxAge: 60 * 60 * 24 * 365 })
+  return computed({
+    get: () => (meta.value && !meta.value.slugs.includes(cookie.value) ? fallback.value : cookie.value),
+    set: (v: string) => {
+      cookie.value = v
+    },
+  })
 }
 
 export function useCompetitions() {
