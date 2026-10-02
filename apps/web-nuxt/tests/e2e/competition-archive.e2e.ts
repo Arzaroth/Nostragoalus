@@ -10,10 +10,6 @@ import {
   seedCompetitionWithMatch,
 } from './helpers/db'
 
-// The remembered competition (ng-competition cookie) feeds every slug-less link.
-// Archiving the one you were last browsing used to leave them all pointing at a
-// 404 until the cookie expired.
-
 test.beforeAll(async () => {
   await clearDefaultCompetition()
 })
