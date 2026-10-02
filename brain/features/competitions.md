@@ -45,12 +45,13 @@ The active competition is a path prefix, not a stored selection:
 `route.params.competition`. Because the slug is in the URL, every link is
 shareable and never shows another competition's data by accident.
 
-The `ng-competition` cookie is a fallback only: it seeds the redirect from `/`
-and from legacy un-prefixed paths. `apps/web-nuxt/app/middleware/competition.global.ts`
+The `ng-competition` cookie is a fallback only: it builds the slug-less links
+(the landing page on `/`, the header nav on un-prefixed pages) and the redirect
+from legacy un-prefixed paths. `apps/web-nuxt/app/middleware/competition.global.ts`
 redirects a legacy path like `/matches` to `/<last>/matches`, and
 `[competition]/index.vue` redirects to that competition's matches.
 `useLastCompetition()` only trusts the cookie while its slug is in the
-competition meta (active competitions): a slug archived since it was remembered
+competition meta (active competitions): a slug archived or deleted since it was remembered
 reads as the default competition instead, or every slug-less link (header nav,
 landing CTAs) would 404 until the cookie expired. Writes still go to the cookie.
 

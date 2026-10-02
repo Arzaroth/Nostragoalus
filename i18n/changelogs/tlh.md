@@ -7,7 +7,7 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ### tI'pu'
 
-- ghoQ polta'lu'DI', tlhegh Sambe'lu'ghach Daq ratlhbe' Daq. ghoQ lunpu'wI' DaH lo'lu'.
+- QaD SoQ pollu'ta'DI', Daq tu'lu'be'bogh Daq ratlhbe'. motlh QaD DaH lo'lu'.
 
 ## [5.1.1] - 2026-09-27
 
