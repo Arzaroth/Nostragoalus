@@ -134,6 +134,11 @@ neither is known to work from a GitHub-hosted runner. See `TODO.md`.
 offline and deterministic; otherwise a FIFA outage, or a Tuesday in July with
 nothing played, repaints changes that have nothing to do with it.
 
+It runs on GitHub only (`if: github.server_url == 'https://github.com'`). The
+repo lives on Forgejo and is push-mirrored to GitHub, so both forges see the
+workflow, but the Forgejo runner has no `gh` for the issue alarm and rejects
+upload-artifact v4.
+
 The alarm is a **GitHub issue**, not a red cross - a cross in the Actions tab is
 a thing nobody looks at. One issue is kept open, found by **label** rather than
 by a fuzzy title search, and the following mornings comment on it; a green run
