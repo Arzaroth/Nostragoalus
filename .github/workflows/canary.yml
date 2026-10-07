@@ -44,6 +44,8 @@ env:
 jobs:
   shape:
     name: have the feeds moved?
+    # Forgejo's runner has no `gh` and refuses upload-artifact v4.
+    if: github.server_url == 'https://github.com'
     runs-on: ubuntu-latest
     # The canary's own budget is 16 requests x 2 attempts x 20s = ~10 minutes of
     # pure waiting on a bad upstream day, plus install. 15 cut it too close on
