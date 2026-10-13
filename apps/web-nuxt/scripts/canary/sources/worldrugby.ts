@@ -308,7 +308,8 @@ export function worldRugbySource(sport: string = SPORT): CanarySource {
         const playedHere = matches.filter((m) => (m.scores ?? []).some((s) => Number(s) > 0))
         playedByEvent.push(playedHere)
         playedCount += playedHere.length
-        if (fixtures.length >= ENOUGH_FIXTURES && playedCount >= MAX_SAMPLES) break
+        const spread = playedByEvent.filter((group) => group.length).length >= 2
+        if (fixtures.length >= ENOUGH_FIXTURES && playedCount >= MAX_SAMPLES && spread) break
       }
 
       const played = interleave(playedByEvent)
