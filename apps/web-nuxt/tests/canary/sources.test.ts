@@ -13,7 +13,7 @@ import { describe, expect, it } from 'vitest'
 import { espnSource } from '../../scripts/canary/sources/espn'
 import { fifaSource } from '../../scripts/canary/sources/fifa'
 import { uefaSource } from '../../scripts/canary/sources/uefa'
-import { pickEvents, worldRugbySource } from '../../scripts/canary/sources/worldrugby'
+import { pickEvents, worldRugbySource, wrInternals } from '../../scripts/canary/sources/worldrugby'
 import { drive, NOW, recording, replace, without, type Route } from './helpers'
 
 // --------------------------------------------------------------------- espn --
@@ -855,7 +855,7 @@ describe('worldrugby source', () => {
         { ...WR_CATALOG.content[0], id: 'e2', altId: 'e2' },
       ],
     }
-    const cup = Array.from({ length: 19 }, (_, i) => wrMatch(`c${i}`))
+    const cup = Array.from({ length: 25 }, (_, i) => wrMatch(`c${i}`))
     const routes: Route[] = [
       { match: (u) => u.includes('/event/e1/schedule'), answer: { matches: cup } },
       { match: (u) => u.includes('/event/e2/schedule'), answer: { matches: [wrMatch('x1')] } },
@@ -866,6 +866,29 @@ describe('worldrugby source', () => {
     const { failures, notes } = await drive(source, routes)
     expect(failures).toEqual([])
     expect(notes.join(' ')).toContain('timeline    match x1')
+  })
+
+  it('still reports an empty timeline when every event sampled has none', async () => {
+    const catalog = {
+      pageInfo: { numPages: 1 },
+      content: [
+        { ...WR_CATALOG.content[0], id: 'e1', altId: 'e1' },
+        { ...WR_CATALOG.content[0], id: 'e2', altId: 'e2' },
+      ],
+    }
+    const routes: Route[] = [
+      { match: (u) => u.includes('/event/e1/schedule'), answer: { matches: [wrMatch('c1'), wrMatch('c2')] } },
+      { match: (u) => u.includes('/event/e2/schedule'), answer: { matches: [wrMatch('x1')] } },
+      ...wrRoutes({ catalog, timeline: { timeline: [] }, summary: EMPTY_SHEET }),
+    ]
+    const { asked, routes: recorded } = recording(routes)
+    const { failures } = await drive(source, recorded)
+    expect(failures).toContain('timeline.timeline')
+    expect(asked.filter((u) => u.includes('/timeline'))).toEqual([
+      expect.stringContaining('/match/c1/'),
+      expect.stringContaining('/match/x1/'),
+      expect.stringContaining('/match/c2/'),
+    ])
   })
 
   it('does not cry wolf when nothing in the event has been played', async () => {
@@ -879,6 +902,16 @@ describe('worldrugby source', () => {
     const catalog = { pageInfo: { numPages: 1 }, content: [{ ...WR_CATALOG.content[0], sport: 'wru' }] }
     const { problems } = await drive(source, wrRoutes({ catalog }))
     expect(problems.join(' ')).toContain('no mru event at all')
+  })
+
+  describe('interleave', () => {
+    it('takes one from each group in turn, then carries on with the longer ones', () => {
+      expect(wrInternals.interleave([['a', 'b', 'c'], [], ['x']])).toEqual(['a', 'x', 'b', 'c'])
+    })
+
+    it('returns nothing for no groups', () => {
+      expect(wrInternals.interleave([])).toEqual([])
+    })
   })
 
   describe('pickEvents', () => {
