@@ -23,6 +23,8 @@ const MAX_EVENTS = 3
 // team sheets - a tier-3 tie often does for days, and a whole round lags
 // together. That is late data, not a changed feed, so a pool of played fixtures
 // from as many events as it takes gets a turn before an empty one is judged.
+// The turns go round the events: a domestic cup (Coppa Italia) never keys
+// either in, and drawing every sample from it reds a healthy feed.
 const MAX_SAMPLES = 3
 
 const CATALOG: Table = [
@@ -137,6 +139,15 @@ interface WrTimeline {
 
 function filled(value: unknown): boolean {
   return Array.isArray(value) && value.length > 0
+}
+
+function interleave<T>(groups: T[][]): T[] {
+  const out: T[] = []
+  const longest = Math.max(0, ...groups.map((g) => g.length))
+  for (let i = 0; i < longest; i += 1) {
+    for (const group of groups) if (i < group.length) out.push(group[i]!)
+  }
+  return out
 }
 
 function keyedIn(timeline: WrTimeline, summary: WrSummary): boolean {
@@ -280,7 +291,8 @@ export function worldRugbySource(sport: string = SPORT): CanarySource {
       ctx.note(`catalog     ${events.length} event(s), ${candidates.length} candidate(s)`)
 
       const fixtures: WrMatch[] = []
-      const played: WrMatch[] = []
+      const playedByEvent: WrMatch[][] = []
+      let playedCount = 0
       for (const event of candidates) {
         const ref = event.altId ? String(event.altId) : String(event.id ?? '')
         const schedule = await ctx.getJson<{ matches?: unknown[] | null }>(
@@ -293,9 +305,13 @@ export function worldRugbySource(sport: string = SPORT): CanarySource {
         ctx.note(
           `schedule    ${event.label ?? ref}: ${tally.matches} fixture(s), ${tally.timed} timed, ${tally.played} played`,
         )
-        played.push(...matches.filter((m) => (m.scores ?? []).some((s) => Number(s) > 0)))
-        if (fixtures.length >= ENOUGH_FIXTURES && played.length >= MAX_SAMPLES) break
+        const playedHere = matches.filter((m) => (m.scores ?? []).some((s) => Number(s) > 0))
+        playedByEvent.push(playedHere)
+        playedCount += playedHere.length
+        if (fixtures.length >= ENOUGH_FIXTURES && playedCount >= MAX_SAMPLES) break
       }
+
+      const played = interleave(playedByEvent)
 
       if (!played.length) {
         ctx.note('timeline    no played fixture in these events: nothing to inspect')
@@ -334,4 +350,4 @@ export function worldRugbySource(sport: string = SPORT): CanarySource {
   }
 }
 
-export const wrInternals = { inspectCatalog, inspectSchedule, crossCheck, timelineCrossCheck, pickEvents, keyedIn }
+export const wrInternals = { inspectCatalog, inspectSchedule, crossCheck, timelineCrossCheck, pickEvents, keyedIn, interleave }
