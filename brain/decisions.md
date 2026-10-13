@@ -1032,7 +1032,9 @@ Issue #2 (2026-10-13) was the same artefact one level up: Coppa Italia, an Itali
 domestic cup, carried scores on six ties and keys in neither a play-by-play nor a
 team sheet at all, and being the newest event it filled all three samples alone.
 The samples now take turns across the events (one fixture from each, then the
-next), so one event that never keys anything in cannot red a healthy feed.
+next), and the schedule loop does not stop until the played fixtures come from at
+least two events: stopping on fixture count alone let a cup of 20 or more ties end
+the loop by itself and left the turn-taking nothing to spread.
 
 Sofascore and football-data are deliberately out of scope for now: one goes
 through cycletls (TLS fingerprinting) and the other needs a key, and neither is
