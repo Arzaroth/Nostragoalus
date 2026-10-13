@@ -3667,6 +3667,15 @@ what it has already found.
       UEFA files it (2026-27 is `2027`). The same first run's World Rugby red was
       a tier-3 fixture with no play-by-play keyed in yet; it now pools three
       played fixtures before judging.
+- [x] **Issue #2: World Rugby red on a Coppa Italia sample** (fixed on
+      `fix/canary-rugby-sample-spread`). The Italian domestic cup keys in no
+      play-by-play or team sheet at all, and as the newest event it supplied all
+      three samples. The pool now takes turns across events and needs played
+      fixtures from at least two.
+- [ ] **FIFA samples a single played match** for its timeline and detail
+      (`sources/fifa.ts`, the first `played(match)` in the calendar). One match
+      with nothing published yet would red it the way issue #2 did World Rugby;
+      a small pool like UEFA's three finished matches would close it.
 - [ ] **Sofascore odds and football-data are not watched.** Sofascore goes
       through the cycletls engine (TLS fingerprinting, a spawned Go helper) and
       football-data needs an API key. Neither is known to work from a
