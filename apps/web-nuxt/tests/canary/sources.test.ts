@@ -845,6 +845,29 @@ describe('worldrugby source', () => {
     expect(notes.join(' ')).toContain('timeline    match x1')
   })
 
+  it('samples across events when the newest one never keys in a play-by-play', async () => {
+    // Verified live (issue #2): Coppa Italia carried scores on six ties and not
+    // one timeline or team sheet, while the Bledisloe Cup behind it had both.
+    const catalog = {
+      pageInfo: { numPages: 1 },
+      content: [
+        { ...WR_CATALOG.content[0], id: 'e1', altId: 'e1' },
+        { ...WR_CATALOG.content[0], id: 'e2', altId: 'e2' },
+      ],
+    }
+    const cup = Array.from({ length: 19 }, (_, i) => wrMatch(`c${i}`))
+    const routes: Route[] = [
+      { match: (u) => u.includes('/event/e1/schedule'), answer: { matches: cup } },
+      { match: (u) => u.includes('/event/e2/schedule'), answer: { matches: [wrMatch('x1')] } },
+      { match: (u) => /\/match\/c\d+\/timeline/.test(u), answer: { timeline: [] } },
+      { match: (u) => /\/match\/c\d+\/summary/.test(u), answer: EMPTY_SHEET },
+      ...wrRoutes({ catalog }),
+    ]
+    const { failures, notes } = await drive(source, routes)
+    expect(failures).toEqual([])
+    expect(notes.join(' ')).toContain('timeline    match x1')
+  })
+
   it('does not cry wolf when nothing in the event has been played', async () => {
     const schedule = { matches: [wrMatch('x1', { scores: [0, 0] })] }
     const { failures, ledger } = await drive(source, wrRoutes({ schedule }))
