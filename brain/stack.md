@@ -60,7 +60,7 @@ Sources of truth: `apps/web-nuxt/package.json`, `pnpm-workspace.yaml`,
 
 - Pluggable `StorageDriver`: `fs` (node:fs) or `s3`.
 - Production deploy uses **rustfs/rustfs** (S3-compatible) via `aws4fetch` SigV4,
-  path-style. `pgsty/mc` (Pigsty's community build of the MinIO client) handles
+  path-style. `pgsty/mc` (Pigsty's community fork of the MinIO client) handles
   bucket-init and backup mirroring; MinIO's own images no longer pull anonymously.
 - See [architecture/storage.md](architecture/storage.md) and
   [features/image-storage.md](features/image-storage.md).

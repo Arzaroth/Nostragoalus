@@ -25,8 +25,9 @@ Shipped in **v2.0.0**, a MAJOR release because it changed the deploy contract:
 
 The docker deploy defaults to the `s3` driver with **rustfs** in compose (the app
 points at `rustfs:9000`); the app's own runtime default, outside compose, is `fs`.
-Bucket init is one-shot via `quay.io/minio/mc` (the `rustfs-init` service; Docker
-Hub's `minio/mc` repository is gone). Configuration is `NUXT_STORAGE_DRIVER` /
+Bucket init is one-shot via `pgsty/mc`, Pigsty's community fork of the MinIO
+client (the `rustfs-init` service; MinIO's own `mc` images no longer pull
+anonymously). Configuration is `NUXT_STORAGE_DRIVER` /
 `_FS_ROOT` / `_S3_*`.
 
 ## Migration

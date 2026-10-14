@@ -7,7 +7,7 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ### tI'pu'
 
-- `mc` mIllogh luHIvlaHbe'chugh MinIO, Pigsty mIllogh lo'. yIQapqa'!
+- `mc` mIllogh bot MinIO; Pigsty mIllogh wIlo'.
 
 ## [5.1.2] - 2026-10-03
 
