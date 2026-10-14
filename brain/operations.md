@@ -78,8 +78,8 @@ otherwise viable here: its `child_process` honors `{shell:true}` so cycletls'
 |---|---|---|
 | `db` | postgres:17.10-alpine | Postgres (volume `nostragoalus_pgdata`) |
 | `rustfs` | rustfs/rustfs | S3-compatible object storage (volume `nostragoalus_media`) |
-| `rustfs-init` | quay.io/minio/mc | one-shot bucket init (idempotent) |
-| `mc` | quay.io/minio/mc | backup/restore client (profile `tools`) |
+| `rustfs-init` | pgsty/mc | one-shot bucket init (idempotent) |
+| `mc` | pgsty/mc | backup/restore client (profile `tools`) |
 | `coturn` | coturn/coturn:4.6.2-alpine | TURN relay for voice (profile `voice`); see [architecture/webrtc.md](architecture/webrtc.md) |
 | `app` | nostragoalus-app:${NG_APP_VERSION:-local}${NG_APP_TAG_SUFFIX:-} | built app, target `${NG_APP_TARGET:-prod}`, `mem_limit: 2g`; `mise run deploy` sets `NG_APP_VERSION` to the package.json version, otherwise `:local` |
 | `app-dev` | nostragoalus-app:dev (`dev` target) | HMR dev server (dev overlay, profile `dev`) |
