@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [5.1.3] - 2026-10-14
+
 ### Corrigé
 
 - Les déploiements n'échouent plus en récupérant l'image du client de stockage : MinIO exige désormais une connexion pour télécharger son image `mc`, la stack utilise donc le fork communautaire de Pigsty.
