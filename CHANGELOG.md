@@ -5,6 +5,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); ver
 
 ## [Unreleased]
 
+### Fixed
+
+- Deploys no longer fail pulling the storage client image: MinIO now requires a login to pull its `mc` image, so the stack uses Pigsty's community build of it instead.
+
 ## [5.1.2] - 2026-10-03
 
 ### Fixed

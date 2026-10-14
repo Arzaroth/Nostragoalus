@@ -5,6 +5,10 @@ naDev Nostragoalus choHmey potlh Hoch qonlu'.
 
 ## [Unreleased]
 
+### tI'pu'
+
+- `mc` mIllogh luHIvlaHbe'chugh MinIO, Pigsty mIllogh lo'. yIQapqa'!
+
 ## [5.1.2] - 2026-10-03
 
 ### tI'pu'
