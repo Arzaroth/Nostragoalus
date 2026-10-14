@@ -974,7 +974,12 @@ routes). These are the real-but-out-of-scope items it surfaced:
 - [x] **Pin the storage images**: rustfs and minio/mc are now pinned by
       `tag@sha256` to the digests proven in prod (rustfs `1.0.0-beta.8`, mc
       `RELEASE.2025-08-13T08-35-41Z`), so a `docker compose pull` can't swap in a
-      breaking backend/mc.
+      breaking backend/mc. (v5.1.3: mc moved to the `pgsty/mc`
+      `RELEASE.2026-09-16T00-00-00Z` fork after quay.io/minio/mc started
+      refusing anonymous pulls; not yet proven in prod.)
+- [ ] **Prove the pgsty/mc pin in prod**: after the v5.1.3 deploy, confirm
+      `rustfs-init` completes and run one `mise run db-backup` + a restore
+      dry-run, since the fork is 13 months newer than the old pin.
 - [ ] **Don't ship usable default object-store creds in prod**: `compose.yaml`
       falls back to `rustfsadmin/rustfsadmin` via `:-`. rustfs has no published
       prod port (in-network only), so the risk is modest, but a hardened deploy
