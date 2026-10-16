@@ -1040,9 +1040,11 @@ Issue #3 (2026-10-16) was the window, not the pool: the Champions Cup and the
 Challenge Cup opened the same weekend with nothing played, so the three newest
 events held one played tie source, Coppa Italia again. A live sweep of the twelve
 newest events found four that never key anything in, so dead events are routine,
-not an edge case. The canary now reads up to eight events and samples one fixture
-from each of up to four, judging the feed only when all four are empty: a real
-feed change empties every event, a dead competition empties one.
+not an edge case. The canary now reads up to eight events, stopping once four have
+a played tie, and its four samples take turns across them; the feed is judged only
+when every sampled fixture is empty. A real feed change empties every event, a
+dead competition empties one - though when it is the only event in eight with a
+played tie, it still supplies every sample.
 
 Sofascore and football-data are deliberately out of scope for now: one goes
 through cycletls (TLS fingerprinting) and the other needs a key, and neither is
