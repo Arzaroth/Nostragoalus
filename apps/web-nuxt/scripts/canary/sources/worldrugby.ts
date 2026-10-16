@@ -24,8 +24,8 @@ const MAX_EVENTS = 8
 // A fixture can carry its points before anyone has keyed in its play-by-play or
 // team sheets - a tier-3 tie often does for days, and a whole round lags
 // together. Some events never key either in at all (Coppa Italia, the English
-// Championship, Super Rugby Aus), so each sample comes from a different event
-// and the feed is judged only when every one of them is empty.
+// Championship, Super Rugby Aus), so the samples take turns across the events
+// and the feed is judged only when every sampled fixture is empty.
 const MAX_SAMPLES = 4
 
 const CATALOG: Table = [
@@ -58,8 +58,8 @@ const MATCH: Table = [
   ['time.label', SAMPLED, CHECKS.filledText],
   ['scores', SAMPLED, CHECKS.list],
   // Verified live: a round-robin event (Six Nations, Nations Championship,
-  // Super Rugby) publishes null for all three on EVERY fixture. With a
-  // three-event sample, a February morning can see nothing but round-robin.
+  // Super Rugby) publishes null for all three on EVERY fixture. A February
+  // morning's handful of events can be nothing but round-robin.
   ['eventPhase', RARE, CHECKS.filledText],
   ['eventPhaseId.type', RARE, CHECKS.filledText],
   ['eventPhaseId.subType', RARE, CHECKS.filledText],
