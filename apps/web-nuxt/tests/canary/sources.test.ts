@@ -915,20 +915,38 @@ describe('worldrugby source', () => {
     expect(notes.join(' ')).toContain('timeline    match x1')
   })
 
+  function eventsOf(ids: string[], fixturesOf: (id: string) => ReturnType<typeof wrMatch>[]): Route[] {
+    return ids.map((id): Route => ({ match: (u) => u.includes(`/event/${id}/schedule`), answer: { matches: fixturesOf(id) } }))
+  }
+
+  function catalogOf(ids: string[]) {
+    return { pageInfo: { numPages: 1 }, content: ids.map((id) => ({ ...WR_CATALOG.content[0], id, altId: id })) }
+  }
+
+  async function schedulesAsked(ids: string[], fixturesOf: (id: string) => ReturnType<typeof wrMatch>[]) {
+    const { asked, routes } = recording([...eventsOf(ids, fixturesOf), ...wrRoutes({ catalog: catalogOf(ids) })])
+    const { failures } = await drive(source, routes)
+    expect(failures).toEqual([])
+    return asked.filter((u) => u.includes('/schedule')).length
+  }
+
   it('stops reading events once four of them have a played tie', async () => {
     const ids = ['e1', 'e2', 'e3', 'e4', 'e5', 'e6']
-    const catalog = { pageInfo: { numPages: 1 }, content: ids.map((id) => ({ ...WR_CATALOG.content[0], id, altId: id })) }
-    const routes: Route[] = [
-      ...ids.map((id): Route => ({
-        match: (u) => u.includes(`/event/${id}/schedule`),
-        answer: { matches: Array.from({ length: 6 }, (_, i) => wrMatch(`${id}m${i}`)) },
-      })),
-      ...wrRoutes({ catalog }),
-    ]
-    const { asked, routes: recorded } = recording(routes)
-    const { failures } = await drive(source, recorded)
-    expect(failures).toEqual([])
-    expect(asked.filter((u) => u.includes('/schedule'))).toHaveLength(4)
+    const big = (id: string) => Array.from({ length: 30 }, (_, i) => wrMatch(`${id}m${i}`))
+    expect(await schedulesAsked(ids, big)).toBe(4)
+  })
+
+  it('reads on past four played events while they are too small to judge', async () => {
+    const ids = ['e1', 'e2', 'e3', 'e4', 'e5', 'e6']
+    const small = (id: string) => [wrMatch(`${id}m0`), wrMatch(`${id}m1`)]
+    expect(await schedulesAsked(ids, small)).toBe(6)
+  })
+
+  it('reads as deep as the eighth event and no further', async () => {
+    const ids = ['e1', 'e2', 'e3', 'e4', 'e5', 'e6', 'e7', 'e8', 'e9']
+    const fixturesOf = (id: string) =>
+      id === 'e8' ? [wrMatch('x1')] : Array.from({ length: 30 }, (_, i) => wrMatch(`${id}u${i}`, { scores: [0, 0] }))
+    expect(await schedulesAsked(ids, fixturesOf)).toBe(8)
   })
 
   it('does not cry wolf when nothing in the event has been played', async () => {
