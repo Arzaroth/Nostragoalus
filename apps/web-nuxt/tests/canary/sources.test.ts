@@ -892,6 +892,45 @@ describe('worldrugby source', () => {
     ])
   })
 
+  it('reads past newly opened events to find one that keys in its play-by-play', async () => {
+    // Verified live (issue #3): the Champions Cup and Challenge Cup opened the
+    // same weekend with nothing played, ahead of Coppa Italia.
+    const catalog = {
+      pageInfo: { numPages: 1 },
+      content: ['e1', 'e2', 'e3', 'e4'].map((id) => ({ ...WR_CATALOG.content[0], id, altId: id })),
+    }
+    const unplayed = (prefix: string) =>
+      Array.from({ length: 30 }, (_, i) => wrMatch(`${prefix}${i}`, { scores: [0, 0] }))
+    const routes: Route[] = [
+      { match: (u) => u.includes('/event/e1/schedule'), answer: { matches: unplayed('a') } },
+      { match: (u) => u.includes('/event/e2/schedule'), answer: { matches: unplayed('b') } },
+      { match: (u) => u.includes('/event/e3/schedule'), answer: { matches: [wrMatch('c1'), wrMatch('c2')] } },
+      { match: (u) => u.includes('/event/e4/schedule'), answer: { matches: [wrMatch('x1')] } },
+      { match: (u) => /\/match\/c\d+\/timeline/.test(u), answer: { timeline: [] } },
+      { match: (u) => /\/match\/c\d+\/summary/.test(u), answer: EMPTY_SHEET },
+      ...wrRoutes({ catalog }),
+    ]
+    const { failures, notes } = await drive(source, routes)
+    expect(failures).toEqual([])
+    expect(notes.join(' ')).toContain('timeline    match x1')
+  })
+
+  it('stops reading events once four of them have a played tie', async () => {
+    const ids = ['e1', 'e2', 'e3', 'e4', 'e5', 'e6']
+    const catalog = { pageInfo: { numPages: 1 }, content: ids.map((id) => ({ ...WR_CATALOG.content[0], id, altId: id })) }
+    const routes: Route[] = [
+      ...ids.map((id): Route => ({
+        match: (u) => u.includes(`/event/${id}/schedule`),
+        answer: { matches: Array.from({ length: 6 }, (_, i) => wrMatch(`${id}m${i}`)) },
+      })),
+      ...wrRoutes({ catalog }),
+    ]
+    const { asked, routes: recorded } = recording(routes)
+    const { failures } = await drive(source, recorded)
+    expect(failures).toEqual([])
+    expect(asked.filter((u) => u.includes('/schedule'))).toHaveLength(4)
+  })
+
   it('does not cry wolf when nothing in the event has been played', async () => {
     const schedule = { matches: [wrMatch('x1', { scores: [0, 0] })] }
     const { failures, ledger } = await drive(source, wrRoutes({ schedule }))
