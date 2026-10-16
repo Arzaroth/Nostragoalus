@@ -1036,6 +1036,14 @@ next), and the schedule loop does not stop until the played fixtures come from a
 least two events: stopping on fixture count alone let a cup of 20 or more ties end
 the loop by itself and left the turn-taking nothing to spread.
 
+Issue #3 (2026-10-16) was the window, not the pool: the Champions Cup and the
+Challenge Cup opened the same weekend with nothing played, so the three newest
+events held one played tie source, Coppa Italia again. A live sweep of the twelve
+newest events found four that never key anything in, so dead events are routine,
+not an edge case. The canary now reads up to eight events and samples one fixture
+from each of up to four, judging the feed only when all four are empty: a real
+feed change empties every event, a dead competition empties one.
+
 Sofascore and football-data are deliberately out of scope for now: one goes
 through cycletls (TLS fingerprinting) and the other needs a key, and neither is
 known to work from a GitHub-hosted runner.
