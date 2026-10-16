@@ -810,8 +810,8 @@ describe('worldrugby source', () => {
     expect(notes.join(' ')).toContain('summary     match x2')
   })
 
-  it('still reports an empty timeline once three played fixtures have none', async () => {
-    const schedule = { matches: ['x1', 'x2', 'x3', 'x4'].map((id) => wrMatch(id)) }
+  it('still reports an empty timeline once four played fixtures have none', async () => {
+    const schedule = { matches: ['x1', 'x2', 'x3', 'x4', 'x5'].map((id) => wrMatch(id)) }
     const { asked, routes } = recording(wrRoutes({ schedule, timeline: { timeline: [] } }))
     const { failures } = await drive(source, routes)
     expect(failures).toContain('timeline.timeline')
@@ -819,6 +819,7 @@ describe('worldrugby source', () => {
       expect.stringContaining('/match/x1/'),
       expect.stringContaining('/match/x2/'),
       expect.stringContaining('/match/x3/'),
+      expect.stringContaining('/match/x4/'),
     ])
   })
 

@@ -18,14 +18,15 @@ const SPORT = 'mru'
 // The newest started event can be a four-fixture tournament, which is too small
 // a population to tell "this key is gone" from "nothing like that happened".
 const ENOUGH_FIXTURES = 20
-const MAX_EVENTS = 3
+// A newly opened event has nothing played, and a European cup weekend opens two
+// at once: three events left Coppa Italia the only one with a played tie.
+const MAX_EVENTS = 8
 // A fixture can carry its points before anyone has keyed in its play-by-play or
 // team sheets - a tier-3 tie often does for days, and a whole round lags
-// together. That is late data, not a changed feed, so a pool of played fixtures
-// from as many events as it takes gets a turn before an empty one is judged.
-// The turns go round the events: a domestic cup (Coppa Italia) never keys
-// either in, and drawing every sample from it reds a healthy feed.
-const MAX_SAMPLES = 3
+// together. Some events never key either in at all (Coppa Italia, the English
+// Championship, Super Rugby Aus), so each sample comes from a different event
+// and the feed is judged only when every one of them is empty.
+const MAX_SAMPLES = 4
 
 const CATALOG: Table = [
   ['content', REQUIRED, CHECKS.filledList],
@@ -292,7 +293,6 @@ export function worldRugbySource(sport: string = SPORT): CanarySource {
 
       const fixtures: WrMatch[] = []
       const playedByEvent: WrMatch[][] = []
-      let playedCount = 0
       for (const event of candidates) {
         const ref = event.altId ? String(event.altId) : String(event.id ?? '')
         const schedule = await ctx.getJson<{ matches?: unknown[] | null }>(
@@ -307,9 +307,8 @@ export function worldRugbySource(sport: string = SPORT): CanarySource {
         )
         const playedHere = matches.filter((m) => (m.scores ?? []).some((s) => Number(s) > 0))
         playedByEvent.push(playedHere)
-        playedCount += playedHere.length
-        const spread = playedByEvent.filter((group) => group.length).length >= 2
-        if (fixtures.length >= ENOUGH_FIXTURES && playedCount >= MAX_SAMPLES && spread) break
+        const eventsPlayed = playedByEvent.filter((group) => group.length).length
+        if (fixtures.length >= ENOUGH_FIXTURES && eventsPlayed >= MAX_SAMPLES) break
       }
 
       const played = interleave(playedByEvent)
