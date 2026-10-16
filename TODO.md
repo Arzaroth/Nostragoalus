@@ -3677,6 +3677,16 @@ what it has already found.
       play-by-play or team sheet at all, and as the newest event it supplied all
       three samples. The pool now takes turns across events and needs played
       fixtures from at least two.
+- [x] **Issue #3: World Rugby red again on Coppa Italia** (fixed on
+      `fix/canary-rugby-wider-window`). The Champions Cup and Challenge Cup
+      opened the same weekend with nothing played, so the three-event window
+      held one played source. It now reads up to eight events and samples four.
+- [ ] **A lone dead rugby event can still red the canary.** When the only event
+      among the newest eight with a played tie never keys in a play-by-play, all
+      four samples come from it. Live, four of the twelve newest `mru` events are
+      like that (Coppa Italia, English Championship, Super Rugby Aus, Premiership
+      Rugby Cup). If it recurs, a known-dead allowlist or reading until one keyed
+      fixture is found would close it.
 - [ ] **FIFA samples a single played match** for its timeline and detail
       (`sources/fifa.ts`, the first `played(match)` in the calendar). One match
       with nothing published yet would red it the way issue #2 did World Rugby;
