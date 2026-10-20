@@ -430,8 +430,9 @@ The open debt is listed in the root `TODO.md` under the "Mobile app" and
   is not optional: `ASWebAuthenticationSession` only intercepts an https callback
   (iOS 17.4+, hence the deployment target) for a domain listing the app there.
   Unlike Android's all-paths intent filter, `applinks` claims only the paths
-  `deepLinkTarget` routes plus the SSO callback (`IOS_APP_LINK_PATHS`), so a
-  reset-password or verify-email link still opens Safari.
+  `deepLinkTarget` routes, the SSO callback and the account-deletion callback
+  (`IOS_APP_LINK_PATHS`), so a reset-password or verify-email link still opens
+  Safari.
 - The Flutter template declares `INTERNET` only in `src/debug` and `src/profile`,
   so the main manifest declares it explicitly or a release APK cannot reach the
   server at all.
@@ -462,8 +463,13 @@ The open debt is listed in the root `TODO.md` under the "Mobile app" and
   account (404 otherwise), and a browser opened from the mail holds none: the
   app is signed in by bearer token. So the link is an App Link / Universal Link
   (iOS claims the path in `IOS_APP_LINK_PATHS`; Android claims every path) and
-  `DeepLinkController` answers it with the app's own session, pops the deleted
-  account's screens and toasts the result. Opened on a desktop, it still works
+  `DeepLinkController` answers it with the app's own session after a
+  confirmation dialog, pops the deleted account's screens and toasts the
+  result. Signed out it does not call the server (which would refuse without
+  spending the token) and says to sign in first; signed in as another account
+  the server spends the token before refusing, so the failure says to request a
+  new link. `app_links` also replays the launch link on its stream, so the
+  controller ignores the same link repeated within a few seconds. Opened on a desktop, it still works
   only where that browser is signed in to the account, as on the web.
 - Permissions in the merged release manifest are `INTERNET`, `RECORD_AUDIO`,
   `MODIFY_AUDIO_SETTINGS`, `ACCESS_NETWORK_STATE` (all WebRTC voice) plus
