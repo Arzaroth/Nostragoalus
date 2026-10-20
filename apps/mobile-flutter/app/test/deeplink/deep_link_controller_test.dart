@@ -39,7 +39,7 @@ class _Auth extends AuthController {
   final AuthUser? _user;
   final Duration delay;
   final bool refuseDeletion;
-  String? confirmed;
+  final confirmed = <String>[];
   @override
   Future<AuthUser?> build() async {
     await Future<void>.delayed(delay);
@@ -49,7 +49,7 @@ class _Auth extends AuthController {
   @override
   Future<void> confirmDeletion(String token) async {
     if (refuseDeletion) throw StateError('Failed to get user info');
-    confirmed = token;
+    confirmed.add(token);
     state = const AsyncData(null);
   }
 }
@@ -159,6 +159,13 @@ void main() {
 
   group('the mailed account-deletion link', () {
     const link = 'https://goal.arzaroth.com/api/auth/delete-user/callback?token=tok&callbackURL=%2Flogin';
+    const signedIn = AuthUser(id: 'u1', email: 'u1@example.com');
+
+    Future<void> confirmDeletion(WidgetTester tester) async {
+      expect(find.text(i18n.t('account.dangerHint')), findsOneWidget, reason: 'asks before deleting');
+      await tester.tap(find.widgetWithText(TextButton, i18n.t('account.deleteAccount')));
+      await tester.pumpAndSettle();
+    }
 
     test('is recognised by its exact path and needs a token', () {
       expect(deletionToken(Uri.parse(link)), 'tok');
@@ -168,10 +175,10 @@ void main() {
       expect(deletionToken(Uri.parse('https://goal.arzaroth.com/leagues/l1?token=tok')), isNull);
     });
 
-    testWidgets('is confirmed with this app\'s session and says the account is gone', (tester) async {
+    testWidgets('is confirmed with this app\'s session after asking, and says the account is gone', (tester) async {
       final links = _FakeLinks();
       addTearDown(links.close);
-      final auth = _Auth(const AuthUser(id: 'u1', email: 'u1@example.com'));
+      final auth = _Auth(signedIn);
       await pumpController(tester, links, auth: () => auth);
       await tester.pumpAndSettle();
       navigatorKey.currentState!.push(MaterialPageRoute<void>(
@@ -180,29 +187,74 @@ void main() {
 
       links.emit(Uri.parse(link));
       await tester.pumpAndSettle();
+      await confirmDeletion(tester);
 
-      expect(auth.confirmed, 'tok');
+      expect(auth.confirmed, ['tok']);
       expect(find.text(i18n.t('account.deletedToast')), findsOneWidget);
       expect(find.text('delete screen'), findsNothing,
           reason: "the deleted account's screens must not cover sign-in");
     });
 
-    testWidgets('a refused link says what to do instead of the server\'s "not found"', (tester) async {
+    testWidgets('cancelling the question deletes nothing', (tester) async {
       final links = _FakeLinks();
       addTearDown(links.close);
-      await pumpController(tester, links, auth: () => _Auth(null, refuseDeletion: true));
+      final auth = _Auth(signedIn);
+      await pumpController(tester, links, auth: () => auth);
+      await tester.pumpAndSettle();
+
+      links.emit(Uri.parse(link));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(TextButton, i18n.t('common.cancel')));
+      await tester.pumpAndSettle();
+
+      expect(auth.confirmed, isEmpty);
+    });
+
+    testWidgets('a refused link says to request a new one: the server spent it', (tester) async {
+      final links = _FakeLinks();
+      addTearDown(links.close);
+      await pumpController(tester, links, auth: () => _Auth(signedIn, refuseDeletion: true));
+      await tester.pumpAndSettle();
+
+      links.emit(Uri.parse(link));
+      await tester.pumpAndSettle();
+      await confirmDeletion(tester);
+
+      expect(find.text(i18n.t('account.deleteLinkFailed')), findsOneWidget);
+    });
+
+    testWidgets('signed out, the server is not called and the link is kept for after sign-in', (tester) async {
+      final links = _FakeLinks();
+      addTearDown(links.close);
+      final auth = _Auth(null);
+      await pumpController(tester, links, auth: () => auth);
       await tester.pumpAndSettle();
 
       links.emit(Uri.parse(link));
       await tester.pumpAndSettle();
 
-      expect(find.text(i18n.t('account.deleteLinkFailed')), findsOneWidget);
+      expect(auth.confirmed, isEmpty);
+      expect(find.text(i18n.t('account.dangerHint')), findsNothing);
+      expect(find.text(i18n.t('account.deleteLinkSignIn')), findsOneWidget);
+    });
+
+    testWidgets('the launch link replayed on the stream is acted on once', (tester) async {
+      final links = _FakeLinks(initial: Uri.parse(link));
+      addTearDown(links.close);
+      final auth = _Auth(signedIn);
+      await pumpController(tester, links, auth: () => auth);
+      links.emit(Uri.parse(link));
+      await tester.pumpAndSettle();
+
+      expect(find.text(i18n.t('account.dangerHint')), findsOneWidget, reason: 'one question, not two');
+      await confirmDeletion(tester);
+      expect(auth.confirmed, ['tok']);
     });
 
     testWidgets('links can come from the provider, for on-device tests', (tester) async {
       final links = _FakeLinks();
       addTearDown(links.close);
-      final auth = _Auth(const AuthUser(id: 'u1', email: 'u1@example.com'));
+      final auth = _Auth(signedIn);
       await tester.pumpWidget(ProviderScope(
         overrides: [
           tokenStoreProvider.overrideWithValue(TokenStore(InMemoryKv())),
@@ -221,8 +273,9 @@ void main() {
 
       links.emit(Uri.parse(link));
       await tester.pumpAndSettle();
+      await confirmDeletion(tester);
 
-      expect(auth.confirmed, 'tok');
+      expect(auth.confirmed, ['tok']);
     });
   });
 }

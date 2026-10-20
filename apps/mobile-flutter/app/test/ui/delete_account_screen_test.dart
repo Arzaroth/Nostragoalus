@@ -20,6 +20,7 @@ const _strings = {
     'deleteMailHint': 'A link will be mailed.',
     'deleteSendMail': 'Send confirmation mail',
     'deleteMailSent': 'Mail sent.',
+    'deleteMailOpenHint': 'Open it on this phone.',
   },
   'twofa': {'disableCode': 'Current code'},
   'common': {'cancel': 'Cancel'},
@@ -95,6 +96,8 @@ void main() {
 
     expect(auth.calls.single.policy.mailConfirmed, isTrue);
     expect(find.text('Mail sent.'), findsOneWidget);
+    expect(find.text('Open it on this phone.'), findsOneWidget,
+        reason: 'the link needs this app or a signed-in browser, so say so');
     expect(find.byType(DeleteAccountScreen), findsOneWidget, reason: 'nothing is deleted yet');
   });
 

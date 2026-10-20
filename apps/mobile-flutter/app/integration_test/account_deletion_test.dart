@@ -139,10 +139,13 @@ void main() {
     // 5. the link reaches the app, which confirms it with its own session and
     // signs out
     links.emit(link);
+    final dialog = find.byType(AlertDialog);
+    await waitFor(tester, dialog, 'the confirmation before deleting');
+    await tester.tap(find.descendant(of: dialog, matching: find.byType(TextButton)).last);
     await waitFor(tester, find.byType(SignInScreen), 'the sign-in screen after deletion');
 
     // 6. the account is gone: its credentials no longer sign in
-    expect((await request('POST', signIn, body: {'email': email, 'password': password})).$1,
-        isNot(200));
+    expect((await request('POST', signIn, body: {'email': email, 'password': password})).$1, 401,
+        reason: 'the deleted account must read as unknown credentials, not a rate limit or an error');
   });
 }
