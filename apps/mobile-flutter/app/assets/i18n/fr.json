@@ -1120,7 +1120,9 @@
     "deleteSendMail": "Envoyer le mail de confirmation",
     "deleteMailSent": "Mail de confirmation envoyé - le compte sera supprimé en ouvrant le lien.",
     "deletedToast": "Votre compte a été supprimé.",
-    "deleteLinkFailed": "Ce lien de suppression n'a pas pu être confirmé. Connectez-vous à ce compte dans l'application, puis rouvrez le lien."
+    "deleteLinkFailed": "Ce lien de suppression n'a pas pu être confirmé : il a peut-être expiré, déjà servi, ou il concerne un autre compte. Demandez-en un nouveau depuis l'écran de suppression du compte.",
+    "deleteLinkSignIn": "Connectez-vous au compte à supprimer, puis rouvrez le lien, ou ouvrez-le dans un navigateur connecté à ce compte.",
+    "deleteMailOpenHint": "Ouvrez le lien sur ce téléphone, ou dans un navigateur connecté à ce compte."
   },
   "admin": {
     "competitions": {

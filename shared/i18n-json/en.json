@@ -1125,7 +1125,9 @@
     "deleteSendMail": "Send confirmation mail",
     "deleteMailSent": "Confirmation mail sent - the account will be deleted when you open the link.",
     "deletedToast": "Your account has been deleted.",
-    "deleteLinkFailed": "This deletion link could not be confirmed. Sign in to that account in this app, then open the link again."
+    "deleteLinkFailed": "This deletion link could not be confirmed: it may have expired, already been used, or belong to another account. Request a new one from the delete account screen.",
+    "deleteLinkSignIn": "Sign in to the account you want to delete, then open the link again, or open it in a browser signed in to that account.",
+    "deleteMailOpenHint": "Open the link on this phone, or in a browser signed in to this account."
   },
   "admin": {
     "competitions": {

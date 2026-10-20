@@ -1120,7 +1120,9 @@
     "deleteSendMail": "'olmeH QIn yIngeH",
     "deleteMailSent": "'olmeH QIn ngeHlu'ta' - leQ DapoSmoHDI' raQwI' Qaw'lu'.",
     "deletedToast": "mI'lIj teqlu'pu'.",
-    "deleteLinkFailed": "QIn chovnatlh 'olbe'. De'wI'HomvaD yI'el, QIn yIpoSmoHqa'."
+    "deleteLinkFailed": "QIn chovnatlh 'olbe'. QIn chu' yItlhob.",
+    "deleteLinkSignIn": "mI'vaD yI'el, QIn yIpoSmoHqa'.",
+    "deleteMailOpenHint": "De'wI'Hom vamDaq QIn yIpoSmoH."
   },
   "admin": {
     "competitions": {

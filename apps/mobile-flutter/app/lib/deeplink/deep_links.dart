@@ -4,6 +4,7 @@ import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../api/auth_repository.dart';
 import '../i18n/i18n_scope.dart';
 import '../state/providers.dart';
 import '../ui/feedback.dart';
@@ -72,6 +73,8 @@ class DeepLinkController extends ConsumerStatefulWidget {
 class _DeepLinkControllerState extends ConsumerState<DeepLinkController> {
   late final _appLinks = widget.links ?? ref.read(appLinksProvider) ?? AppLinks();
   StreamSubscription<Uri>? _sub;
+  Uri? _lastUri;
+  DateTime? _lastAt;
 
   @override
   void initState() {
@@ -98,7 +101,21 @@ class _DeepLinkControllerState extends ConsumerState<DeepLinkController> {
     super.dispose();
   }
 
+  /// app_links delivers the launch link on uriLinkStream as well as through
+  /// getInitialLink, so a cold start hands the same link over twice. Acted on
+  /// twice, a deletion link deletes once and then reports a failure.
+  bool _isRepeat(Uri uri) {
+    final now = DateTime.now();
+    final repeat = uri == _lastUri &&
+        _lastAt != null &&
+        now.difference(_lastAt!) < const Duration(seconds: 5);
+    _lastUri = uri;
+    _lastAt = now;
+    return repeat;
+  }
+
   Future<void> _handle(Uri uri) async {
+    if (_isRepeat(uri)) return;
     // Only real web links are routed here. The SSO callback is an https App Link
     // too, but the auth session consumes it before it is ever dispatched as a
     // link, and deepLinkTarget has no route for it either way.
@@ -118,13 +135,29 @@ class _DeepLinkControllerState extends ConsumerState<DeepLinkController> {
     if (route != null) navigatorKey.currentState?.push(route);
   }
 
-  /// The mailed deletion link, answered with this app's session. Without one
-  /// (signed out, or signed in as someone else) the server refuses, and the
-  /// message says what to do rather than echoing its "not found".
+  /// The mailed deletion link, answered with this app's session. Signed out,
+  /// the server would refuse without consuming the token, so the link is kept
+  /// for after sign-in. Signed in, the server consumes the token before it
+  /// checks whose it is, so a refusal means the link is spent either way.
   Future<void> _confirmDeletion(String token) async {
+    AuthUser? user;
+    try {
+      user = await ref.read(authControllerProvider.future);
+    } catch (_) {
+      user = null;
+    }
+    var context = navigatorKey.currentContext;
+    if (!mounted || context == null || !context.mounted) return;
+    if (user == null) return showToast(context, context.tr('account.deleteLinkSignIn'));
+    final ok = await confirmDialog(
+      context,
+      title: context.tr('account.dangerTitle'),
+      message: context.tr('account.dangerHint'),
+      confirmLabel: context.tr('account.deleteAccount'),
+    );
+    if (!ok || !mounted) return;
     String message;
     try {
-      await ref.read(authControllerProvider.future);
       await ref.read(authControllerProvider.notifier).confirmDeletion(token);
       // Whatever was pushed (the delete screen, typically) belonged to the
       // account that no longer exists; sign-in is the root underneath.
@@ -133,7 +166,7 @@ class _DeepLinkControllerState extends ConsumerState<DeepLinkController> {
     } catch (_) {
       message = 'account.deleteLinkFailed';
     }
-    final context = navigatorKey.currentContext;
+    context = navigatorKey.currentContext;
     if (!mounted || context == null || !context.mounted) return;
     showToast(context, context.tr(message));
   }

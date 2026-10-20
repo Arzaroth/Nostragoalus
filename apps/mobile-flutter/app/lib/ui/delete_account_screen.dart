@@ -114,10 +114,13 @@ class _DeleteAccountScreenState extends ConsumerState<DeleteAccountScreen> {
                 ],
               ),
               const SizedBox(height: 16),
-              if (_mailSent)
+              if (_mailSent) ...[
                 Text(context.tr('account.deleteMailSent'),
-                    key: const ValueKey('delete-mail-sent'), style: theme.textTheme.bodyMedium)
-              else ...[
+                    key: const ValueKey('delete-mail-sent'), style: theme.textTheme.bodyMedium),
+                const SizedBox(height: 8),
+                Text(context.tr('account.deleteMailOpenHint'),
+                    style: theme.textTheme.bodySmall?.copyWith(color: t.muted)),
+              ] else ...[
                 if (policy.mailConfirmed)
                   Text(context.tr('account.deleteMailHint'),
                       style: theme.textTheme.bodyMedium?.copyWith(color: t.muted)),

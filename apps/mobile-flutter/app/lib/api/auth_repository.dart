@@ -50,9 +50,6 @@ class AuthUser {
       );
 }
 
-/// Email/password auth over the bearer contract. Sign-in surfaces the token in
-/// the `set-auth-token` header (captured by [ApiClient]); every later call reads
-/// it from the [TokenStore].
 /// How the server wants an account deletion confirmed (`/api/me/sso-status`).
 class DeletionPolicy {
   const DeletionPolicy({required this.mailConfirmed, required this.ssoManaged});
@@ -67,6 +64,9 @@ class DeletionPolicy {
   bool get needsPassword => !mailConfirmed && !ssoManaged;
 }
 
+/// Email/password auth over the bearer contract. Sign-in surfaces the token in
+/// the `set-auth-token` header (captured by [ApiClient]); every later call reads
+/// it from the [TokenStore].
 class AuthRepository {
   AuthRepository(this._api, this._tokens);
 
