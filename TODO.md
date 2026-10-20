@@ -3744,6 +3744,16 @@ what it has already found.
       libsodium.framework prints only `arm64`.
 - [x] In-app account deletion (App Store guideline 5.1.1(v)): the account
       tab's delete row, confirmed like the web (feat/mobile-account-deletion).
+- [ ] Account-deletion review deferrals (feat/mobile-account-deletion):
+      server error messages reach the delete screen untranslated (apiMessage
+      shows body.message as-is, app-wide pattern); the delete row sits in the
+      same panel as Sign out (separate danger panel would be cleaner); a
+      deletion whose response is lost reports a failure though the account is
+      gone (the next 401 recovers the app); no widget test asserts the row is
+      hidden when signed out; opened on a desktop browser without a session the
+      mailed link still dead-ends on better-auth's JSON 404 (web behaviour,
+      pre-existing); with SMTP off, freshAge: 0 lets an SSO account be deleted on
+      a bearer token alone.
 - [x] `integration_test/account_deletion_test.dart` run green on the x86_64
       emulator against the isolated e2e stack; it found that the mailed link
       needs the app's own session (now handled in-app).
