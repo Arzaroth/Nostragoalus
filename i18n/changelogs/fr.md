@@ -5,6 +5,8 @@ Le format suit [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) ; les ve
 
 ## [Unreleased]
 
+## [5.2.0] - 2026-10-21
+
 ### Ajouté
 
 - Application Android : vous pouvez désormais supprimer votre compte depuis l'application, dans l'onglet compte. La confirmation se fait comme sur le site : par un lien envoyé par e-mail, ou par votre mot de passe (et votre code à deux facteurs si vous en utilisez un) quand le site n'envoie pas d'e-mails.
