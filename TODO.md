@@ -3744,6 +3744,11 @@ what it has already found.
       libsodium.framework prints only `arm64`.
 - [x] In-app account deletion (App Store guideline 5.1.1(v)): the account
       tab's delete row, confirmed like the web (feat/mobile-account-deletion).
+- [ ] Pin the toolchain in the repo's `.mise.toml` (`node = "22"`, pnpm 11.5.1):
+      on a box whose default Node is 26, `pnpm test:components` fails 144/350
+      ("No 'queryClient' found") on master too, and `mise run release` cannot
+      be wrapped in `mise x` (its shims win), so 5.2.0 was cut by running
+      `mise-tasks/release` directly with Node 22 first on PATH.
 - [ ] Account-deletion review deferrals (feat/mobile-account-deletion):
       server error messages reach the delete screen untranslated (apiMessage
       shows body.message as-is, app-wide pattern); the delete row sits in the
